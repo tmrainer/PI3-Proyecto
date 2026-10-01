@@ -1,27 +1,26 @@
 # Sistema de Asistencia
 
-**Ollas comunes y comedores · Programa de Complementación Alimentaria · Villa
-María del Triunfo**
-
-Aplicación web para las dirigentes de ollas comunes y comedores.
-
-Su tarea diaria es **pasar lista**: tocar a quien vino y que las raciones se
-cuenten solas. Alrededor de eso, ayuda a llenar y validar el **Formato B-1** (Balance de Centros de Atención
-Subsidiados), a llevar el **padrón de personas afiliadas** con su asistencia
-diaria, y a no perder de vista **cuándo toca la siguiente entrega**.
-
-El formato tiene carácter de declaración jurada, así que la aplicación **calcula,
-sugiere y valida, pero nunca rellena ni estima un dato por su cuenta**. Si un
-campo está vacío, se queda vacío.
+Aplicación web para las dirigentes de ollas comunes y comedores del Programa de
+Complementación Alimentaria (PCA) de la Municipalidad Distrital de Villa María
+del Triunfo.
 
 ---
 
-## Cómo ejecutarlo en local
+## En línea
 
-Hace falta **un navegador y un servidor estático**. Nada más: no hay `npm install`,
-ni compilación, ni base de datos, ni servidor de aplicación.
+Ya está desplegada en GitHub Pages:
 
-### Con Python (lo más probable que ya tengas)
+**<https://tmrainer.github.io/PI3-Proyecto/>**
+
+No hace falta instalar nada: se abre en el navegador del celular o de la
+computadora.
+
+---
+
+## Levantarla en local
+
+Hace falta un navegador y un servidor estático. No hay `npm install`, ni
+compilación, ni base de datos.
 
 ```bash
 git clone git@github.com:tmrainer/PI3-Proyecto.git
@@ -29,136 +28,67 @@ cd PI3-Proyecto
 python3 -m http.server 8000
 ```
 
-Abre **<http://localhost:8000>** en el navegador. `Ctrl-C` para detenerlo.
+Abre **<http://localhost:8000>**. `Ctrl-C` para detenerlo.
 
-### Otras formas, si prefieres
+### Otras formas
 
 ```bash
-npx serve .          # Node.js
+npx serve .             # Node.js
 php -S localhost:8000   # PHP
 ```
 
 En VS Code también sirve la extensión **Live Server**: clic derecho sobre
-`index.html` → *Open with Live Server*.
+`asistencia.html` → *Open with Live Server*.
 
 ### No abras los archivos con doble clic
 
-Abrir `index.html` directamente (`file:///…`) **no funciona**. La aplicación usa
-módulos ES (`<script type="module">`), que el navegador bloquea por política de
-mismo origen cuando la página viene de `file://`. La pantalla saldrá en blanco o a
-medias.
+Abrir `asistencia.html` directamente (`file:///…`) **no funciona**. La aplicación
+usa módulos ES, que el navegador bloquea por política de mismo origen cuando la
+página viene de `file://`. La pantalla saldrá en blanco o a medias.
 
 Siempre a través de `http://localhost`, aunque el servidor sea tu propia máquina.
 
 ---
 
-## Qué hay en cada página
+## Pendientes
 
-| Página | Para qué |
-|---|---|
-| `asistencia.html` | Pasar lista del día, precio del menú, días anteriores y raciones del periodo |
-| `padron.html` | Inscribir personas, buscarlas y editarlas, cargar un padrón desde Excel o CSV, y el reporte para el formato municipal |
-| `index.html` | Formato B-1: centro, periodo, subsidio, compras y los tres totales |
-| `calendario.html` | Periodicidad de entrega y cuenta regresiva hasta la próxima |
-| `pruebas.html` | 72 aserciones sobre los módulos de cálculo, validación e importación |
+### Bloqueado — hace falta algo de fuera
 
-La paleta y la tipografía siguen las del informe del proyecto (UNACEM · Desafío 2).
+- [ ] **Medir la plantilla física del Formato B-1** con regla, o escanearla plana
+      a 300 dpi. Sin eso no se puede imprimir sobre la hoja oficial.
+- [ ] **Conseguir un ejemplar del B-1 donde el total sea menor que el subsidio**,
+      para verificar la fórmula del renglón «gastos con el subsidio».
+- [ ] **Conseguir el formato de padrón que pide la Municipalidad**, para mapear
+      las columnas del reporte.
+- [ ] **Averiguar el formato del código de barras (PDF417) del DNI**, con
+      muestras reales, antes de escribir el lector.
 
-Cada página hace **una cosa**. La tarea diaria —pasar lista— está en su propia
-pantalla y es la primera del menú.
+### Por preguntar en la Subgerencia
 
-Las pruebas se ejecutan **en el navegador**, sin instalar nada: abre
-<http://localhost:8000/pruebas.html> y deben salir todas en verde.
+- [ ] ¿La entrega quincenal son 15 días corridos o días fijos (15 y fin de mes)?
+- [ ] ¿El PCA usa los mismos tramos de edad que el MINSA (0-11 / 12-17 / 18-59 / 60+)?
+- [ ] ¿Acepta una segunda hoja de continuación cuando hay más de 17 compras?
+- [ ] ¿Qué se hace cuando queda saldo del subsidio sin gastar? El formato no tiene
+      renglón para eso.
 
-### Pasar lista
+### Por construir
 
-«Asistencia de hoy» está siempre arriba del padrón y apunta a la fecha del día.
-Se toca la fila de quien vino: las raciones se cuentan solas, no hay nada que
-escribir. El menú de cada persona sale del tipo con el que se inscribió; si ese
-día come otro, se toca la etiqueta de la derecha.
+- [ ] **Vista previa de impresión**: ver los datos colocados sobre un lienzo A4,
+      para corregir posiciones sin gastar hojas. No está bloqueada.
+- [ ] **Impresión sobre la plantilla oficial** y página de calibración.
+- [ ] **Histórico de precios de compra** por insumo, con aviso de desviación.
+- [ ] **Consumo por origen de fondo**: el dato ya se captura, falta la pantalla.
+- [ ] **Lector del código de barras del DNI** para inscribir sin teclear.
 
-El día solo se guarda cuando se marca a la primera persona, así que abrir la
-aplicación no crea días de atención vacíos.
+### Por decidir
 
-### Cargar un padrón que ya existe
+- [ ] **Quien come sin estar inscrito no tiene dónde anotarse.** Las raciones se
+      cuentan de la asistencia, así que un visitante no registrado suma cero.
+      ¿Se le inscribe, o hace falta una cuenta aparte?
+- [ ] La raíz del sitio abre el Formato B-1, pero la tarea diaria es pasar lista.
+      ¿Debería abrir `asistencia.html`?
 
-En `padron.html`, la sección **Cargar un padrón desde Excel o CSV** admite pegar
-las filas o elegir un archivo. Hace falta la fila de títulos (`Apellido paterno`,
-`Nombres`, `DNI`, `Grupo de edad`, `Tipo`…). Antes de guardar nada se muestra la
-tabla de lo que entraría, con el motivo de cada omisión.
+### Probar con una usuaria real
 
----
-
-## Dónde se guardan los datos
-
-Todo vive en el **`localStorage` del navegador**, en el dispositivo donde escribes.
-No hay servidor: la aplicación funciona con el wifi apagado y no tiene a dónde
-enviar nada.
-
-Eso tiene dos consecuencias que conviene conocer:
-
-- Los datos **se pierden** si borras los datos de navegación, si usas una ventana
-  de incógnito, o si abres la aplicación en otro equipo o navegador.
-- El `localStorage` es **por origen**. Lo guardado en `localhost:8000` no es lo
-  mismo que lo guardado en la versión publicada en GitHub Pages: son dos almacenes
-  distintos.
-
-Por eso cada página tiene **Exportar respaldo** e **Importar respaldo**, que
-descargan y leen un `.json` local. Es la única forma de mover datos entre
-dispositivos o de recuperarlos después de un borrado.
-
-Ese archivo contiene nombres, números de documento y el registro de qué días vino
-cada persona. **No lo compartas por WhatsApp ni por correo sin cifrar.**
-
----
-
-## Estructura
-
-```
-index.html  padron.html  calendario.html  pruebas.html
-estilos.css
-
-js/modelo.js            datos, dinero en céntimos, fechas, localStorage, migraciones
-js/calculos.js          totales, grupo etario, raciones, asistencia      ← puro
-js/validaciones.js      reglas de error y advertencia                    ← puro
-js/alertas.js           fechas de entrega y cuenta regresiva             ← puro
-js/sugerencias.js       propuestas a partir de datos ya ingresados       ← puro
-js/escaneo-dni.js       lectura del código de barras del DNI (pendiente) ← puro
-js/importar.js          lectura de un padrón pegado o en CSV             ← puro
-js/casos-prueba.js      las aserciones de pruebas.html                   ← puro
-
-js/ui.js                ayudas de DOM compartidas
-js/pagina-b1.js         controlador de index.html
-js/pagina-padron.js     controlador de padron.html
-js/pagina-calendario.js controlador de calendario.html
-```
-
-Los módulos marcados **← puro** no tocan el DOM, no guardan estado y no hacen red:
-reciben datos y devuelven números o listas. Por eso se pueden probar, y por eso no
-pueden escribir solos en ningún campo del formulario.
-
----
-
-## Publicar en GitHub Pages
-
-En el repositorio: **Settings → Pages → Source: Deploy from a branch → `main` /
-`(root)`**.
-
-Queda en <https://tmrainer.github.io/PI3-Proyecto/>. Todas las rutas del proyecto
-son relativas, así que funciona bajo ese subdirectorio sin cambiar nada.
-
----
-
-## Restricciones técnicas
-
-Son deliberadas, no una etapa provisional:
-
-- **HTML, CSS y JavaScript puros.** Sin framework, sin bundler, sin CDN.
-- **Cero dependencias** y **sin paso de build**: lo que está en el repositorio es
-  lo que se publica.
-- **Sin backend y sin red.** Ni `fetch`, ni peticiones a dominios externos.
-- **`localStorage`** como único almacenamiento.
-
-El motivo es el contexto de uso: conexión intermitente, sin presupuesto para
-hosting ni mantenimiento, y datos de familias en situación de vulnerabilidad que
-no deben salir del dispositivo.
+- [ ] Nada de lo construido se ha usado en una olla común. Hace falta ver a una
+      dirigente pasar lista, inscribir a alguien e importar su padrón.
