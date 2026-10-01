@@ -52,7 +52,7 @@ Siempre a través de `http://localhost`, aunque el servidor sea tu propia máqui
 
 ## Pendientes
 
-### Bloqueado — hace falta algo de fuera
+### Hace falta datos para continuar
 
 - [ ] **Medir la plantilla física del Formato B-1** con regla, o escanearla plana
       a 300 dpi. Sin eso no se puede imprimir sobre la hoja oficial.
