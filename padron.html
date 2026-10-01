@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Padrón y asistencia</title>
+<link rel="stylesheet" href="./estilos.css">
+</head>
+<body data-pagina="padron">
+<main>
+
+  <div id="avisos-sistema"></div>
+  <div id="banner"></div>
+  <div id="panel" class="panel" role="status" aria-live="polite" aria-label="Resumen de revisión"></div>
+
+  <section class="bloque">
+    <h2>Precio del menú</h2>
+    <p class="pista">
+      El precio que ya tienen fijado. Se copia a cada día nuevo que registres, así
+      no hay que escribirlo cada vez. Si un día fue distinto, se puede cambiar en
+      ese día sin tocar este.
+    </p>
+    <div class="rejilla dos">
+      <div class="campo" data-campo="precio.normal">
+        <label for="precioNormal">Menú normal (S/)</label>
+        <input id="precioNormal" type="text" inputmode="decimal" placeholder="0.00">
+      </div>
+      <div class="campo" data-campo="precio.ayuda">
+        <label for="precioAyuda">Menú de ayuda social (S/)</label>
+        <input id="precioAyuda" type="text" inputmode="decimal" placeholder="0.00">
+        <span class="pista">Si es gratuito, escribe 0.00.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="bloque">
+    <h2>Resumen</h2>
+    <div class="rejilla tres">
+      <div class="campo">
+        <label for="fechaRef">Fecha de referencia</label>
+        <input id="fechaRef" type="date">
+        <span class="pista">Los grupos de edad calculados por fecha de nacimiento se miden a este día.</span>
+      </div>
+      <div class="campo">
+        <label for="periodoInicio">Periodo — desde</label>
+        <input id="periodoInicio" type="date">
+      </div>
+      <div class="campo">
+        <label for="periodoFin">hasta</label>
+        <input id="periodoFin" type="date">
+      </div>
+    </div>
+    <p class="pista" style="margin:12px 0 4px">Personas activas, por grupo de edad</p>
+    <div id="resumen-etario" class="resumen-chips"></div>
+    <p class="pista" style="margin:12px 0 4px">Raciones del periodo (contadas de la asistencia)</p>
+    <div id="resumen-raciones" class="resumen-chips"></div>
+    <p class="nota-calculo" id="nota-precio"></p>
+  </section>
+
+  <section class="bloque">
+    <h2>Inscribir a una persona</h2>
+    <p class="pista">
+      Los cinco datos de abajo son obligatorios. El grupo de edad y el tipo son los
+      que permiten llenar el padrón y marcar la asistencia rápido.
+    </p>
+    <div class="rejilla tres">
+      <div class="campo">
+        <label for="altaPaterno">Apellido paterno</label>
+        <input id="altaPaterno" type="text" autocomplete="off">
+      </div>
+      <div class="campo">
+        <label for="altaMaterno">Apellido materno</label>
+        <input id="altaMaterno" type="text" autocomplete="off">
+      </div>
+      <div class="campo">
+        <label for="altaNombres">Nombres</label>
+        <input id="altaNombres" type="text" autocomplete="off">
+      </div>
+    </div>
+    <div class="rejilla tres" style="margin-top:10px">
+      <div class="campo">
+        <label for="altaTipoDoc">Documento</label>
+        <select id="altaTipoDoc">
+          <option value="dni">DNI</option>
+          <option value="ce">Carné de extranjería</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="altaDoc">Número</label>
+        <input id="altaDoc" type="text" inputmode="numeric" maxlength="12" autocomplete="off">
+      </div>
+      <div class="campo">
+        <label for="altaNacimiento">Fecha de nacimiento (opcional)</label>
+        <input id="altaNacimiento" type="date">
+        <span class="pista">Si la pones, el grupo de edad se calcula solo y se actualiza con los años.</span>
+      </div>
+    </div>
+    <fieldset style="margin-top:10px">
+      <legend>Grupo de edad</legend>
+      <div class="opciones" id="alta-grupo"></div>
+    </fieldset>
+    <fieldset style="margin-top:10px">
+      <legend>Tipo</legend>
+      <div class="opciones" id="alta-tipo"></div>
+    </fieldset>
+    <div class="acciones" style="margin-top:12px">
+      <button type="button" class="boton" id="agregar-afiliado">Inscribir</button>
+      <span class="estado-guardado" id="alta-mensaje"></span>
+    </div>
+  </section>
+
+  <section class="bloque">
+    <h2>Personas afiliadas</h2>
+    <div class="acciones">
+      <label class="opcion"><input type="checkbox" id="ver-inactivos"> Ver también las dadas de baja</label>
+      <span class="estado-guardado" id="conteo-afiliados"></span>
+    </div>
+    <div id="lista-afiliados" style="margin-top:12px"></div>
+  </section>
+
+  <section class="bloque">
+    <h2>Asistencia por día</h2>
+    <p class="pista">
+      Marca quién vino. Las raciones se cuentan solas de esa lista: no hay que
+      escribirlas. El menú de cada persona viene de cómo se inscribió, y se puede
+      cambiar ese día.
+    </p>
+    <div class="acciones">
+      <button type="button" class="boton" id="agregar-atencion">+ Registrar un día</button>
+    </div>
+    <div id="lista-atenciones" style="margin-top:12px"></div>
+  </section>
+
+  <section class="bloque">
+    <h2>Reporte para el padrón</h2>
+    <p class="pista">
+      Las personas activas, ordenadas y numeradas, con los datos que suelen pedir
+      los formatos de padrón. Solo ordena lo que ya ingresaste: no completa nada.
+    </p>
+    <div class="acciones">
+      <button type="button" class="boton secundario" id="copiar-padron">Copiar al portapapeles</button>
+      <button type="button" class="boton secundario" id="descargar-padron">Descargar CSV</button>
+    </div>
+    <div id="reporte-padron" style="margin-top:12px"></div>
+  </section>
+
+  <section class="bloque">
+    <h2>Inscripción por código de barras del DNI</h2>
+    <div id="estado-escaneo"></div>
+  </section>
+
+  <section class="bloque">
+    <h2>Tus datos</h2>
+    <div id="privacidad"></div>
+    <div id="barra-datos"></div>
+    <p class="estado-guardado" id="estado-guardado">Se guarda solo, mientras escribes.</p>
+  </section>
+
+  <p class="pie-nota">
+    El padrón contiene datos de personas reales: nombres, número de documento y el
+    registro de qué días vino cada una. No se registra dirección, teléfono, salud
+    ni composición familiar. Todo vive solo en este dispositivo.
+    <br><br>
+    Los grupos de edad siguen las etapas de vida del MINSA (RM 030-2020-MINSA):
+    niño/a hasta 11 años, adolescente de 12 a 17, adulto/a de 18 a 59, adulto/a
+    mayor de 60 a más.
+  </p>
+
+</main>
+<script type="module" src="./js/pagina-padron.js"></script>
+</body>
+</html>

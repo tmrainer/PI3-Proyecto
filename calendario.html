@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Entregas del formato</title>
+<link rel="stylesheet" href="./estilos.css">
+</head>
+<body data-pagina="calendario">
+<main>
+
+  <div id="avisos-sistema"></div>
+  <div id="banner"></div>
+  <div id="panel" class="panel" role="status" aria-live="polite" aria-label="Resumen de revisión"></div>
+
+  <section class="bloque">
+    <h2>Cada cuánto entregas</h2>
+    <p class="pista">
+      La aplicación no conoce el calendario de la Municipalidad. Dale dos datos y
+      ella cuenta las siguientes fechas: cada cuánto entregas, y una fecha de
+      entrega que ya sepas. Si la Municipalidad cambia una fecha, corrígela aquí.
+    </p>
+    <div class="rejilla tres">
+      <div class="campo" data-campo="calendario.periodicidad">
+        <label for="periodicidad">Periodicidad</label>
+        <select id="periodicidad">
+          <option value="semanal">Semanal (cada 7 días)</option>
+          <option value="quincenal">Quincenal (cada 15 días)</option>
+          <option value="mensual">Mensual (mismo día de cada mes)</option>
+        </select>
+      </div>
+      <div class="campo" data-campo="calendario.base">
+        <label for="fechaBase">Una fecha de entrega que conoces</label>
+        <input id="fechaBase" type="date">
+        <span class="pista">Puede ser la próxima o una pasada. Da igual cuál.</span>
+      </div>
+      <div class="campo">
+        <label for="diasAviso">Avisar con (días de anticipación)</label>
+        <input id="diasAviso" type="text" inputmode="numeric" placeholder="7, 3, 1">
+        <span class="pista">Separa los números con comas.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="bloque">
+    <h2>Próximas entregas</h2>
+    <div id="agenda"></div>
+    <p class="nota-calculo">
+      El aviso aparece solo mientras tengas esta aplicación abierta. No manda
+      notificaciones al celular ni correos: no tiene a dónde mandarlos, porque no
+      hay servidor. Para eso haría falta algo que esta aplicación, a propósito, no es.
+    </p>
+  </section>
+
+  <section class="bloque">
+    <h2>Tus datos</h2>
+    <div id="privacidad"></div>
+    <div id="barra-datos"></div>
+    <p class="estado-guardado" id="estado-guardado">Se guarda solo, mientras escribes.</p>
+  </section>
+
+</main>
+<script type="module" src="./js/pagina-calendario.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# Fotos del formato (una de ellas trae datos personales reales). Ver AGENTS.md §9.
+*.jpeg
+*.jpg
+*.png
+*.pdf
+
+# Respaldos exportados por la app: contienen datos personales.
+*.json
+!js/*.json

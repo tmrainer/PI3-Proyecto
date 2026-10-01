@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Pruebas</title>
+<link rel="stylesheet" href="./estilos.css">
+<style>
+  .caso { display: flex; gap: 8px; align-items: baseline; padding: 6px 8px;
+          border-bottom: 1px solid var(--borde); font-size: .9rem; }
+  .caso .marca { font-weight: 700; min-width: 2.4ch; }
+  .caso.pasa .marca { color: var(--ok); }
+  .caso.falla { background: var(--error-fondo); }
+  .caso.falla .marca { color: var(--error); }
+  .caso .detalle { display: block; color: var(--error); font-size: .85rem; margin-top: 3px; }
+  .grupo-titulo { margin-top: 18px; }
+</style>
+</head>
+<body data-pagina="pruebas">
+<main>
+  <div id="resumen" class="panel" role="status" aria-live="polite"></div>
+  <section class="bloque">
+    <h2>Resultados</h2>
+    <p class="pista">
+      Aserciones sobre los módulos de cálculo, validación, escaneo y sugerencias.
+      Se ejecutan en este navegador, sin instalar nada.
+    </p>
+    <div id="lista"></div>
+  </section>
+  <p class="pie-nota">
+    Ningún caso usa datos de personas reales: los DNI y RUC de las pruebas son
+    ficticios y además están elegidos para no parecer válidos.
+  </p>
+</main>
+
+<script type="module">
+import { ejecutar } from './js/casos-prueba.js';
+import { crear, montarCabecera } from './js/ui.js';
+
+montarCabecera('pruebas', 'Aserciones en el navegador, sin dependencias');
+
+const resultados = ejecutar();
+const fallan = resultados.filter((r) => r.estado === 'falla');
+
+const resumen = document.getElementById('resumen');
+resumen.append(crear('p', { clase: 'panel-resumen' }, [
+  crear('span', {
+    clase: fallan.length ? 'pastilla error' : 'pastilla ok',
+    texto: fallan.length
+      ? `✕ ${fallan.length} de ${resultados.length} fallan`
+      : `✓ ${resultados.length} de ${resultados.length} pasan`
+  })
+]));
+
+const lista = document.getElementById('lista');
+let grupoActual = null;
+for (const r of resultados) {
+  if (r.grupo !== grupoActual) {
+    grupoActual = r.grupo;
+    lista.append(crear('h3', { clase: 'grupo-titulo', texto: grupoActual }));
+  }
+  lista.append(crear('div', { clase: `caso ${r.estado}` }, [
+    crear('span', { clase: 'marca', texto: r.estado === 'pasa' ? '✓' : '✕' }),
+    crear('span', {}, [
+      r.nombre,
+      r.detalle ? crear('span', { clase: 'detalle', texto: r.detalle }) : null
+    ])
+  ]));
+}
+</script>
+</body>
+</html>
