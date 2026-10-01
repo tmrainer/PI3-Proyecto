@@ -317,3 +317,41 @@ table.tabla td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .asistencia-nombre { display: flex; flex-direction: column; gap: 1px; }
 .asistencia-etiqueta { font-size: .72rem; color: var(--tinta-suave); }
 .asistencia-lista input[type="search"] { width: 100%; }
+
+/* ------------------------------- lista compacta de personas (una fila c/u) */
+
+.persona { border: 1px solid var(--borde); border-left: 4px solid var(--borde-fuerte);
+  border-radius: var(--radio); margin-bottom: 6px; background: #fdfdfc; }
+.persona.con-error { border-left-color: var(--error); }
+.persona.con-aviso { border-left-color: var(--aviso); }
+.persona.inactiva { opacity: .62; border-left-style: dashed; }
+
+.persona-fila { display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 9px 10px; background: none; border: 0; font: inherit; color: inherit;
+  text-align: left; cursor: pointer; }
+.persona-fila:hover { background: var(--acento-suave); }
+.persona-flecha { flex: 0 0 auto; color: var(--tinta-suave); font-size: .8rem; width: 1em; }
+.persona-fila[aria-expanded="true"] .persona-flecha { transform: rotate(90deg); }
+.persona-texto { flex: 1 1 auto; min-width: 0; }
+.persona-nombre { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.persona-meta { display: block; font-size: .78rem; color: var(--tinta-suave); margin-top: 1px; }
+.persona-falta { flex: 0 0 auto; font-size: .72rem; font-weight: 700; color: var(--error);
+  background: var(--error-fondo); border: 1px solid var(--error);
+  border-radius: 999px; padding: 1px 8px; }
+.persona-editor { padding: 0 10px 12px; border-top: 1px dotted var(--borde); }
+
+/* ------------------------------------------------ días plegables */
+
+.dia { border: 1px solid var(--borde); border-left: 4px solid var(--borde-fuerte);
+  border-radius: var(--radio); margin-bottom: 8px; background: #fdfdfc; }
+.dia[open] { border-left-color: var(--acento); }
+.dia.con-error { border-left-color: var(--error); }
+.dia.con-aviso { border-left-color: var(--aviso); }
+.dia > summary { cursor: pointer; padding: 10px; display: flex; flex-wrap: wrap;
+  gap: 8px; align-items: baseline; }
+.dia > summary::-webkit-details-marker { display: none; }
+.dia-fecha { font-weight: 700; font-variant-numeric: tabular-nums; }
+.dia-hoy { font-size: .7rem; font-weight: 700; color: #fff; background: var(--acento);
+  border-radius: 999px; padding: 1px 8px; }
+.dia-resumen { font-size: .82rem; color: var(--tinta-suave); flex: 1 1 160px; }
+.dia-cuerpo { padding: 0 10px 12px; }

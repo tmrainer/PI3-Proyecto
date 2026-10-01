@@ -3,8 +3,8 @@
 
 import {
   CLAVES, leer, guardar, padronVacio, migrarPadron, nuevoAfiliado, nuevaAtencion,
-  nombreCompleto, aDdMmAa, hoyIso, debounce, esIso, aCentimos, formatearSoles,
-  calendarioVacio, configVacia, descargarTexto, VERSION_PADRON
+  nombreCompleto, normalizarNombre, aDdMmAa, hoyIso, debounce, esIso, aCentimos,
+  formatearSoles, calendarioVacio, configVacia, descargarTexto, VERSION_PADRON
 } from './modelo.js';
 import {
   afiliadosActivos, grupoEtario, etiquetaGrupoEtario, edadEnFecha,
@@ -12,7 +12,7 @@ import {
   desgloseDelDia, recaudacionDelDiaCent, resumenEconomicoRaciones,
   asistenciaPorAfiliado, afiliadosSinAsistencia, asistio, menuDe, filasPadron
 } from './calculos.js';
-import { validarPadron, validarPreciosMenu } from './validaciones.js';
+import { validarPadron, validarAfiliado, validarPreciosMenu } from './validaciones.js';
 import { soportaCamaraPdf417 } from './escaneo-dni.js';
 import { alertaProximaEntrega } from './alertas.js';
 import {
@@ -33,7 +33,8 @@ const calendario = leer(CLAVES.calendario, calendarioVacio());
 let fechaRef = hoyIso();
 let periodoInicio = fechaRef.slice(0, 8) + '01';
 let periodoFin = fechaRef;
-let verInactivos = false;
+let busqueda = '';
+let filtroLista = 'activos';
 
 const guardarDiferido = debounce(() => {
   guardar(CLAVES.padron, padron);
@@ -131,8 +132,7 @@ function pintarResumen() {
   }
   nota.textContent = partes.join(' ');
 
-  $('#conteo-afiliados').textContent =
-    `${padron.afiliados.filter((a) => a.activo).length} activa(s) de ${padron.afiliados.length}.`;
+  // El conteo de la lista lo escribe pintarAfiliados(), que sabe del filtro.
 }
 
 // --------------------------------------------------------------- alta rápida
@@ -171,6 +171,13 @@ function montarAlta() {
   });
 
   $('#agregar-afiliado').addEventListener('click', inscribir);
+
+  // Enter en cualquier campo del alta inscribe, sin tener que buscar el botón.
+  for (const id of ['altaPaterno', 'altaMaterno', 'altaNombres', 'altaDoc']) {
+    $('#' + id).addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') { ev.preventDefault(); inscribir(); }
+    });
+  }
 }
 
 function inscribir() {
@@ -196,6 +203,20 @@ function inscribir() {
     return;
   }
 
+  // Duplicado por documento: se avisa ANTES de inscribir, no después.
+  const repetido = padron.afiliados.find(
+    (o) => o.activo && o.numeroDocumento === a.numeroDocumento);
+  if (repetido) {
+    msg.textContent = `El documento ${a.numeroDocumento} ya está registrado en ` +
+      `${nombreCompleto(repetido)}. No se inscribió a nadie.`;
+    return;
+  }
+  const mismoNombre = padron.afiliados.find(
+    (o) => o.activo && normalizarNombre(nombreCompleto(o)) === normalizarNombre(nombreCompleto(a)));
+  if (mismoNombre && !confirm(
+    `Ya hay alguien con el nombre ${nombreCompleto(a)} en el padrón.\n\n` +
+    '¿Inscribir igual? Pueden ser dos personas distintas.')) return;
+
   padron.afiliados.push(a);
   msg.textContent = `${nombreCompleto(a)} quedó inscrita.`;
   for (const id of ['altaPaterno', 'altaMaterno', 'altaNombres', 'altaDoc', 'altaNacimiento']) {
@@ -213,7 +234,8 @@ function inscribir() {
 
 // ----------------------------------------------------------------- afiliados
 
-function fichaAfiliado(a) {
+/** El editor completo de una persona. Se construye SOLO al desplegar su fila. */
+function cuerpoAfiliado(a) {
   const idp = a.id.slice(0, 8);
   const texto = (prop, extra = {}) => {
     const el = crear('input', Object.assign(
@@ -281,33 +303,10 @@ function fichaAfiliado(a) {
   const fAlta = crear('input', { id: `a-alta-${idp}`, type: 'date', value: a.altaEn || '' });
   fAlta.addEventListener('input', () => { a.altaEn = fAlta.value; cambio({ repintar: true }); });
 
-  const ficha = crear('article', {
-    clase: `ficha${a.activo ? '' : ' inactiva'}`,
-    id: `ficha-${a.id}`,
-    'data-campo': `afiliado.${a.id}`
-  });
-  const titulo = crear('span', { clase: 'ficha-numero' });
-  const sub = crear('span', { clase: 'pista' });
+  const editor = crear('div', { clase: 'persona-editor' });
 
-  function refrescarCabecera() {
-    titulo.textContent = nombreCompleto(a) || 'Persona sin nombre';
-    const g = grupoEtario(a, fechaRef);
-    const edad = esIso(a.fechaNacimiento) ? edadEnFecha(a.fechaNacimiento, fechaRef) : null;
-    const partes = [g ? etiquetaGrupoEtario(g) : 'Sin grupo'];
-    if (edad !== null) partes.push(`${edad} años`);
-    partes.push(a.tipoAfiliado === 'caso_social' ? 'Ayuda social'
-      : a.tipoAfiliado === 'habitual' ? 'Habitual' : 'Sin tipo');
-    if (a.numeroDocumento) partes.push(`${(a.tipoDocumento || '').toUpperCase()} ${a.numeroDocumento}`);
-    if (!a.activo) partes.push('dada de baja');
-    sub.textContent = partes.join(' · ');
-  }
-  refrescarCabecera();
-  ficha._refrescarCabecera = refrescarCabecera;
-
-  ficha.append(
-    crear('div', { clase: 'ficha-cabecera' }, [
-      crear('div', {}, [titulo, crear('br'), sub]),
-      crear('div', { clase: 'acciones' }, [
+  editor.append(
+    crear('div', { clase: 'acciones', style: 'margin:10px 0' }, [
         crear('button', {
           type: 'button', clase: 'boton diminuto secundario',
           texto: a.activo ? 'Dar de baja' : 'Reactivar',
@@ -337,7 +336,6 @@ function fichaAfiliado(a) {
             cambio({ repintar: true });
           }
         })
-      ])
     ]),
     crear('div', { clase: 'rejilla tres' }, [
       campo('Apellido paterno', texto('apellidoPaterno')),
@@ -364,7 +362,59 @@ function fichaAfiliado(a) {
       campo('Nota', texto('nota'))
     ])
   );
-  return ficha;
+  return editor;
+}
+
+/** Una línea por persona. El editor se construye al desplegarla, no antes. */
+function filaAfiliado(a) {
+  const hallazgos = validarAfiliado(a, padron);
+  const errores = hallazgos.filter((x) => x.severidad === 'error').length;
+
+  const nombre = crear('span', { clase: 'persona-nombre', texto: nombreCompleto(a) || 'Persona sin nombre' });
+  const meta = crear('span', { clase: 'persona-meta' });
+
+  function refrescarMeta() {
+    const g = grupoEtario(a, fechaRef);
+    const edad = esIso(a.fechaNacimiento) ? edadEnFecha(a.fechaNacimiento, fechaRef) : null;
+    const partes = [g ? etiquetaGrupoEtario(g) : 'Sin grupo'];
+    if (edad !== null) partes.push(`${edad} años`);
+    partes.push(a.tipoAfiliado === 'caso_social' ? 'Ayuda social'
+      : a.tipoAfiliado === 'habitual' ? 'Habitual' : 'Sin tipo');
+    if (a.numeroDocumento) partes.push(`${(a.tipoDocumento || '').toUpperCase()} ${a.numeroDocumento}`);
+    if (!a.activo) partes.push('dada de baja');
+    meta.textContent = partes.join(' · ');
+    nombre.textContent = nombreCompleto(a) || 'Persona sin nombre';
+  }
+  refrescarMeta();
+
+  const boton = crear('button', {
+    type: 'button', clase: 'persona-fila', 'aria-expanded': 'false'
+  }, [
+    crear('span', { clase: 'persona-flecha', 'aria-hidden': 'true', texto: '▸' }),
+    crear('span', { clase: 'persona-texto' }, [nombre, meta]),
+    errores ? crear('span', { clase: 'persona-falta', texto: 'faltan datos' }) : null
+  ]);
+
+  const caja = crear('article', {
+    clase: `persona${a.activo ? '' : ' inactiva'}`,
+    id: `ficha-${a.id}`,
+    'data-campo': `afiliado.${a.id}`
+  }, [boton]);
+
+  let editor = null;
+  caja._desplegar = (abrir) => {
+    const abierto = boton.getAttribute('aria-expanded') === 'true';
+    const quiero = abrir === undefined ? !abierto : abrir;
+    if (quiero && !editor) {           // construcción perezosa
+      editor = cuerpoAfiliado(a);
+      caja.append(editor);
+    }
+    if (editor) editor.hidden = !quiero;
+    boton.setAttribute('aria-expanded', quiero ? 'true' : 'false');
+  };
+  caja._refrescarCabecera = refrescarMeta;
+  boton.addEventListener('click', () => caja._desplegar());
+  return caja;
 }
 
 function refrescarCabeceraFicha(a) {
@@ -372,23 +422,49 @@ function refrescarCabeceraFicha(a) {
   if (ficha && ficha._refrescarCabecera) ficha._refrescarCabecera();
 }
 
+function coincideBusqueda(a) {
+  if (!busqueda) return true;
+  const aguja = normalizarNombre(busqueda);
+  return normalizarNombre(nombreCompleto(a)).includes(aguja) ||
+    String(a.numeroDocumento || '').includes(busqueda.trim());
+}
+
+function pasaFiltro(a) {
+  switch (filtroLista) {
+    case 'activos': return a.activo;
+    case 'bajas': return !a.activo;
+    case 'ayuda_social': return a.activo && a.tipoAfiliado === 'caso_social';
+    case 'incompletas':
+      return validarAfiliado(a, padron).some((x) => x.severidad === 'error');
+    default: return true;
+  }
+}
+
 function pintarAfiliados() {
   const lista = $('#lista-afiliados');
   lista.textContent = '';
   const visibles = padron.afiliados
-    .filter((a) => verInactivos || a.activo)
+    .filter((a) => pasaFiltro(a) && coincideBusqueda(a))
     .sort((a, b) => nombreCompleto(a).localeCompare(nombreCompleto(b), 'es'));
+
+  const incompletas = padron.afiliados
+    .filter((a) => a.activo && validarAfiliado(a, padron).some((x) => x.severidad === 'error')).length;
+  const activas = padron.afiliados.filter((a) => a.activo).length;
+  $('#conteo-afiliados').textContent =
+    `Mostrando ${visibles.length} de ${padron.afiliados.length}. ` +
+    `${activas} activa(s)` +
+    (incompletas ? ` · ${incompletas} con datos incompletos.` : '.');
 
   if (visibles.length === 0) {
     lista.append(crear('p', {
       clase: 'vacio-mensaje',
       texto: padron.afiliados.length === 0
         ? 'Todavía no hay nadie en el padrón. Usa el formulario de arriba.'
-        : 'No hay personas activas. Marca «Ver también las dadas de baja».'
+        : 'Nadie coincide con la búsqueda o el filtro.'
     }));
     return;
   }
-  for (const a of visibles) lista.append(fichaAfiliado(a));
+  for (const a of visibles) lista.append(filaAfiliado(a));
 }
 
 // ------------------------------------------------- asistencia por día (checklist)
@@ -501,7 +577,7 @@ function fichaAtencion(at) {
         }
         selMenu.disabled = !chk.checked;
         fila.classList.toggle('presente', chk.checked);
-        refrescarResumenDia();
+        if (caja._refrescar) caja._refrescar();
         cambio();
         pintarAsistencia();
       });
@@ -509,7 +585,7 @@ function fichaAtencion(at) {
       selMenu.addEventListener('change', () => {
         const reg = (at.asistencias || []).find((x) => x.afiliadoId === persona.id);
         if (reg) reg.tipoMenu = selMenu.value;
-        refrescarResumenDia();
+        if (caja._refrescar) caja._refrescar();
         cambio();
         pintarAsistencia();
       });
@@ -530,52 +606,82 @@ function fichaAtencion(at) {
       at.asistencias = [];
     }
     pintarLista();
-    refrescarResumenDia();
+    if (caja._refrescar) caja._refrescar();
     cambio();
     pintarAsistencia();
   }
 
-  pintarLista();
   refrescarResumenDia();
 
-  return crear('article', { clase: 'ficha', id: `ficha-${at.id}`, 'data-campo': `atencion.${at.id}` }, [
-    crear('div', { clase: 'ficha-cabecera' }, [
-      crear('span', { clase: 'ficha-numero', texto: at.fecha ? aDdMmAa(at.fecha) : 'Sin fecha' }),
-      crear('button', {
-        type: 'button', clase: 'boton diminuto peligro', texto: 'Quitar',
-        onclick: () => {
-          if (!confirm('¿Quitar este día? También se borra su asistencia.')) return;
-          padron.atenciones = padron.atenciones.filter((o) => o.id !== at.id);
-          cambio({ repintar: true });
-          pintarAsistencia();
-        }
-      })
-    ]),
-    crear('div', { clase: 'rejilla dos' }, [campo('Fecha', fFecha), campo('Nota', fNota)]),
-    contadores,
-    avisoLegado,
-    crear('div', { clase: 'acciones', style: 'margin-top:10px' }, [
-      crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Marcar todos', onclick: () => marcarTodos(true) }),
-      crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Quitar todos', onclick: () => marcarTodos(false) })
-    ]),
-    crear('div', { clase: 'campo', style: 'margin-top:10px' }, [
-      crear('label', { for: buscador.id, texto: 'Buscar' }), buscador
-    ]),
-    listaAsistencia,
-    crear('details', { clase: 'asistencia', style: 'margin-top:10px' }, [
-      crear('summary', { texto: 'Precio del menú de este día' }),
-      crear('p', {
-        clase: 'pista',
-        texto: at.precioTomadoDeConfig
-          ? 'Tomado del precio que fijaste arriba. Cámbialo solo si ese día fue distinto.'
-          : 'Precio propio de este día.'
-      }),
-      crear('div', { clase: 'rejilla dos' }, [
-        campo('Menú normal (S/)', fPrecioNormal),
-        campo('Menú de ayuda social (S/)', fPrecioAyuda)
-      ])
+  const esHoy = at.fecha === hoyIso();
+  const resumenCorto = crear('span', { clase: 'dia-resumen' });
+  function refrescarResumenCorto() {
+    const d = desgloseDelDia(at);
+    const rec = recaudacionDelDiaCent(at);
+    resumenCorto.textContent =
+      `${d.total} ración(es)` +
+      (d.ayudaSocial ? ` · ${d.ayudaSocial} de ayuda social` : '') +
+      (rec === null ? '' : ` · S/ ${formatearSoles(rec)}`);
+  }
+  refrescarResumenCorto();
+  const refrescarTodo = () => { refrescarResumenDia(); refrescarResumenCorto(); };
+
+  const caja = crear('details', {
+    clase: 'dia', id: `ficha-${at.id}`, 'data-campo': `atencion.${at.id}`
+  }, [
+    crear('summary', {}, [
+      crear('span', { clase: 'dia-fecha', texto: at.fecha ? aDdMmAa(at.fecha) : 'Sin fecha' }),
+      esHoy ? crear('span', { clase: 'dia-hoy', texto: 'HOY' }) : null,
+      resumenCorto
     ])
   ]);
+  caja._refrescar = refrescarTodo;
+
+  // El cuerpo —y sobre todo el checklist— se construye al abrir el día, no antes.
+  let cuerpo = null;
+  caja.addEventListener('toggle', () => {
+    if (!caja.open || cuerpo) return;
+    pintarLista();
+    cuerpo = crear('div', { clase: 'dia-cuerpo' }, [
+      crear('div', { clase: 'rejilla dos' }, [campo('Fecha', fFecha), campo('Nota', fNota)]),
+      contadores,
+      avisoLegado,
+      crear('div', { clase: 'acciones', style: 'margin-top:10px' }, [
+        crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Marcar todos', onclick: () => marcarTodos(true) }),
+        crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Quitar todos', onclick: () => marcarTodos(false) }),
+        crear('button', {
+          type: 'button', clase: 'boton diminuto peligro', texto: 'Quitar el día',
+          onclick: () => {
+            if (!confirm('¿Quitar este día? También se borra su asistencia.')) return;
+            padron.atenciones = padron.atenciones.filter((o) => o.id !== at.id);
+            cambio({ repintar: true });
+            pintarAsistencia();
+          }
+        })
+      ]),
+      crear('div', { clase: 'campo', style: 'margin-top:10px' }, [
+        crear('label', { for: buscador.id, texto: 'Buscar persona' }), buscador
+      ]),
+      listaAsistencia,
+      crear('details', { clase: 'asistencia', style: 'margin-top:10px' }, [
+        crear('summary', { texto: 'Precio del menú de este día' }),
+        crear('p', {
+          clase: 'pista',
+          texto: at.precioTomadoDeConfig
+            ? 'Tomado del precio que fijaste arriba. Cámbialo solo si ese día fue distinto.'
+            : 'Precio propio de este día.'
+        }),
+        crear('div', { clase: 'rejilla dos' }, [
+          campo('Menú normal (S/)', fPrecioNormal),
+          campo('Menú de ayuda social (S/)', fPrecioAyuda)
+        ])
+      ])
+    ]);
+    caja.append(cuerpo);
+  });
+
+  if (esHoy) caja.open = true;      // el día de hoy arranca abierto
+  return caja;
 }
 
 function pintarAtenciones() {
@@ -720,8 +826,22 @@ function refrescarValidacion() {
 }
 
 function irACampo(campo) {
-  const caja = document.querySelector(`[data-campo="${CSS.escape(campo)}"]`);
+  let caja = document.querySelector(`[data-campo="${CSS.escape(campo)}"]`);
+
+  // Puede estar oculta por el filtro o la búsqueda: se limpian para poder llegar.
+  if (!caja && campo.startsWith('afiliado.')) {
+    busqueda = '';
+    filtroLista = 'todas';
+    $('#buscarAfiliado').value = '';
+    $('#filtroAfiliado').value = 'todas';
+    pintarAfiliados();
+    caja = document.querySelector(`[data-campo="${CSS.escape(campo)}"]`);
+  }
   if (!caja) return;
+
+  if (caja._desplegar) caja._desplegar(true);          // persona plegada
+  if (caja.tagName === 'DETAILS') caja.open = true;    // día plegado
+
   caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
   const control = caja.querySelector('input, select, textarea');
   if (control && !control.disabled) control.focus({ preventScroll: true });
@@ -767,9 +887,31 @@ fFin.value = periodoFin;
 fIni.addEventListener('input', () => { periodoInicio = fIni.value || periodoInicio; pintarAsistencia(); });
 fFin.addEventListener('input', () => { periodoFin = fFin.value || periodoFin; pintarAsistencia(); });
 
-$('#ver-inactivos').addEventListener('change', (ev) => {
-  verInactivos = ev.target.checked;
+const fBuscar = $('#buscarAfiliado');
+fBuscar.addEventListener('input', debounce(() => {
+  busqueda = fBuscar.value;
   pintarAfiliados();
+}, 150));
+
+const fFiltro = $('#filtroAfiliado');
+fFiltro.value = filtroLista;
+fFiltro.addEventListener('change', () => { filtroLista = fFiltro.value; pintarAfiliados(); });
+
+/** El gesto más frecuente: abrir el día de hoy y pasar lista. */
+$('#asistencia-hoy').addEventListener('click', () => {
+  const hoy = hoyIso();
+  let at = padron.atenciones.find((o) => o.fecha === hoy);
+  if (!at) {
+    at = nuevaAtencion(preciosActuales());
+    at.fecha = hoy;
+    padron.atenciones.push(at);
+    cambio({ repintar: true });
+  }
+  const caja = document.getElementById(`ficha-${at.id}`);
+  if (caja) {
+    caja.open = true;
+    caja.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 });
 
 $('#agregar-atencion').addEventListener('click', () => {

@@ -112,11 +112,24 @@
 
   <section class="bloque">
     <h2>Personas afiliadas</h2>
-    <div class="acciones">
-      <label class="opcion"><input type="checkbox" id="ver-inactivos"> Ver también las dadas de baja</label>
-      <span class="estado-guardado" id="conteo-afiliados"></span>
+    <div class="rejilla dos">
+      <div class="campo">
+        <label for="buscarAfiliado">Buscar</label>
+        <input id="buscarAfiliado" type="search" placeholder="Nombre o número de documento…" autocomplete="off">
+      </div>
+      <div class="campo">
+        <label for="filtroAfiliado">Mostrar</label>
+        <select id="filtroAfiliado">
+          <option value="activos">Solo activas</option>
+          <option value="incompletas">Solo a las que les faltan datos</option>
+          <option value="ayuda_social">Solo de ayuda social</option>
+          <option value="bajas">Solo las dadas de baja</option>
+          <option value="todas">Todas</option>
+        </select>
+      </div>
     </div>
-    <div id="lista-afiliados" style="margin-top:12px"></div>
+    <p class="estado-guardado" id="conteo-afiliados" style="margin-top:8px"></p>
+    <div id="lista-afiliados" style="margin-top:8px"></div>
   </section>
 
   <section class="bloque">
@@ -127,7 +140,8 @@
       cambiar ese día.
     </p>
     <div class="acciones">
-      <button type="button" class="boton" id="agregar-atencion">+ Registrar un día</button>
+      <button type="button" class="boton" id="asistencia-hoy">Pasar lista de hoy</button>
+      <button type="button" class="boton secundario" id="agregar-atencion">+ Otro día</button>
     </div>
     <div id="lista-atenciones" style="margin-top:12px"></div>
   </section>
