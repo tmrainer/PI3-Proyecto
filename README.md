@@ -63,7 +63,7 @@ Siempre a través de `http://localhost`, aunque el servidor sea tu propia máqui
 - [ ] **Averiguar el formato del código de barras (PDF417) del DNI**, con
       muestras reales, antes de escribir el lector.
 
-### Por preguntar en la Subgerencia
+### Por preguntar
 
 - [ ] ¿La entrega quincenal son 15 días corridos o días fijos (15 y fin de mes)?
 - [ ] ¿El PCA usa los mismos tramos de edad que el MINSA (0-11 / 12-17 / 18-59 / 60+)?
