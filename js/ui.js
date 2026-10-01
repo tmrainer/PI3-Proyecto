@@ -76,7 +76,7 @@ export function montarCabecera(claveActiva, subtitulo) {
     })));
   const cab = crear('header', { clase: 'cabecera' }, [
     crear('div', { clase: 'cabecera-titulo' }, [
-      crear('h1', { texto: 'Rendición B-1' }),
+      crear('h1', { texto: 'Sistema de Asistencia' }),
       crear('p', { clase: 'cabecera-sub', texto: subtitulo })
     ]),
     nav
@@ -241,6 +241,9 @@ export function pintarPanel(contenedor, hallazgos, { alIrA } = {}) {
 
   if (hallazgos.length === 0) return;
 
+  // Con pocos hallazgos se ven directos; con muchos, el panel no puede comerse
+  // media pantalla, así que el detalle se pliega y se abre a voluntad.
+  const muchos = hallazgos.length > 3;
   const lista = crear('ul', { clase: 'panel-lista' });
   for (const hall of [...errores, ...avisos]) {
     const item = crear('li', { clase: `panel-item ${hall.severidad}` }, [
@@ -257,7 +260,12 @@ export function pintarPanel(contenedor, hallazgos, { alIrA } = {}) {
     }
     lista.append(item);
   }
-  contenedor.append(lista);
+
+  if (!muchos) { contenedor.append(lista); return; }
+  contenedor.append(crear('details', { clase: 'panel-detalle' }, [
+    crear('summary', { texto: `Ver qué falta (${hallazgos.length})` }),
+    lista
+  ]));
 }
 
 /** Marca o limpia un campo con problema. No toca su valor. */

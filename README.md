@@ -1,10 +1,12 @@
-# Rendición B-1 y padrón — Ollas comunes y comedores
+# Sistema de Asistencia
 
-Aplicación web para las dirigentes de ollas comunes y comedores del Programa de
-Complementación Alimentaria (PCA) de la **Municipalidad Distrital de Villa María
-del Triunfo**.
+**Ollas comunes y comedores · Programa de Complementación Alimentaria · Villa
+María del Triunfo**
 
-Ayuda a llenar y validar el **Formato B-1** (Balance de Centros de Atención
+Aplicación web para las dirigentes de ollas comunes y comedores.
+
+Su tarea diaria es **pasar lista**: tocar a quien vino y que las raciones se
+cuenten solas. Alrededor de eso, ayuda a llenar y validar el **Formato B-1** (Balance de Centros de Atención
 Subsidiados), a llevar el **padrón de personas afiliadas** con su asistencia
 diaria, y a no perder de vista **cuándo toca la siguiente entrega**.
 
@@ -59,6 +61,8 @@ Siempre a través de `http://localhost`, aunque el servidor sea tu propia máqui
 | `index.html` | Formato B-1: centro, periodo, subsidio, compras y los tres totales |
 | `calendario.html` | Periodicidad de entrega y cuenta regresiva hasta la próxima |
 | `pruebas.html` | 72 aserciones sobre los módulos de cálculo, validación e importación |
+
+La paleta y la tipografía siguen las del informe del proyecto (UNACEM · Desafío 2).
 
 Cada página hace **una cosa**. La tarea diaria —pasar lista— está en su propia
 pantalla y es la primera del menú.

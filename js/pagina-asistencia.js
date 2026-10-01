@@ -74,7 +74,7 @@ function repintar() {
 
 // ------------------------------------------------------------------- arranque
 
-montarCabecera('asistencia', 'Pasar lista y contar raciones');
+montarCabecera('asistencia', 'Ollas comunes y comedores · PCA · Villa María del Triunfo');
 pintarAvisosAlmacenamiento($('#avisos-sistema'));
 $('#privacidad').append(bloquePrivacidad());
 $('#barra-datos').append(barraDatos({

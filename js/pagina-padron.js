@@ -98,7 +98,7 @@ async function pintarEstadoEscaneo() {
 
 // ------------------------------------------------------------------- arranque
 
-montarCabecera('padron', 'Quiénes están inscritas y con qué datos');
+montarCabecera('padron', 'Ollas comunes y comedores · PCA · Villa María del Triunfo');
 pintarAvisosAlmacenamiento($('#avisos-sistema'));
 $('#privacidad').append(bloquePrivacidad());
 $('#barra-datos').append(barraDatos({

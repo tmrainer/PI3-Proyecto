@@ -420,7 +420,7 @@ function irACampo(campo) {
 
 // ------------------------------------------------------------------- arranque
 
-montarCabecera('b1', 'Balance de centros de atención subsidiados · PCA · Villa María del Triunfo');
+montarCabecera('b1', 'Ollas comunes y comedores · PCA · Villa María del Triunfo');
 pintarAvisosAlmacenamiento($('#avisos-sistema'));
 const bannerB1 = bannerAlerta(alertaProximaEntrega(leer(CLAVES.calendario, calendarioVacio()), hoyIso()));
 if (bannerB1) $('#banner').append(bannerB1);
