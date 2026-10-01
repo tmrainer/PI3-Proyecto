@@ -54,10 +54,14 @@ Siempre a través de `http://localhost`, aunque el servidor sea tu propia máqui
 
 | Página | Para qué |
 |---|---|
+| `asistencia.html` | Pasar lista del día, precio del menú, días anteriores y raciones del periodo |
+| `padron.html` | Inscribir personas, buscarlas y editarlas, cargar un padrón desde Excel o CSV, y el reporte para el formato municipal |
 | `index.html` | Formato B-1: centro, periodo, subsidio, compras y los tres totales |
-| `padron.html` | Precio del menú, inscripción de personas, **asistencia de hoy**, carga de un padrón desde Excel o CSV, y reporte del padrón |
 | `calendario.html` | Periodicidad de entrega y cuenta regresiva hasta la próxima |
-| `pruebas.html` | 63 aserciones sobre los módulos de cálculo y validación |
+| `pruebas.html` | 72 aserciones sobre los módulos de cálculo, validación e importación |
+
+Cada página hace **una cosa**. La tarea diaria —pasar lista— está en su propia
+pantalla y es la primera del menú.
 
 Las pruebas se ejecutan **en el navegador**, sin instalar nada: abre
 <http://localhost:8000/pruebas.html> y deben salir todas en verde.

@@ -24,11 +24,44 @@ export function crear(etiqueta, props = {}, hijos = []) {
   return el;
 }
 
+/** Campo etiquetado: la combinación que se repite en todos los formularios. */
+export function campo(etiqueta, control, pista) {
+  return crear('div', { clase: 'campo' }, [
+    crear('label', { for: control.id, texto: etiqueta }),
+    control,
+    pista ? crear('span', { clase: 'pista', texto: pista }) : null
+  ]);
+}
+
+/** Lleva el foco a un campo, desplegando lo que esté plegado para llegar a él. */
+export function irACampo(nombre, { antesDeBuscar } = {}) {
+  let caja = document.querySelector(`[data-campo="${CSS.escape(nombre)}"]`);
+  if (!caja && antesDeBuscar) {
+    antesDeBuscar(nombre);
+    caja = document.querySelector(`[data-campo="${CSS.escape(nombre)}"]`);
+  }
+  if (!caja) return;
+  if (caja._desplegar) caja._desplegar(true);
+  if (caja.tagName === 'DETAILS') caja.open = true;
+  caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const control = caja.querySelector('input, select, textarea');
+  if (control && !control.disabled) control.focus({ preventScroll: true });
+}
+
+/** Marca los campos con hallazgos y pinta el panel. */
+export function aplicarHallazgos(panel, hallazgos, alIrA) {
+  pintarPanel(panel, hallazgos, { alIrA });
+  for (const caja of document.querySelectorAll('[data-campo]')) {
+    marcarCampo(caja, hallazgos.filter((x) => x.campo === caja.dataset.campo));
+  }
+}
+
 // ------------------------------------------------------------------ navegación
 
 const PAGINAS = [
-  { href: './index.html', texto: 'Formato B-1', clave: 'b1' },
+  { href: './asistencia.html', texto: 'Asistencia', clave: 'asistencia' },
   { href: './padron.html', texto: 'Padrón', clave: 'padron' },
+  { href: './index.html', texto: 'Formato B-1', clave: 'b1' },
   { href: './calendario.html', texto: 'Entregas', clave: 'calendario' },
   { href: './pruebas.html', texto: 'Pruebas', clave: 'pruebas' }
 ];

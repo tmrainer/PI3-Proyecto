@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Padrón y asistencia</title>
+<title>Padrón de personas afiliadas</title>
 <link rel="stylesheet" href="./estilos.css">
 </head>
 <body data-pagina="padron">
@@ -13,50 +13,6 @@
   <div id="avisos-sistema"></div>
   <div id="banner"></div>
   <div id="panel" class="panel" role="status" aria-live="polite" aria-label="Resumen de revisión"></div>
-
-  <section class="bloque">
-    <h2>Precio del menú</h2>
-    <p class="pista">
-      El precio que ya tienen fijado. Se copia a cada día nuevo que registres, así
-      no hay que escribirlo cada vez. Si un día fue distinto, se puede cambiar en
-      ese día sin tocar este.
-    </p>
-    <div class="rejilla dos">
-      <div class="campo" data-campo="precio.normal">
-        <label for="precioNormal">Menú normal (S/)</label>
-        <input id="precioNormal" type="text" inputmode="decimal" placeholder="0.00">
-      </div>
-      <div class="campo" data-campo="precio.ayuda">
-        <label for="precioAyuda">Menú de ayuda social (S/)</label>
-        <input id="precioAyuda" type="text" inputmode="decimal" placeholder="0.00">
-        <span class="pista">Si es gratuito, escribe 0.00.</span>
-      </div>
-    </div>
-  </section>
-
-  <section class="bloque">
-    <h2>Resumen</h2>
-    <div class="rejilla tres">
-      <div class="campo">
-        <label for="fechaRef">Fecha de referencia</label>
-        <input id="fechaRef" type="date">
-        <span class="pista">Los grupos de edad calculados por fecha de nacimiento se miden a este día.</span>
-      </div>
-      <div class="campo">
-        <label for="periodoInicio">Periodo — desde</label>
-        <input id="periodoInicio" type="date">
-      </div>
-      <div class="campo">
-        <label for="periodoFin">hasta</label>
-        <input id="periodoFin" type="date">
-      </div>
-    </div>
-    <p class="pista" style="margin:12px 0 4px">Personas activas, por grupo de edad</p>
-    <div id="resumen-etario" class="resumen-chips"></div>
-    <p class="pista" style="margin:12px 0 4px">Raciones del periodo (contadas de la asistencia)</p>
-    <div id="resumen-raciones" class="resumen-chips"></div>
-    <p class="nota-calculo" id="nota-precio"></p>
-  </section>
 
   <section class="bloque">
     <h2>Inscribir a una persona</h2>
@@ -112,7 +68,7 @@
 
   <section class="bloque">
     <h2>Personas afiliadas</h2>
-    <div class="rejilla dos">
+    <div class="rejilla tres">
       <div class="campo">
         <label for="buscarAfiliado">Buscar</label>
         <input id="buscarAfiliado" type="search" placeholder="Nombre o número de documento…" autocomplete="off">
@@ -127,28 +83,14 @@
           <option value="todas">Todas</option>
         </select>
       </div>
+      <div class="campo">
+        <label for="fechaRef">Edades a la fecha</label>
+        <input id="fechaRef" type="date">
+      </div>
     </div>
+    <div id="resumen-etario" class="resumen-chips" style="margin-top:12px"></div>
     <p class="estado-guardado" id="conteo-afiliados" style="margin-top:8px"></p>
     <div id="lista-afiliados" style="margin-top:8px"></div>
-  </section>
-
-  <section class="bloque" id="bloque-hoy">
-    <h2 id="titulo-hoy">Asistencia de hoy</h2>
-    <p class="pista">
-      Toca a quien vino. Las raciones se cuentan solas: no hay nada que escribir.
-      El menú sale de cómo se inscribió cada persona; si ese día come otro, toca
-      la etiqueta de la derecha.
-    </p>
-    <div id="hoy"></div>
-  </section>
-
-  <section class="bloque">
-    <h2>Otros días</h2>
-    <p class="pista">Días anteriores, para corregir o completar lo que quedó pendiente.</p>
-    <div class="acciones">
-      <button type="button" class="boton secundario" id="agregar-atencion">+ Registrar otro día</button>
-    </div>
-    <div id="lista-atenciones" style="margin-top:12px"></div>
   </section>
 
   <section class="bloque">
@@ -177,7 +119,17 @@
       Las personas activas, ordenadas y numeradas, con los datos que suelen pedir
       los formatos de padrón. Solo ordena lo que ya ingresaste: no completa nada.
     </p>
-    <div class="acciones">
+    <div class="rejilla dos">
+      <div class="campo">
+        <label for="repInicio">Días asistidos, desde</label>
+        <input id="repInicio" type="date">
+      </div>
+      <div class="campo">
+        <label for="repFin">hasta</label>
+        <input id="repFin" type="date">
+      </div>
+    </div>
+    <div class="acciones" style="margin-top:10px">
       <button type="button" class="boton secundario" id="copiar-padron">Copiar al portapapeles</button>
       <button type="button" class="boton secundario" id="descargar-padron">Descargar CSV</button>
     </div>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Asistencia y raciones</title>
+<link rel="stylesheet" href="./estilos.css">
+</head>
+<body data-pagina="asistencia">
+<main>
+
+  <div id="avisos-sistema"></div>
+  <div id="banner"></div>
+  <div id="panel" class="panel" role="status" aria-live="polite" aria-label="Resumen de revisión"></div>
+
+  <section class="bloque" id="bloque-hoy">
+    <h2 id="titulo-hoy">Asistencia de hoy</h2>
+    <p class="pista">
+      Toca a quien vino. Las raciones se cuentan solas: no hay nada que escribir.
+      El menú sale de cómo se inscribió cada persona; si ese día come otro, toca
+      la etiqueta de la derecha.
+    </p>
+    <div id="hoy"></div>
+  </section>
+
+  <section class="bloque">
+    <h2>Resumen del periodo</h2>
+    <div class="rejilla dos">
+      <div class="campo">
+        <label for="periodoInicio">Desde</label>
+        <input id="periodoInicio" type="date">
+      </div>
+      <div class="campo">
+        <label for="periodoFin">hasta</label>
+        <input id="periodoFin" type="date">
+      </div>
+    </div>
+    <div id="resumen-raciones" class="resumen-chips" style="margin-top:12px"></div>
+    <p class="nota-calculo" id="nota-precio"></p>
+  </section>
+
+  <section class="bloque">
+    <h2>Precio del menú</h2>
+    <p class="pista">
+      El precio que ya tienen fijado. Se copia a cada día nuevo que registres, así
+      no hay que escribirlo cada vez. Si un día fue distinto, se cambia en ese día
+      sin tocar este.
+    </p>
+    <div class="rejilla dos">
+      <div class="campo" data-campo="precio.normal">
+        <label for="precioNormal">Menú normal (S/)</label>
+        <input id="precioNormal" type="text" inputmode="decimal" placeholder="0.00">
+      </div>
+      <div class="campo" data-campo="precio.ayuda">
+        <label for="precioAyuda">Menú de ayuda social (S/)</label>
+        <input id="precioAyuda" type="text" inputmode="decimal" placeholder="0.00">
+        <span class="pista">Si es gratuito, escribe 0.00.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="bloque">
+    <h2>Otros días</h2>
+    <p class="pista">Días anteriores, para corregir o completar lo que quedó pendiente.</p>
+    <div class="acciones">
+      <button type="button" class="boton secundario" id="agregar-atencion">+ Registrar otro día</button>
+    </div>
+    <div id="lista-atenciones" style="margin-top:12px"></div>
+  </section>
+
+  <section class="bloque">
+    <h2>Tus datos</h2>
+    <div id="privacidad"></div>
+    <div id="barra-datos"></div>
+    <p class="estado-guardado" id="estado-guardado">Se guarda solo, mientras tocas.</p>
+  </section>
+
+  <p class="pie-nota">
+    Las raciones no se escriben: salen de contar la asistencia marcada. El día de
+    hoy se guarda cuando marcas a la primera persona, así que abrir esta página no
+    crea días vacíos.
+  </p>
+
+</main>
+<script type="module" src="./js/pagina-asistencia.js"></script>
+</body>
+</html>
