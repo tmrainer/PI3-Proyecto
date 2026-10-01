@@ -15,6 +15,7 @@ import {
 import { validarPadron, validarAfiliado, validarPreciosMenu } from './validaciones.js';
 import { soportaCamaraPdf417 } from './escaneo-dni.js';
 import { alertaProximaEntrega } from './alertas.js';
+import { prepararImportacion, filasImportables } from './importar.js';
 import {
   $, crear, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
   marcarCampo, bannerAlerta, pintarAvisosAlmacenamiento
@@ -230,6 +231,7 @@ function inscribir() {
   altaTipo = null;
   $('#altaPaterno').focus();
   cambio({ repintar: true });
+  pintarHoy();
 }
 
 // ----------------------------------------------------------------- afiliados
@@ -467,6 +469,75 @@ function pintarAfiliados() {
   for (const a of visibles) lista.append(filaAfiliado(a));
 }
 
+// ----------------------------------------- asistencia: una fila, un toque
+//
+// Marcar a alguien es UN toque en su fila. El menú sale de cómo se inscribió
+// (habitual -> normal, ayuda social -> menú de ayuda social) y solo hace falta
+// tocarlo cuando ese día come otro. Sin desplegables.
+
+function filaToque(at, persona, alCambiar) {
+  const presente = asistio(at, persona.id);
+  const menu = menuDe(at, persona.id) || menuPorDefecto(persona);
+  const g = grupoEtario(persona, at.fecha || fechaRef);
+
+  const marca = crear('span', { clase: 'toque-marca', 'aria-hidden': 'true', texto: '✓' });
+  const botonNombre = crear('button', {
+    type: 'button', clase: 'toque-nombre',
+    'aria-pressed': presente ? 'true' : 'false'
+  }, [
+    marca,
+    crear('span', { clase: 'toque-texto' }, [
+      nombreCompleto(persona),
+      crear('span', { clase: 'toque-sub', texto: g ? etiquetaGrupoEtario(g) : 'Sin grupo' })
+    ])
+  ]);
+
+  const botonMenu = crear('button', {
+    type: 'button', clase: 'toque-menu', 'data-menu': menu,
+    title: 'Cambiar el menú de esta persona solo para este día',
+    texto: menu === 'ayuda_social' ? 'Ayuda social' : 'Normal'
+  });
+  botonMenu.disabled = !presente;
+
+  const fila = crear('div', { clase: `toque${presente ? ' presente' : ''}` }, [botonNombre, botonMenu]);
+
+  function pintar() {
+    const hay = asistio(at, persona.id);
+    const m = menuDe(at, persona.id) || menuPorDefecto(persona);
+    fila.classList.toggle('presente', hay);
+    botonNombre.setAttribute('aria-pressed', hay ? 'true' : 'false');
+    botonMenu.disabled = !hay;
+    botonMenu.dataset.menu = m;
+    botonMenu.textContent = m === 'ayuda_social' ? 'Ayuda social' : 'Normal';
+  }
+
+  botonNombre.addEventListener('click', () => {
+    if (!Array.isArray(at.asistencias)) at.asistencias = [];
+    if (asistio(at, persona.id)) {
+      at.asistencias = at.asistencias.filter((x) => x.afiliadoId !== persona.id);
+    } else {
+      at.legado = null;
+      at.asistencias.push({ afiliadoId: persona.id, tipoMenu: menuPorDefecto(persona) });
+    }
+    pintar();
+    if (alCambiar) alCambiar();
+    cambio();
+    pintarAsistencia();
+  });
+
+  botonMenu.addEventListener('click', () => {
+    const reg = (at.asistencias || []).find((x) => x.afiliadoId === persona.id);
+    if (!reg) return;
+    reg.tipoMenu = reg.tipoMenu === 'ayuda_social' ? 'normal' : 'ayuda_social';
+    pintar();
+    if (alCambiar) alCambiar();
+    cambio();
+    pintarAsistencia();
+  });
+
+  return fila;
+}
+
 // ------------------------------------------------- asistencia por día (checklist)
 
 function fichaAtencion(at) {
@@ -522,11 +593,11 @@ function fichaAtencion(at) {
       : '';
   }
 
-  // ---- checklist ----
+  // ---- lista de un toque ----
   const buscador = crear('input', {
     id: `at-buscar-${idp}`, type: 'search', placeholder: 'Buscar por nombre…', autocomplete: 'off'
   });
-  const listaAsistencia = crear('div', { clase: 'asistencia-lista' });
+  const listaAsistencia = crear('div', { clase: 'lista-toque' });
   let filtro = '';
   buscador.addEventListener('input', () => { filtro = buscador.value.trim().toLowerCase(); pintarLista(); });
 
@@ -544,54 +615,7 @@ function fichaAtencion(at) {
       }));
       return;
     }
-
-    for (const persona of activos) {
-      const presente = asistio(at, persona.id);
-      const chk = crear('input', { type: 'checkbox', id: `as-${idp}-${persona.id.slice(0, 8)}` });
-      chk.checked = presente;
-
-      const selMenu = crear('select', {}, [
-        crear('option', { value: 'normal', texto: 'Normal' }),
-        crear('option', { value: 'ayuda_social', texto: 'Ayuda social' })
-      ]);
-      selMenu.value = menuDe(at, persona.id) || menuPorDefecto(persona);
-      selMenu.disabled = !presente;
-
-      const g = grupoEtario(persona, at.fecha || fechaRef);
-      const fila = crear('div', { clase: `asistencia-fila${presente ? ' presente' : ''}` }, [
-        chk,
-        crear('label', { clase: 'asistencia-nombre', for: chk.id }, [
-          nombreCompleto(persona),
-          crear('span', { clase: 'asistencia-etiqueta', texto: g ? etiquetaGrupoEtario(g) : 'Sin grupo' })
-        ]),
-        selMenu
-      ]);
-
-      chk.addEventListener('change', () => {
-        if (!Array.isArray(at.asistencias)) at.asistencias = [];
-        if (chk.checked) {
-          at.legado = null;      // al marcar asistencia, las raciones salen de aquí
-          at.asistencias.push({ afiliadoId: persona.id, tipoMenu: selMenu.value });
-        } else {
-          at.asistencias = at.asistencias.filter((x) => x.afiliadoId !== persona.id);
-        }
-        selMenu.disabled = !chk.checked;
-        fila.classList.toggle('presente', chk.checked);
-        if (caja._refrescar) caja._refrescar();
-        cambio();
-        pintarAsistencia();
-      });
-
-      selMenu.addEventListener('change', () => {
-        const reg = (at.asistencias || []).find((x) => x.afiliadoId === persona.id);
-        if (reg) reg.tipoMenu = selMenu.value;
-        if (caja._refrescar) caja._refrescar();
-        cambio();
-        pintarAsistencia();
-      });
-
-      listaAsistencia.append(fila);
-    }
+    for (const persona of activos) listaAsistencia.append(filaToque(at, persona, refrescarTodo));
   }
 
   function marcarTodos(marcar) {
@@ -687,12 +711,125 @@ function fichaAtencion(at) {
 function pintarAtenciones() {
   const lista = $('#lista-atenciones');
   lista.textContent = '';
-  const ordenadas = [...padron.atenciones].sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  const hoy = hoyIso();
+  const ordenadas = [...padron.atenciones]
+    .filter((at) => at.fecha !== hoy)        // hoy va arriba, en su propia sección
+    .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
   if (ordenadas.length === 0) {
-    lista.append(crear('p', { clase: 'vacio-mensaje', texto: 'Todavía no hay días registrados.' }));
+    lista.append(crear('p', { clase: 'vacio-mensaje', texto: 'No hay otros días registrados.' }));
     return;
   }
   for (const at of ordenadas) lista.append(fichaAtencion(at));
+}
+
+// -------------------------------------------------------- asistencia de hoy
+//
+// Siempre visible y siempre apuntando al día de hoy. El registro del día NO se
+// crea al abrir la página: se crea cuando se marca a la primera persona. Así,
+// abrir la aplicación no inventa un día de atención que nadie tuvo.
+
+let atencionDeHoy = null;
+let filtroHoy = '';
+
+function asegurarHoyGuardado() {
+  if (!atencionDeHoy) return;
+  if (!padron.atenciones.some((o) => o.id === atencionDeHoy.id)) {
+    padron.atenciones.push(atencionDeHoy);
+  }
+}
+
+function pintarHoy() {
+  const caja = $('#hoy');
+  caja.textContent = '';
+  const hoy = hoyIso();
+
+  $('#titulo-hoy').textContent = `Asistencia de hoy · ${aDdMmAa(hoy)}`;
+
+  atencionDeHoy = padron.atenciones.find((o) => o.fecha === hoy) || null;
+  if (!atencionDeHoy) {
+    atencionDeHoy = nuevaAtencion(preciosActuales());
+    atencionDeHoy.fecha = hoy;           // todavía sin guardar: ver asegurarHoyGuardado
+  }
+  const at = atencionDeHoy;
+
+  const cuenta = crear('span', { clase: 'hoy-cuenta' });
+  const detalle = crear('span', { clase: 'hoy-detalle' });
+  const activos = afiliadosActivos(padron, hoy);
+
+  function refrescar() {
+    const d = desgloseDelDia(at);
+    cuenta.textContent = `${d.total} de ${activos.length}`;
+    if (d.total === 0) {
+      detalle.textContent = activos.length === 0
+        ? 'No hay nadie en el padrón todavía.'
+        : 'Nadie marcado todavía. Toca a quien vino.';
+      return;
+    }
+    const rec = recaudacionDelDiaCent(at);
+    detalle.textContent =
+      `${d.normal} con menú normal · ${d.ayudaSocial} de ayuda social` +
+      (rec === null ? ' · falta el precio del menú' : ` · S/ ${formatearSoles(rec)}`);
+  }
+
+  const alCambiar = () => { asegurarHoyGuardado(); refrescar(); };
+
+  const buscador = crear('input', {
+    id: 'hoy-buscar', type: 'search', placeholder: 'Buscar por nombre…', autocomplete: 'off'
+  });
+  buscador.value = filtroHoy;
+  const lista = crear('div', { clase: 'lista-toque' });
+
+  function pintarLista() {
+    lista.textContent = '';
+    const visibles = activos
+      .filter((p) => !filtroHoy || nombreCompleto(p).toLowerCase().includes(filtroHoy))
+      .sort((a, b) => nombreCompleto(a).localeCompare(nombreCompleto(b), 'es'));
+    if (visibles.length === 0) {
+      lista.append(crear('p', {
+        clase: 'vacio-mensaje',
+        texto: activos.length === 0
+          ? 'No hay nadie activo en el padrón. Inscribe personas arriba.'
+          : 'Nadie coincide con esa búsqueda.'
+      }));
+      return;
+    }
+    for (const persona of visibles) lista.append(filaToque(at, persona, alCambiar));
+  }
+  buscador.addEventListener('input', () => {
+    filtroHoy = buscador.value.trim().toLowerCase();
+    pintarLista();
+  });
+
+  function marcarTodos(marcar) {
+    if (marcar) {
+      at.legado = null;
+      at.asistencias = activos.map((p) => {
+        const previo = (at.asistencias || []).find((x) => x.afiliadoId === p.id);
+        return { afiliadoId: p.id, tipoMenu: previo ? previo.tipoMenu : menuPorDefecto(p) };
+      });
+    } else {
+      at.asistencias = [];
+    }
+    asegurarHoyGuardado();
+    pintarLista();
+    refrescar();
+    cambio();
+    pintarAsistencia();
+  }
+
+  caja.append(
+    crear('div', { clase: 'hoy-barra' }, [
+      cuenta, detalle,
+      crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Marcar a todos', onclick: () => marcarTodos(true) }),
+      crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Quitar a todos', onclick: () => marcarTodos(false) })
+    ]),
+    crear('div', { clase: 'campo' }, [
+      crear('label', { for: buscador.id, texto: 'Buscar' }), buscador
+    ]),
+    lista
+  );
+  pintarLista();
+  refrescar();
 }
 
 // ------------------------------------------------- resumen de asistencia y reporte
@@ -700,6 +837,15 @@ function pintarAtenciones() {
 function pintarAsistencia() {
   pintarResumen();
   pintarReporte();
+}
+
+function repintarTodo() {
+  pintarHoy();
+  pintarAfiliados();
+  pintarAtenciones();
+  pintarResumen();
+  pintarReporte();
+  refrescarValidacion();
 }
 
 function pintarReporte() {
@@ -771,8 +917,10 @@ function filasComoTexto(separador) {
   const filas = filasPadron(padron, fechaRef);
   const asistencias = new Map(
     asistenciaPorAfiliado(padron, periodoInicio, periodoFin).map((x) => [x.afiliadoId, x]));
-  const cab = ['N°', 'Apellido paterno', 'Apellido materno', 'Nombres', 'Documento',
-    'Número', 'Grupo de edad', 'Edad', 'Tipo', 'Días asistidos'];
+  // Títulos sin ambigüedad: así lo exportado se puede volver a importar (§6.9).
+  const cab = ['N°', 'Apellido paterno', 'Apellido materno', 'Nombres',
+    'Tipo de documento', 'Número de documento', 'Grupo de edad', 'Edad', 'Tipo',
+    'Días asistidos'];
   const lineas = [cab.join(separador)];
   for (const f of filas) {
     const as = asistencias.get(f.afiliadoId);
@@ -813,6 +961,124 @@ async function pintarEstadoEscaneo() {
       'de guardarlo, los campos que no se puedan leer quedarán vacíos, y la cadena ' +
       'cruda del código no se guardará en ninguna parte.'
   }));
+}
+
+// -------------------------------------------- importar un padrón desde archivo
+//
+// Nada se guarda hasta que la usuaria ve exactamente qué filas entran y cuáles
+// no, y confirma. Ver AGENTS.md §6.9.
+
+let importacionPendiente = null;
+
+function montarImportacion() {
+  const area = $('#pegarPadron');
+  const archivo = $('#archivoPadron');
+  const vista = $('#vista-importacion');
+  const btnRevisar = $('#revisar-importacion');
+  const btnConfirmar = $('#confirmar-importacion');
+  const btnCancelar = $('#cancelar-importacion');
+
+  archivo.addEventListener('change', async () => {
+    const f = archivo.files && archivo.files[0];
+    if (!f) return;
+    try {
+      area.value = await f.text();
+      revisar();
+    } catch (e) {
+      vista.textContent = '';
+      vista.append(crear('p', { clase: 'aviso-sistema', texto: 'No se pudo leer el archivo.' }));
+    }
+    archivo.value = '';
+  });
+
+  function limpiar() {
+    importacionPendiente = null;
+    vista.textContent = '';
+    btnConfirmar.hidden = true;
+    btnCancelar.hidden = true;
+  }
+
+  function revisar() {
+    const texto = area.value;
+    if (!texto.trim()) { limpiar(); return; }
+
+    const r = prepararImportacion(texto, padron);
+    vista.textContent = '';
+
+    if (r.error) {
+      vista.append(crear('div', { clase: 'aviso-sistema' }, [crear('p', { texto: r.error })]));
+      btnConfirmar.hidden = true;
+      btnCancelar.hidden = false;
+      importacionPendiente = null;
+      return;
+    }
+
+    importacionPendiente = r;
+    const entran = filasImportables(r.filas);
+
+    const chips = crear('div', { clase: 'imp-resumen' }, [
+      crear('span', { clase: 'chip', html: `Se importarán: <b>${entran.length}</b>` }),
+      r.resumen.incompleta ? crear('span', { clase: 'chip', html: `Con datos que faltan: <b>${r.resumen.incompleta}</b>` }) : null,
+      r.resumen.duplicada ? crear('span', { clase: 'chip', html: `Ya están en el padrón: <b>${r.resumen.duplicada}</b>` }) : null,
+      r.resumen.vacia ? crear('span', { clase: 'chip', html: `Filas vacías: <b>${r.resumen.vacia}</b>` }) : null
+    ]);
+    vista.append(chips);
+
+    if (r.sinReconocer.length) {
+      vista.append(crear('p', {
+        clase: 'pista',
+        texto: 'Columnas que no se reconocieron y se ignoran: ' + r.sinReconocer.join(', ') + '.'
+      }));
+    }
+
+    const cuerpo = crear('tbody');
+    for (const f of r.filas.slice(0, 50)) {
+      const a = f.afiliado;
+      cuerpo.append(crear('tr', { clase: `imp-fila-${f.estado}` }, [
+        crear('td', { clase: 'num', texto: String(f.linea) }),
+        crear('td', { texto: f.nombreCompleto || '—' }),
+        crear('td', { texto: a.numeroDocumento || '—' }),
+        crear('td', { texto: a.grupoEtarioManual ? etiquetaGrupoEtario(a.grupoEtarioManual)
+          : (a.fechaNacimiento ? 'por fecha de nacimiento' : '—') }),
+        crear('td', { texto: a.tipoAfiliado === 'caso_social' ? 'Ayuda social'
+          : a.tipoAfiliado === 'habitual' ? 'Habitual' : '—' }),
+        crear('td', { texto: f.avisos.join('; ') || 'lista' })
+      ]));
+    }
+    vista.append(crear('div', { clase: 'tabla-desplazable' }, [
+      crear('table', { clase: 'tabla' }, [
+        crear('thead', {}, [crear('tr', {},
+          ['Fila', 'Nombre', 'Documento', 'Grupo', 'Tipo', 'Estado']
+            .map((t) => crear('th', { texto: t })))]),
+        cuerpo
+      ])
+    ]));
+    if (r.filas.length > 50) {
+      vista.append(crear('p', { clase: 'pista', texto: `… y ${r.filas.length - 50} fila(s) más.` }));
+    }
+
+    btnConfirmar.hidden = entran.length === 0;
+    btnConfirmar.textContent = `Importar ${entran.length} persona(s)`;
+    btnCancelar.hidden = false;
+  }
+
+  btnRevisar.addEventListener('click', revisar);
+  btnCancelar.addEventListener('click', () => { area.value = ''; limpiar(); });
+
+  btnConfirmar.addEventListener('click', () => {
+    if (!importacionPendiente) return;
+    const entran = filasImportables(importacionPendiente.filas);
+    if (entran.length === 0) return;
+    if (!confirm(`Se añadirán ${entran.length} persona(s) al padrón.\n\n` +
+      'No se borra ni se modifica a nadie de los que ya están. ¿Continuar?')) return;
+
+    for (const f of entran) padron.afiliados.push(f.afiliado);
+    area.value = '';
+    limpiar();
+    guardar(CLAVES.padron, padron);
+    repintarTodo();
+    $('#estado-guardado').textContent = `${entran.length} persona(s) importada(s).`;
+  });
 }
 
 // ---------------------------------------------------------------- validación
@@ -897,22 +1163,7 @@ const fFiltro = $('#filtroAfiliado');
 fFiltro.value = filtroLista;
 fFiltro.addEventListener('change', () => { filtroLista = fFiltro.value; pintarAfiliados(); });
 
-/** El gesto más frecuente: abrir el día de hoy y pasar lista. */
-$('#asistencia-hoy').addEventListener('click', () => {
-  const hoy = hoyIso();
-  let at = padron.atenciones.find((o) => o.fecha === hoy);
-  if (!at) {
-    at = nuevaAtencion(preciosActuales());
-    at.fecha = hoy;
-    padron.atenciones.push(at);
-    cambio({ repintar: true });
-  }
-  const caja = document.getElementById(`ficha-${at.id}`);
-  if (caja) {
-    caja.open = true;
-    caja.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-});
+
 
 $('#agregar-atencion').addEventListener('click', () => {
   const at = nuevaAtencion(preciosActuales());
@@ -943,6 +1194,8 @@ $('#copiar-padron').addEventListener('click', async () => {
 
 montarPrecios();
 montarAlta();
+montarImportacion();
+pintarHoy();
 pintarAfiliados();
 pintarAtenciones();
 pintarResumen();

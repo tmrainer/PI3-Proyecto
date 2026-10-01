@@ -355,3 +355,40 @@ table.tabla td.num { text-align: right; font-variant-numeric: tabular-nums; }
   border-radius: 999px; padding: 1px 8px; }
 .dia-resumen { font-size: .82rem; color: var(--tinta-suave); flex: 1 1 160px; }
 .dia-cuerpo { padding: 0 10px 12px; }
+
+/* --------------------------------------- asistencia: una fila, un toque */
+
+.hoy-barra { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  margin-bottom: 10px; }
+.hoy-cuenta { font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hoy-detalle { font-size: .85rem; color: var(--tinta-suave); flex: 1 1 140px; }
+
+.lista-toque { display: grid; gap: 6px; grid-template-columns: 1fr; margin-top: 8px; }
+@media (min-width: 620px) { .lista-toque { grid-template-columns: 1fr 1fr; } }
+
+.toque { display: flex; align-items: stretch; gap: 0; border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio); overflow: hidden; background: #fff; }
+.toque-nombre { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px;
+  padding: 12px 10px; background: none; border: 0; font: inherit; color: inherit;
+  text-align: left; cursor: pointer; }
+.toque-marca { flex: 0 0 auto; width: 1.5em; height: 1.5em; line-height: 1.4em;
+  text-align: center; border: 2px solid var(--borde-fuerte); border-radius: 5px;
+  font-weight: 700; color: transparent; }
+.toque.presente { border-color: var(--ok); background: var(--ok-fondo); }
+.toque.presente .toque-marca { background: var(--ok); border-color: var(--ok); color: #fff; }
+.toque-texto { overflow-wrap: anywhere; }
+.toque-sub { display: block; font-size: .72rem; color: var(--tinta-suave); }
+.toque-menu { flex: 0 0 auto; padding: 0 10px; background: none; border: 0;
+  border-left: 1px solid var(--borde); font: inherit; font-size: .72rem; font-weight: 700;
+  color: var(--tinta-suave); cursor: pointer; min-width: 5.5em; }
+.toque-menu[data-menu="ayuda_social"] { color: var(--acento); background: var(--acento-suave); }
+.toque-menu:disabled { opacity: .35; cursor: default; }
+
+/* ------------------------------------------------- vista previa de importación */
+
+.imp-resumen { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.imp-fila-lista { color: var(--ok); }
+.imp-fila-incompleta { color: var(--aviso); }
+.imp-fila-duplicada, .imp-fila-vacia { color: var(--error); text-decoration: line-through; }
+textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio); width: 100%; background: #fff; color: var(--tinta); }

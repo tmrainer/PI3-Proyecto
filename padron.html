@@ -132,18 +132,43 @@
     <div id="lista-afiliados" style="margin-top:8px"></div>
   </section>
 
-  <section class="bloque">
-    <h2>Asistencia por día</h2>
+  <section class="bloque" id="bloque-hoy">
+    <h2 id="titulo-hoy">Asistencia de hoy</h2>
     <p class="pista">
-      Marca quién vino. Las raciones se cuentan solas de esa lista: no hay que
-      escribirlas. El menú de cada persona viene de cómo se inscribió, y se puede
-      cambiar ese día.
+      Toca a quien vino. Las raciones se cuentan solas: no hay nada que escribir.
+      El menú sale de cómo se inscribió cada persona; si ese día come otro, toca
+      la etiqueta de la derecha.
     </p>
+    <div id="hoy"></div>
+  </section>
+
+  <section class="bloque">
+    <h2>Otros días</h2>
+    <p class="pista">Días anteriores, para corregir o completar lo que quedó pendiente.</p>
     <div class="acciones">
-      <button type="button" class="boton" id="asistencia-hoy">Pasar lista de hoy</button>
-      <button type="button" class="boton secundario" id="agregar-atencion">+ Otro día</button>
+      <button type="button" class="boton secundario" id="agregar-atencion">+ Registrar otro día</button>
     </div>
     <div id="lista-atenciones" style="margin-top:12px"></div>
+  </section>
+
+  <section class="bloque">
+    <h2>Cargar un padrón desde Excel o CSV</h2>
+    <p class="pista">
+      Si ya tienes el padrón en una hoja de cálculo, cópialo con sus títulos y
+      pégalo aquí. Nada se guarda hasta que revises lo que se va a importar.
+    </p>
+    <div class="campo">
+      <label for="pegarPadron">Pega aquí las filas (con la fila de títulos)</label>
+      <textarea id="pegarPadron" rows="5" placeholder="Apellido paterno	Apellido materno	Nombres	DNI	Grupo de edad	Tipo"></textarea>
+    </div>
+    <div class="acciones" style="margin-top:10px">
+      <label class="boton secundario" for="archivoPadron">Elegir un archivo .csv</label>
+      <input type="file" id="archivoPadron" accept=".csv,.tsv,.txt,text/csv" class="oculto-visual">
+      <button type="button" class="boton secundario" id="revisar-importacion">Revisar</button>
+      <button type="button" class="boton" id="confirmar-importacion" hidden>Importar</button>
+      <button type="button" class="boton secundario" id="cancelar-importacion" hidden>Cancelar</button>
+    </div>
+    <div id="vista-importacion" style="margin-top:12px"></div>
   </section>
 
   <section class="bloque">

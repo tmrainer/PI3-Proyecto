@@ -20,6 +20,10 @@ import {
 import {
   avanzarPeriodo, fechasDeEntrega, alertaProximaEntrega, agendaEntregas, nivelPorDias
 } from './alertas.js';
+import {
+  detectarSeparador, parsearTabla, detectarColumnas, parsearFechaFlexible,
+  parsearGrupoEtario, parsearTipoAfiliado, prepararImportacion, filasImportables
+} from './importar.js';
 import { parsearCadenaDni, CAMPOS } from './escaneo-dni.js';
 import { sugerirRucProveedor, sugerenciasEncabezado } from './sugerencias.js';
 
@@ -959,6 +963,154 @@ export const casos = [
       const s = sugerirRucProveedor(rendiciones, 'MERCADO CENTRAL');
       igual(s.valor, '10000000009', 'la más reciente');
       ok(/01-09-26/.test(s.procedencia));
+    }
+  },
+
+  // ------------------------------------------------------------- importación
+  {
+    grupo: 'Importar',
+    nombre: 'Reconoce el separador de Excel, CSV y punto y coma',
+    fn: () => {
+      igual(detectarSeparador('a\tb\tc'), '\t');
+      igual(detectarSeparador('a,b,c'), ',');
+      igual(detectarSeparador('a;b;c'), ';');
+      igual(detectarSeparador('"a,b";c'), ';', 'no cuenta los separadores entre comillas');
+    }
+  },
+  {
+    grupo: 'Importar',
+    nombre: 'Lee comillas, comas dentro del campo y filas vacías',
+    fn: () => {
+      const t = 'Apellido,Nombres\n"Pérez, Jr.",Ana\n\nQuispe,Rosa\n';
+      const filas = parsearTabla(t);
+      igual(filas.length, 3, 'la fila vacía se descarta');
+      igual(filas[1][0], 'Pérez, Jr.');
+      igual(filas[2][1], 'Rosa');
+    }
+  },
+  {
+    grupo: 'Importar',
+    nombre: 'Reconoce los títulos de columna aunque cambien de forma',
+    fn: () => {
+      const { mapa } = detectarColumnas(
+        ['Ap. Paterno', 'APELLIDO MATERNO', 'Nombres', 'DNI', 'Grupo de edad', 'Tipo', 'Correo']);
+      igual(mapa.apellidoPaterno, 0);
+      igual(mapa.apellidoMaterno, 1);
+      igual(mapa.nombres, 2);
+      igual(mapa.numeroDocumento, 3);
+      igual(mapa.grupoEtario, 4);
+      igual(mapa.tipoAfiliado, 5);
+      const { sinReconocer } = detectarColumnas(['Nombres', 'Correo']);
+      ok(sinReconocer.includes('Correo'), 'lo que no entiende lo declara');
+    }
+  },
+  {
+    grupo: 'Importar',
+    nombre: 'Entiende las fechas como se escriben aquí',
+    fn: () => {
+      igual(parsearFechaFlexible('14-09-2026'), '2026-09-14');
+      igual(parsearFechaFlexible('14/9/1960'), '1960-09-14');
+      igual(parsearFechaFlexible('2026-09-14'), '2026-09-14');
+      igual(parsearFechaFlexible('14-09-60'), '1960-09-14', 'dos dígitos: 60 es 1960');
+      igual(parsearFechaFlexible('14-09-26'), '2026-09-14', 'y 26 es 2026');
+      igual(parsearFechaFlexible('cualquier cosa'), '', 'no inventa una fecha');
+      igual(parsearFechaFlexible(''), '');
+    }
+  },
+  {
+    grupo: 'Importar',
+    nombre: 'Entiende el grupo de edad y el tipo escritos de varias formas',
+    fn: () => {
+      igual(parsearGrupoEtario('Niño'), 'nino');
+      igual(parsearGrupoEtario('NIÑA'), 'nino');
+      igual(parsearGrupoEtario('adolescente'), 'adolescente');
+      igual(parsearGrupoEtario('Adulto Mayor'), 'adulto_mayor');
+      igual(parsearGrupoEtario('tercera edad'), 'adulto_mayor');
+      igual(parsearGrupoEtario('Adulto'), 'adulto');
+      igual(parsearGrupoEtario('vejete'), null, 'lo que no entiende queda sin grupo');
+
+      igual(parsearTipoAfiliado('Ayuda social'), 'caso_social');
+      igual(parsearTipoAfiliado('caso social'), 'caso_social');
+      igual(parsearTipoAfiliado('SI'), 'caso_social');
+      igual(parsearTipoAfiliado('Habitual'), 'habitual');
+      igual(parsearTipoAfiliado('no'), 'habitual');
+      igual(parsearTipoAfiliado('???'), '', 'no adivina');
+    }
+  },
+  {
+    grupo: 'Importar',
+    nombre: 'Clasifica cada fila y no importa duplicados ni vacíos',
+    fn: () => {
+      const p = padronVacio();
+      p.afiliados = [Object.assign(nuevoAfiliado(), {
+        id: 'ya', apellidoPaterno: 'Existente', nombres: 'Ana',
+        numeroDocumento: '00000001', activo: true
+      })];
+      const texto = [
+        'Apellido paterno\tApellido materno\tNombres\tDNI\tGrupo de edad\tTipo',
+        'Quispe\tRojas\tRosa\t00000002\tAdulto\tHabitual',
+        'Existente\t\tAna\t00000001\tAdulto\tHabitual',
+        'Mamani\t\tLuz\t\t\t',
+        '\t\t\t\t\t'
+      ].join('\n');
+      const r = prepararImportacion(texto, p);
+      igual(r.error, null);
+      igual(r.filas.length, 3, 'la fila totalmente vacía ni se cuenta');
+      igual(r.resumen.lista, 1);
+      igual(r.resumen.duplicada, 1);
+      igual(r.resumen.incompleta, 1);
+      igual(filasImportables(r.filas).length, 2, 'la duplicada queda fuera');
+
+      const lista = r.filas.find((f) => f.estado === 'lista');
+      igual(lista.afiliado.apellidoPaterno, 'Quispe');
+      igual(lista.afiliado.grupoEtarioManual, 'adulto');
+      igual(lista.afiliado.tipoAfiliado, 'habitual');
+      igual(lista.afiliado.origenDato, 'importado', 'queda marcado de dónde vino');
+
+      const incompleta = r.filas.find((f) => f.estado === 'incompleta');
+      ok(/falta documento, grupo de edad, tipo/.test(incompleta.avisos.join()),
+        'dice exactamente qué falta: ' + incompleta.avisos.join());
+    }
+  },
+  {
+    grupo: 'Importar',
+    nombre: 'La edad en números también sirve para el grupo',
+    fn: () => {
+      const texto = 'Nombres\tApellido paterno\tEdad\tDNI\tTipo\n' +
+        'Ana\tPerez\t8\t00000003\tHabitual\n' +
+        'Rosa\tQuispe\t67\t00000004\tAyuda social';
+      const r = prepararImportacion(texto, padronVacio());
+      igual(r.filas[0].afiliado.grupoEtarioManual, 'nino');
+      igual(r.filas[1].afiliado.grupoEtarioManual, 'adulto_mayor');
+      igual(r.filas[1].afiliado.tipoAfiliado, 'caso_social');
+      igual(r.resumen.lista, 2);
+    }
+  },
+  {
+    grupo: 'Importar',
+    nombre: 'Sin encabezado reconocible, no importa nada y lo explica',
+    fn: () => {
+      const r = prepararImportacion('Ana\tPerez\t12345678\nRosa\tQuispe\t87654321', padronVacio());
+      igual(r.filas.length, 0);
+      ok(r.error && /encabezado/.test(r.error), 'explica qué falta: ' + r.error);
+      igual(prepararImportacion('', padronVacio()).filas.length, 0);
+    }
+  },
+  {
+    grupo: 'Importar',
+    nombre: 'Lo exportado se puede volver a importar',
+    fn: () => {
+      const cab = 'N°,Apellido paterno,Apellido materno,Nombres,Tipo de documento,' +
+        'Número de documento,Grupo de edad,Edad,Tipo,Días asistidos';
+      const fila = '1,Álvarez,Rojas,Rosa,DNI,00000009,Niño/a,,Ayuda social,3';
+      const r = prepararImportacion(cab + '\n' + fila, padronVacio());
+      igual(r.error, null);
+      igual(r.resumen.lista, 1, JSON.stringify(r.filas[0] && r.filas[0].avisos));
+      const a = r.filas[0].afiliado;
+      igual(a.apellidoPaterno, 'Álvarez');
+      igual(a.numeroDocumento, '00000009');
+      igual(a.grupoEtarioManual, 'nino');
+      igual(a.tipoAfiliado, 'caso_social');
     }
   },
 

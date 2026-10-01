@@ -55,12 +55,29 @@ Siempre a través de `http://localhost`, aunque el servidor sea tu propia máqui
 | Página | Para qué |
 |---|---|
 | `index.html` | Formato B-1: centro, periodo, subsidio, compras y los tres totales |
-| `padron.html` | Precio del menú, inscripción de personas, asistencia diaria y reporte del padrón |
+| `padron.html` | Precio del menú, inscripción de personas, **asistencia de hoy**, carga de un padrón desde Excel o CSV, y reporte del padrón |
 | `calendario.html` | Periodicidad de entrega y cuenta regresiva hasta la próxima |
 | `pruebas.html` | 63 aserciones sobre los módulos de cálculo y validación |
 
 Las pruebas se ejecutan **en el navegador**, sin instalar nada: abre
 <http://localhost:8000/pruebas.html> y deben salir todas en verde.
+
+### Pasar lista
+
+«Asistencia de hoy» está siempre arriba del padrón y apunta a la fecha del día.
+Se toca la fila de quien vino: las raciones se cuentan solas, no hay nada que
+escribir. El menú de cada persona sale del tipo con el que se inscribió; si ese
+día come otro, se toca la etiqueta de la derecha.
+
+El día solo se guarda cuando se marca a la primera persona, así que abrir la
+aplicación no crea días de atención vacíos.
+
+### Cargar un padrón que ya existe
+
+En `padron.html`, la sección **Cargar un padrón desde Excel o CSV** admite pegar
+las filas o elegir un archivo. Hace falta la fila de títulos (`Apellido paterno`,
+`Nombres`, `DNI`, `Grupo de edad`, `Tipo`…). Antes de guardar nada se muestra la
+tabla de lo que entraría, con el motivo de cada omisión.
 
 ---
 
@@ -99,6 +116,7 @@ js/validaciones.js      reglas de error y advertencia                    ← pur
 js/alertas.js           fechas de entrega y cuenta regresiva             ← puro
 js/sugerencias.js       propuestas a partir de datos ya ingresados       ← puro
 js/escaneo-dni.js       lectura del código de barras del DNI (pendiente) ← puro
+js/importar.js          lectura de un padrón pegado o en CSV             ← puro
 js/casos-prueba.js      las aserciones de pruebas.html                   ← puro
 
 js/ui.js                ayudas de DOM compartidas
