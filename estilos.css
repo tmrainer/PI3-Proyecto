@@ -564,3 +564,15 @@ main:focus { outline: none; }
 
 /* El enlace del aviso de entrega llegaba a 22px de alto: WCAG 2.2 pide 24. */
 .banner-enlace { display: inline-block; padding: 3px 2px; }
+
+/* ------------------------------------------- reservar el sitio por adelantado
+
+   El banner de aviso y el panel de revisión los rellena el JS, que al ser un
+   módulo corre después del primer pintado. Sin reservar su alto, el contenido
+   ya dibujado se desplazaba 143 px de golpe: quien tocara algo en ese momento
+   acababa pulsando otra cosa. Los dos aparecen siempre, así que el hueco nunca
+   se queda vacío. Medido: 54 y 56 px en escritorio, el banner 108 en móvil. */
+.nav { min-height: 41px; }
+#banner { min-height: 54px; }
+#panel { min-height: 56px; }
+@media (max-width: 619px) { #banner { min-height: 108px; } }

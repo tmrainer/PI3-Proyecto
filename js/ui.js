@@ -123,24 +123,28 @@ const PAGINAS = [
 ];
 
 export function montarCabecera(claveActiva, subtitulo) {
-  const nav = crear('nav', { clase: 'nav', 'aria-label': 'Secciones' },
-    PAGINAS.map((p) => crear('a', {
+  if (claveActiva === 'pruebas') {
+    PAGINAS.push({ href: './pruebas.html', texto: 'Pruebas', clave: 'pruebas' });
+  }
+
+  // La cabecera ya está en el HTML: solo se rellena. Cuando la construía aquí
+  // y la insertaba al principio, el contenido ya pintado saltaba 111 px hacia
+  // abajo (Lighthouse medía un CLS de 0,258).
+  const nav = $('.cabecera .nav');
+  if (!nav) return;
+  nav.textContent = '';
+  for (const p of PAGINAS) {
+    nav.append(crear('a', {
       href: p.href,
       clase: p.clave === claveActiva ? 'nav-enlace activo' : 'nav-enlace',
       'aria-current': p.clave === claveActiva ? 'page' : null,
       texto: p.texto
-    })));
-  if (claveActiva === 'pruebas') {
-    PAGINAS.push({ href: './pruebas.html', texto: 'Pruebas', clave: 'pruebas' });
+    }));
   }
-  const cab = crear('header', { clase: 'cabecera' }, [
-    crear('div', { clase: 'cabecera-titulo' }, [
-      crear('h1', { texto: 'Sistema de Asistencia' }),
-      crear('p', { clase: 'cabecera-sub', texto: subtitulo })
-    ]),
-    nav
-  ]);
-  document.body.prepend(cab);
+  if (subtitulo) {
+    const sub = $('.cabecera-sub');
+    if (sub) sub.textContent = subtitulo;
+  }
 }
 
 // ------------------------------------------- aviso de la próxima entrega (§6.6)
