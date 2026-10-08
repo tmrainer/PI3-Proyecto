@@ -62,7 +62,7 @@ function refrescar() {
 function validar() {
   const hallazgos = validarPadron(estado.padron)
     .filter((x) => x.campo.startsWith('atencion.') || x.campo.startsWith('precio.'))
-    .concat(validarPreciosMenu(estado.config));
+    .concat(validarPreciosMenu(estado.config, estado.padron.atenciones.length > 0));
   aplicarHallazgos($('#panel'), hallazgos, (c) => irACampo(c));
 }
 

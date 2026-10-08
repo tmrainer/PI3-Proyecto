@@ -33,9 +33,15 @@ const ctx = {
 };
 
 function pintarResumenEtario() {
-  const conteo = resumenEtario(estado.padron, ctx.fechaRef);
   const caja = $('#resumen-etario');
   caja.textContent = '';
+  // Una fila de ceros no informa de nada.
+  const vacio = estado.padron.afiliados.length === 0;
+  $('#buscarAfiliado').closest('.rejilla').hidden = vacio;
+  $('#conteo-afiliados').hidden = vacio;
+  if (vacio) return;
+
+  const conteo = resumenEtario(estado.padron, ctx.fechaRef);
   caja.append(crear('span', {
     clase: 'chip', html: `Activas: <b>${afiliadosActivos(estado.padron, ctx.fechaRef).length}</b>`
   }));

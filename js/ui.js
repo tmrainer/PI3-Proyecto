@@ -95,8 +95,7 @@ const PAGINAS = [
   { href: './', texto: 'Asistencia', clave: 'asistencia' },
   { href: './padron.html', texto: 'Padrón', clave: 'padron' },
   { href: './formato-b1.html', texto: 'Formato B-1', clave: 'b1' },
-  { href: './calendario.html', texto: 'Entregas', clave: 'calendario' },
-  { href: './pruebas.html', texto: 'Pruebas', clave: 'pruebas' }
+  { href: './calendario.html', texto: 'Entregas', clave: 'calendario' }
 ];
 
 export function montarCabecera(claveActiva, subtitulo) {
@@ -107,6 +106,9 @@ export function montarCabecera(claveActiva, subtitulo) {
       'aria-current': p.clave === claveActiva ? 'page' : null,
       texto: p.texto
     })));
+  if (claveActiva === 'pruebas') {
+    PAGINAS.push({ href: './pruebas.html', texto: 'Pruebas', clave: 'pruebas' });
+  }
   const cab = crear('header', { clase: 'cabecera' }, [
     crear('div', { clase: 'cabecera-titulo' }, [
       crear('h1', { texto: 'Sistema de Asistencia' }),

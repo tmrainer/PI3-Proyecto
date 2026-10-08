@@ -413,8 +413,11 @@ table.tabla td.num { text-align: right; font-variant-numeric: tabular-nums; }
   flex: 0 0 auto; padding: 0 8px; background: none; border: 0;
   border-left: 1px solid var(--borde); font: inherit; font-size: .78rem;
   font-weight: 600; line-height: 1.2; text-align: center;
-  color: var(--tinta-suave); cursor: pointer; width: 5.4em;
+  color: var(--tinta-suave); cursor: pointer; width: 4.8em;
+  white-space: nowrap;
 }
+/* Todas las filas con la misma altura: la lista se recorre con la vista. */
+.toque { min-height: 3.4rem; }
 .toque-menu[data-menu="ayuda_social"] { color: var(--verde-700); background: var(--verde-200); }
 .toque-menu:disabled { opacity: .3; cursor: default; }
 

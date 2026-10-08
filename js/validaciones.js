@@ -391,12 +391,16 @@ export function validarAtencion(atencion, padron) {
 
 // --------------------------------------------------- Precio del menú (config)
 
-export function validarPreciosMenu(config) {
+export function validarPreciosMenu(config, hayRaciones = true) {
   const hs = [];
   if (!config) return hs;
+  // Sin raciones registradas todavía no hay nada que valorar: reclamar el
+  // precio en ese momento es regañar a quien aún no ha empezado.
   if (!Number.isFinite(config.precioMenuNormalCent)) {
-    hs.push(h(AVISO, 'precio.normal',
-      'Falta el precio del menú normal. Sin él no se puede sacar el promedio por ración.'));
+    if (hayRaciones) {
+      hs.push(h(AVISO, 'precio.normal',
+        'Falta el precio del menú normal. Sin él no se puede sacar el promedio por ración.'));
+    }
   } else if (config.precioMenuNormalCent <= 0) {
     hs.push(h(ERROR, 'precio.normal', 'El precio del menú normal debe ser mayor que cero.'));
   }

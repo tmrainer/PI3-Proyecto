@@ -40,7 +40,7 @@ export function filaToque(at, persona, ctx, alCambiar) {
   const botonMenu = crear('button', {
     type: 'button', clase: 'toque-menu', 'data-menu': menu,
     title: 'Cambiar el menú de esta persona solo para este día',
-    texto: menu === 'ayuda_social' ? 'Ayuda social' : 'Normal'
+    texto: menu === 'ayuda_social' ? 'Social' : 'Normal'
   });
   const nombrePersona = nombreCompleto(persona);
   function etiquetarMenu(m) {
@@ -59,7 +59,7 @@ export function filaToque(at, persona, ctx, alCambiar) {
     botonNombre.setAttribute('aria-pressed', hay ? 'true' : 'false');
     botonMenu.disabled = !hay;
     botonMenu.dataset.menu = m;
-    botonMenu.textContent = m === 'ayuda_social' ? 'Ayuda social' : 'Normal';
+    botonMenu.textContent = m === 'ayuda_social' ? 'Social' : 'Normal';
     etiquetarMenu(m);
   }
 
@@ -442,6 +442,14 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
     ctx.onResumen();
   }
 
+  // Sin nadie en el padrón, el contador, los botones de marcar y el buscador no
+  // pueden hacer nada: ofrecerlos es ruido en la primera pantalla que se ve.
+  if (activos.length === 0) {
+    caja.append(lista);
+    pintarLista();
+    return;
+  }
+
   caja.append(
     resumenVivo,
     crear('div', { clase: 'hoy-barra' }, [
@@ -450,9 +458,10 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
       crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Quitar a todos', onclick: () => marcarTodos(false) }),
       botonFaltan
     ]),
-    crear('div', { clase: 'campo' }, [
+    // El buscador solo hace falta cuando la lista no cabe de un vistazo.
+    activos.length > 12 ? crear('div', { clase: 'campo' }, [
       crear('label', { for: buscador.id, texto: 'Buscar' }), buscador
-    ]),
+    ]) : null,
     lista
   );
   pintarLista();
