@@ -1,0 +1,17 @@
+{
+  "name": "Sistema de Asistencia",
+  "short_name": "Asistencia",
+  "description": "Pasar lista, llevar el padrón y rendir el Formato B-1 de las ollas comunes y comedores de Villa María del Triunfo.",
+  "start_url": "./asistencia.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fafbf5",
+  "theme_color": "#1b2e1e",
+  "lang": "es-PE",
+  "dir": "ltr",
+  "icons": [
+    { "src": "./icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icono-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

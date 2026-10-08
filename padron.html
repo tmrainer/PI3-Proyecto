@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Padrón · Sistema de Asistencia</title>
+<meta name="theme-color" content="#1b2e1e">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icono.svg">
 <link rel="stylesheet" href="./estilos.css">
 </head>
 <body data-pagina="padron">
@@ -90,7 +94,7 @@
     <div id="lista-afiliados" style="margin-top:8px"></div>
   </section>
 
-  <section class="bloque">
+  <section class="bloque apoyo">
     <h2>Cargar un padrón desde Excel o CSV</h2>
     <p class="pista">
       Pega las filas con su fila de títulos. Nada se guarda hasta que revises.
@@ -109,7 +113,7 @@
     <div id="vista-importacion" style="margin-top:12px"></div>
   </section>
 
-  <section class="bloque">
+  <section class="bloque apoyo">
     <h2>Reporte para el padrón</h2>
     <p class="pista">Personas activas, numeradas y ordenadas por apellido.</p>
     <div class="rejilla dos">
@@ -129,17 +133,20 @@
     <div id="reporte-padron" style="margin-top:12px"></div>
   </section>
 
-  <section class="bloque">
-    <h2>Inscripción por código de barras del DNI</h2>
-    <div id="estado-escaneo"></div>
-  </section>
+  <details class="plegable">
+    <summary>Inscripción por código de barras del DNI</summary>
+    <div class="plegable-cuerpo" id="estado-escaneo"></div>
+  </details>
 
-  <section class="bloque">
-    <h2>Tus datos</h2>
-    <div id="privacidad"></div>
-    <div id="barra-datos"></div>
-    <p class="estado-guardado" id="estado-guardado">Se guarda solo, mientras escribes.</p>
-  </section>
+  <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras escribes.</p>
+
+  <details class="plegable">
+    <summary>Respaldos y privacidad</summary>
+    <div class="plegable-cuerpo">
+      <div id="privacidad"></div>
+      <div id="barra-datos"></div>
+    </div>
+  </details>
 
   <p class="pie-nota">
     Los datos del padrón viven solo en este dispositivo. Los grupos de edad siguen

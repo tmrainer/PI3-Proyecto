@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Formato B-1 · Sistema de Asistencia</title>
+<meta name="theme-color" content="#1b2e1e">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icono.svg">
 <link rel="stylesheet" href="./estilos.css">
 </head>
 <body data-pagina="b1">
@@ -167,12 +171,15 @@
     </div>
   </section>
 
-  <section class="bloque">
-    <h2>Tus datos</h2>
-    <div id="privacidad"></div>
-    <div id="barra-datos"></div>
-    <p class="estado-guardado" id="estado-guardado">Se guarda solo, mientras escribes.</p>
-  </section>
+  <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras escribes.</p>
+
+  <details class="plegable">
+    <summary>Respaldos y privacidad</summary>
+    <div class="plegable-cuerpo">
+      <div id="privacidad"></div>
+      <div id="barra-datos"></div>
+    </div>
+  </details>
 
   <p class="pie-nota">
     El Formato B-1 es una Declaración Jurada (Art. 06, Ley 25035). La aplicación

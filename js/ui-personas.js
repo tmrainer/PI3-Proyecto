@@ -243,17 +243,26 @@ function filaAfiliado(a, ctx) {
   const nombre = crear('span', { clase: 'persona-nombre', texto: nombreCompleto(a) || 'Persona sin nombre' });
   const meta = crear('span', { clase: 'persona-meta' });
 
+  // El documento va primero y en cifras tabulares: es lo que se busca al
+  // cotejar la lista contra un papel. Lo demás, detrás y más tenue.
   function refrescarMeta() {
+    nombre.textContent = nombreCompleto(a) || 'Persona sin nombre';
+    meta.textContent = '';
+
+    if (a.numeroDocumento) {
+      meta.append(crear('span', { clase: 'meta-doc', texto: a.numeroDocumento }));
+    }
     const g = grupoEtario(a, ctx.fechaRef);
     const edad = esIso(a.fechaNacimiento) ? edadEnFecha(a.fechaNacimiento, ctx.fechaRef) : null;
-    const partes = [g ? etiquetaGrupoEtario(g) : 'Sin grupo'];
-    if (edad !== null) partes.push(`${edad} años`);
-    partes.push(a.tipoAfiliado === 'caso_social' ? 'Ayuda social'
-      : a.tipoAfiliado === 'habitual' ? 'Habitual' : 'Sin tipo');
-    if (a.numeroDocumento) partes.push(`${(a.tipoDocumento || '').toUpperCase()} ${a.numeroDocumento}`);
-    if (!a.activo) partes.push('dada de baja');
-    meta.textContent = partes.join(' · ');
-    nombre.textContent = nombreCompleto(a) || 'Persona sin nombre';
+    meta.append(crear('span', {
+      texto: (g ? etiquetaGrupoEtario(g) : 'Sin grupo') + (edad === null ? '' : `, ${edad} años`)
+    }));
+    if (a.tipoAfiliado === 'caso_social') {
+      meta.append(crear('span', { clase: 'meta-social', texto: 'Ayuda social' }));
+    } else if (!a.tipoAfiliado) {
+      meta.append(crear('span', { texto: 'Sin tipo' }));
+    }
+    if (!a.activo) meta.append(crear('span', { texto: 'Dada de baja' }));
   }
   refrescarMeta();
 
@@ -322,7 +331,7 @@ export function pintarListaPersonas(lista, ctx) {
   if (ctx.conteo) ctx.conteo.textContent =
     `Mostrando ${visibles.length} de ${estado.padron.afiliados.length}. ` +
     `${activas} activa(s)` +
-    (incompletas ? ` · ${incompletas} con datos incompletos.` : '.');
+    (incompletas ? `, ${incompletas} con datos incompletos.` : '.');
 
   if (visibles.length === 0) {
     lista.append(crear('p', {

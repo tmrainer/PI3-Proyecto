@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Sistema de Asistencia">
+  <rect width="512" height="512" fill="#1b2e1e"/>
+  <g transform="translate(256 256) scale(0.62) translate(-256 -256)">
+    <g fill="none" stroke="#cfe0c4" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M232 150h136M232 256h136M232 362h136"/>
+    </g>
+    <g fill="none" stroke="#6e9161" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M128 150l30 30 52-56"/>
+      <path d="M128 256l30 30 52-56"/>
+    </g>
+    <circle cx="162" cy="362" r="26" fill="none" stroke="#3a5533" stroke-width="22"/>
+  </g>
+</svg>

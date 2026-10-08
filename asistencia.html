@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Asistencia del día · Sistema de Asistencia</title>
+<meta name="theme-color" content="#1b2e1e">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icono.svg">
 <link rel="stylesheet" href="./estilos.css">
 </head>
 <body data-pagina="asistencia">
@@ -14,13 +18,13 @@
   <div id="banner"></div>
   <div id="panel" class="panel" role="status" aria-live="polite" aria-label="Resumen de revisión"></div>
 
-  <section class="bloque" id="bloque-hoy">
+  <section class="bloque foco" id="bloque-hoy">
     <h2 id="titulo-hoy">Asistencia de hoy</h2>
     <p class="pista">Toca a quien vino; las raciones se cuentan solas.</p>
     <div id="hoy"></div>
   </section>
 
-  <section class="bloque">
+  <section class="bloque apoyo">
     <h2>Resumen del periodo</h2>
     <div class="rejilla dos">
       <div class="campo">
@@ -36,7 +40,7 @@
     <p class="nota-calculo" id="nota-precio"></p>
   </section>
 
-  <section class="bloque">
+  <section class="bloque apoyo">
     <h2>Precio del menú</h2>
     <p class="pista">Se copia a cada día nuevo. Si un día fue distinto, se cambia en ese día.</p>
     <div class="rejilla dos">
@@ -52,7 +56,7 @@
     </div>
   </section>
 
-  <section class="bloque">
+  <section class="bloque apoyo">
     <h2>Otros días</h2>
     <p class="pista">Para corregir o completar días pasados.</p>
     <div class="acciones">
@@ -61,12 +65,15 @@
     <div id="lista-atenciones" style="margin-top:12px"></div>
   </section>
 
-  <section class="bloque">
-    <h2>Tus datos</h2>
-    <div id="privacidad"></div>
-    <div id="barra-datos"></div>
-    <p class="estado-guardado" id="estado-guardado">Se guarda solo, mientras tocas.</p>
-  </section>
+  <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras tocas.</p>
+
+  <details class="plegable">
+    <summary>Respaldos y privacidad</summary>
+    <div class="plegable-cuerpo">
+      <div id="privacidad"></div>
+      <div id="barra-datos"></div>
+    </div>
+  </details>
 
   <p class="pie-nota">
     El día se guarda al marcar a la primera persona: abrir esta página no crea

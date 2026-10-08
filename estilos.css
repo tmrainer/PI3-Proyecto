@@ -447,3 +447,76 @@ table.tabla td.num { text-align: right; font-variant-numeric: tabular-nums; }
 /* Iconos SVG: alineados con el texto que acompañan, nunca solos. */
 .icono { flex: 0 0 auto; vertical-align: -.18em; }
 .pastilla .icono, .chip .icono { vertical-align: -.16em; margin-right: 1px; }
+
+/* Metadatos en piezas separadas por espacio, no por un carácter. Permite dar
+   peso distinto a cada dato: el documento, que es lo que se coteja contra un
+   papel, va en cifras tabulares y más oscuro. */
+.persona-meta, .dia-resumen, .hoy-detalle {
+  display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: baseline;
+}
+.meta-doc { font-variant-numeric: tabular-nums; color: var(--tinta); font-weight: 500; }
+.meta-social { color: var(--verde-700); font-weight: 600; }
+.dato-fuerte { color: var(--tinta); font-weight: 600; }
+.dato-falta { color: var(--aviso); font-weight: 600; }
+
+.titulo-fecha {
+  font-weight: 400; color: var(--tinta-suave); font-size: .86rem;
+  font-variant-numeric: tabular-nums; margin-left: 10px;
+}
+
+/* ------------------------------------------------- jerarquía de secciones
+
+   No todas las secciones pesan lo mismo. La tarea del día lleva el foco; lo
+   que se consulta de vez en cuando pierde el fondo y se apoya en una regla;
+   lo que casi nunca se abre queda plegado en una línea. */
+
+section.bloque.foco { border-color: var(--verde-200); border-top: 3px solid var(--verde-600); }
+
+section.bloque.apoyo {
+  background: none; border: 0; border-top: 1px solid var(--borde);
+  border-radius: 0; padding: 14px 2px 4px; margin-bottom: 10px;
+}
+section.bloque.apoyo h2 { font-size: .98rem; color: var(--verde-700); }
+
+.plegable {
+  border-top: 1px solid var(--borde);
+  margin: 0 0 2px; padding: 2px;
+}
+.plegable > summary {
+  cursor: pointer; padding: 11px 2px; font-size: .92rem;
+  font-weight: 600; color: var(--verde-700); list-style-position: outside;
+}
+.plegable > summary:hover { color: var(--verde-900); }
+.plegable-cuerpo { padding: 2px 2px 14px; }
+
+.barra-estado { margin: 14px 2px 2px; }
+
+/* ------------------------------------------------------- pantallas de dedo
+
+   En escritorio con ratón conviene la densidad: se ve más de una vez. En un
+   celular hace falta superficie para acertar sin mirar. `pointer: coarse`
+   distingue las dos cosas sin preguntar por el ancho, que no es lo mismo. */
+
+@media (pointer: coarse) {
+  .boton { padding: 13px 18px; }
+  .boton.diminuto { padding: 9px 14px; font-size: .84rem; }
+  .nav-enlace { padding: 13px 16px 14px; }
+  .opcion { padding: 11px 15px; }
+  input, select, textarea { padding: 11px 12px; font-size: 16px; }  /* 16px evita el zoom de iOS */
+  .persona-fila { padding: 13px 12px; }
+  .dia > summary, .plegable > summary { padding: 14px 4px; }
+  .toque-nombre { padding: 15px 12px; }
+  .toque-menu { width: 6em; }
+  .enlace-ir { padding: 6px 0; }
+}
+
+/* En app instalada no hay barra de navegador: el contenido respeta la
+   zona segura del dispositivo. */
+@media (display-mode: standalone) {
+  .cabecera { padding-top: env(safe-area-inset-top); }
+  main { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

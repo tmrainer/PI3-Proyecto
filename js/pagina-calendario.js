@@ -106,7 +106,7 @@ function irACampo(campo) {
 
 // ------------------------------------------------------------------- arranque
 
-montarCabecera('calendario', 'Ollas comunes y comedores · PCA · Villa María del Triunfo');
+montarCabecera('calendario', 'Ollas comunes y comedores de Villa María del Triunfo');
 pintarAvisosAlmacenamiento($('#avisos-sistema'));
 $('#privacidad').append(bloquePrivacidad());
 $('#barra-datos').append(barraDatos({

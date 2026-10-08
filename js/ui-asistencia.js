@@ -187,10 +187,14 @@ function fichaAtencion(at, ctx) {
   function refrescarResumenCorto() {
     const d = desgloseDelDia(at);
     const rec = recaudacionDelDiaCent(at);
-    resumenCorto.textContent =
-      `${d.total} ración(es)` +
-      (d.ayudaSocial ? ` · ${d.ayudaSocial} de ayuda social` : '') +
-      (rec === null ? '' : ` · S/ ${formatearSoles(rec)}`);
+    resumenCorto.textContent = '';
+    resumenCorto.append(crear('span', { clase: 'dato-fuerte', texto: `${d.total} raciones` }));
+    if (d.ayudaSocial) {
+      resumenCorto.append(crear('span', { texto: `${d.ayudaSocial} de ayuda social` }));
+    }
+    if (rec !== null) {
+      resumenCorto.append(crear('span', { texto: `S/ ${formatearSoles(rec)}` }));
+    }
   }
   refrescarResumenCorto();
   const refrescarTodo = () => { refrescarResumenDia(); refrescarResumenCorto(); };
@@ -286,7 +290,10 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   caja.textContent = '';
   const hoy = hoyIso();
 
-  if (ctx.titulo) ctx.titulo.textContent = `Asistencia de hoy · ${aDdMmAa(hoy)}`;
+  if (ctx.titulo) {
+    ctx.titulo.textContent = 'Asistencia de hoy';
+    ctx.titulo.append(crear('span', { clase: 'titulo-fecha', texto: aDdMmAa(hoy) }));
+  }
 
   atencionDeHoy = estado.padron.atenciones.find((o) => o.fecha === hoy) || null;
   if (!atencionDeHoy) {
@@ -309,9 +316,12 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
       return;
     }
     const rec = recaudacionDelDiaCent(at);
-    detalle.textContent =
-      `${d.normal} con menú normal · ${d.ayudaSocial} de ayuda social` +
-      (rec === null ? ' · falta el precio del menú' : ` · S/ ${formatearSoles(rec)}`);
+    detalle.textContent = '';
+    detalle.append(crear('span', { texto: `${d.normal} con menú normal` }));
+    if (d.ayudaSocial) detalle.append(crear('span', { texto: `${d.ayudaSocial} de ayuda social` }));
+    detalle.append(rec === null
+      ? crear('span', { clase: 'dato-falta', texto: 'falta el precio del menú' })
+      : crear('span', { texto: `S/ ${formatearSoles(rec)}` }));
   }
 
   const alCambiar = () => { asegurarHoyGuardado(); refrescar(); };
