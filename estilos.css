@@ -527,3 +527,7 @@ section.bloque.apoyo h2 { font-size: .98rem; color: var(--verde-700); }
 }
 .boton:disabled { opacity: .45; cursor: default; }
 .boton:disabled:hover { background: var(--papel); }
+
+/* Un estado vacío puede ofrecer la salida, no solo describir el hueco. */
+.vacio-mensaje p { margin: 0 0 12px; }
+.vacio-mensaje .boton { display: inline-block; text-decoration: none; }

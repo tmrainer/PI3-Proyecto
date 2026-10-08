@@ -17,7 +17,10 @@ export function pintarReportePadron(caja, ctx) {
     asistenciaPorAfiliado(estado.padron, ctx.inicio, ctx.fin).map((x) => [x.afiliadoId, x]));
 
   if (filas.length === 0) {
-    caja.append(crear('p', { clase: 'vacio-mensaje', texto: 'No hay personas activas que listar.' }));
+    caja.append(crear('p', {
+      clase: 'vacio-mensaje',
+      texto: 'El reporte sale del padrón. Inscribe personas o carga un archivo y aparecerán aquí.'
+    }));
     return;
   }
 

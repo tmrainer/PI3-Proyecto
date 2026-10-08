@@ -42,6 +42,12 @@ export function filaToque(at, persona, ctx, alCambiar) {
     title: 'Cambiar el menú de esta persona solo para este día',
     texto: menu === 'ayuda_social' ? 'Ayuda social' : 'Normal'
   });
+  const nombrePersona = nombreCompleto(persona);
+  function etiquetarMenu(m) {
+    botonMenu.setAttribute('aria-label',
+      `Menú de ${nombrePersona}: ${m === 'ayuda_social' ? 'ayuda social' : 'normal'}. Tocar para cambiarlo.`);
+  }
+  etiquetarMenu(menu);
   botonMenu.disabled = !presente;
 
   const fila = crear('div', { clase: `toque${presente ? ' presente' : ''}` }, [botonNombre, botonMenu]);
@@ -54,6 +60,7 @@ export function filaToque(at, persona, ctx, alCambiar) {
     botonMenu.disabled = !hay;
     botonMenu.dataset.menu = m;
     botonMenu.textContent = m === 'ayuda_social' ? 'Ayuda social' : 'Normal';
+    etiquetarMenu(m);
   }
 
   botonNombre.addEventListener('click', () => {
@@ -264,7 +271,10 @@ export function pintarOtrosDias(lista, ctx) {
     .filter((at) => at.fecha !== hoy)        // hoy va arriba, en su propia sección
     .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
   if (ordenadas.length === 0) {
-    lista.append(crear('p', { clase: 'vacio-mensaje', texto: 'No hay otros días registrados.' }));
+    lista.append(crear('p', {
+      clase: 'vacio-mensaje',
+      texto: 'Aquí aparecerán los días pasados, para corregirlos si hace falta.'
+    }));
     return;
   }
   for (const at of ordenadas) lista.append(fichaAtencion(at, ctx));
@@ -305,11 +315,15 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
 
   const cuenta = crear('span', { clase: 'hoy-cuenta' });
   const detalle = crear('span', { clase: 'hoy-detalle' });
+  // Marcar a alguien cambia el conteo; sin esto, quien usa lector de pantalla
+  // toca y no recibe confirmación de nada.
+  const resumenVivo = crear('p', { clase: 'oculto-visual', role: 'status', 'aria-live': 'polite' });
   const activos = afiliadosActivos(estado.padron, hoy);
 
   function refrescar() {
     const d = desgloseDelDia(at);
     cuenta.textContent = `${d.total} de ${activos.length}`;
+    resumenVivo.textContent = `${d.total} de ${activos.length} personas marcadas.`;
     if (d.total === 0) {
       detalle.textContent = activos.length === 0
         ? 'No hay nadie en el padrón todavía.'
@@ -378,12 +392,21 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
       .sort((a, b) => nombreCompleto(a).localeCompare(nombreCompleto(b), 'es'));
 
     if (visibles.length === 0) {
-      lista.append(crear('p', {
-        clase: 'vacio-mensaje',
-        texto: activos.length === 0 ? 'No hay nadie activo en el padrón. Inscribe personas arriba.'
-          : soloSinMarcar ? 'No falta nadie: ya pasaste lista completa.'
+      // Una pantalla vacía es una invitación a hacer algo, no un aviso. Cuando
+      // falta el padrón entero, lo que hace falta es el camino para empezarlo.
+      if (activos.length === 0) {
+        lista.append(crear('div', { clase: 'vacio-mensaje' }, [
+          crear('p', { texto: 'Para pasar lista hace falta tener personas inscritas.' }),
+          crear('a', { clase: 'boton', href: './padron.html', texto: 'Inscribir a la primera persona' })
+        ]));
+      } else {
+        lista.append(crear('p', {
+          clase: 'vacio-mensaje',
+          texto: soloSinMarcar
+            ? 'No falta nadie: ya pasaste lista completa.'
             : 'Nadie coincide con esa búsqueda.'
-      }));
+        }));
+      }
       refrescarBotonFaltan();
       return;
     }
@@ -420,6 +443,7 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   }
 
   caja.append(
+    resumenVivo,
     crear('div', { clase: 'hoy-barra' }, [
       cuenta, detalle,
       crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Marcar a todos', onclick: () => marcarTodos(true) }),
