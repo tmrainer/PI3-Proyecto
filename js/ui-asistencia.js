@@ -278,6 +278,7 @@ export function pintarOtrosDias(lista, ctx) {
 
 let atencionDeHoy = null;
 let filtroHoy = '';
+let soloSinMarcar = false;
 
 function asegurarHoyGuardado() {
   if (!atencionDeHoy) return;
@@ -324,30 +325,78 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
       : crear('span', { texto: `S/ ${formatearSoles(rec)}` }));
   }
 
-  const alCambiar = () => { asegurarHoyGuardado(); refrescar(); };
-
   const buscador = crear('input', {
     id: 'hoy-buscar', type: 'search', placeholder: 'Buscar por nombre…', autocomplete: 'off'
   });
   buscador.value = filtroHoy;
   const lista = crear('div', { clase: 'lista-toque' });
 
+  // Cerrar la lista es buscar a los pocos que faltan entre decenas de filas ya
+  // marcadas. Con el filtro puesto, cada toque los va quitando de en medio y la
+  // lista se vacía cuando no queda nadie: eso mismo es la señal de que terminó.
+  const botonFaltan = crear('button', {
+    type: 'button', clase: 'boton diminuto secundario', 'aria-pressed': 'false'
+  });
+
+  function alternarFaltan() {
+    soloSinMarcar = !soloSinMarcar;
+    botonFaltan.setAttribute('aria-pressed', soloSinMarcar ? 'true' : 'false');
+    botonFaltan.classList.toggle('activo', soloSinMarcar);
+    pintarLista();
+  }
+  botonFaltan.addEventListener('click', alternarFaltan);
+
+  function sinMarcar() {
+    return activos.filter((p) => !asistio(at, p.id)).length;
+  }
+
+  function refrescarBotonFaltan() {
+    const n = sinMarcar();
+    botonFaltan.textContent = soloSinMarcar
+      ? `Viendo los ${n} que faltan`
+      : `Ver los ${n} que faltan`;
+    botonFaltan.disabled = n === 0 && !soloSinMarcar;
+  }
+
+  const alCambiar = () => {
+    asegurarHoyGuardado();
+    refrescar();
+    refrescarBotonFaltan();
+  };
+
   function pintarLista() {
+    // Con el filtro puesto, la fila tocada desaparece: se conserva la posición
+    // del foco para que el teclado pueda seguir bajando por la lista.
+    const activo = document.activeElement;
+    const enLista = lista.contains(activo);
+    const i = enLista ? [...lista.querySelectorAll('.toque-nombre')].indexOf(activo) : -1;
+
     lista.textContent = '';
     const visibles = activos
       .filter((p) => !filtroHoy || nombreCompleto(p).toLowerCase().includes(filtroHoy))
+      .filter((p) => !soloSinMarcar || !asistio(at, p.id))
       .sort((a, b) => nombreCompleto(a).localeCompare(nombreCompleto(b), 'es'));
+
     if (visibles.length === 0) {
       lista.append(crear('p', {
         clase: 'vacio-mensaje',
-        texto: activos.length === 0
-          ? 'No hay nadie activo en el padrón. Inscribe personas arriba.'
-          : 'Nadie coincide con esa búsqueda.'
+        texto: activos.length === 0 ? 'No hay nadie activo en el padrón. Inscribe personas arriba.'
+          : soloSinMarcar ? 'No falta nadie: ya pasaste lista completa.'
+            : 'Nadie coincide con esa búsqueda.'
       }));
+      refrescarBotonFaltan();
       return;
     }
     for (const persona of visibles) lista.append(filaToque(at, persona, ctx, alCambiar));
+    refrescarBotonFaltan();
+
+    if (i >= 0) {
+      const botones = lista.querySelectorAll('.toque-nombre');
+      const destino = botones[Math.min(i, botones.length - 1)];
+      if (destino) destino.focus({ preventScroll: true });
+    }
   }
+
   buscador.addEventListener('input', () => {
     filtroHoy = buscador.value.trim().toLowerCase();
     pintarLista();
@@ -374,7 +423,8 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
     crear('div', { clase: 'hoy-barra' }, [
       cuenta, detalle,
       crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Marcar a todos', onclick: () => marcarTodos(true) }),
-      crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Quitar a todos', onclick: () => marcarTodos(false) })
+      crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Quitar a todos', onclick: () => marcarTodos(false) }),
+      botonFaltan
     ]),
     crear('div', { clase: 'campo' }, [
       crear('label', { for: buscador.id, texto: 'Buscar' }), buscador

@@ -520,3 +520,10 @@ section.bloque.apoyo h2 { font-size: .98rem; color: var(--verde-700); }
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Botón de dos estados: cuando está puesto, se ve puesto. */
+.boton.secundario.activo {
+  background: var(--verde-700); color: #fff; border-color: var(--verde-700);
+}
+.boton:disabled { opacity: .45; cursor: default; }
+.boton:disabled:hover { background: var(--papel); }

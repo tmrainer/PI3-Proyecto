@@ -4,174 +4,68 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Formato B-1 · Sistema de Asistencia</title>
+<title>Asistencia del día · Sistema de Asistencia</title>
 <meta name="theme-color" content="#1b2e1e">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icono.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icono.svg">
 <link rel="stylesheet" href="./estilos.css">
 </head>
-<body data-pagina="b1">
+<body data-pagina="asistencia">
 <main>
 
   <div id="avisos-sistema"></div>
   <div id="banner"></div>
   <div id="panel" class="panel" role="status" aria-live="polite" aria-label="Resumen de revisión"></div>
 
-  <section class="bloque">
-    <h2>Centro de atención</h2>
-    <div id="sugerencias-encabezado"></div>
-
-    <fieldset>
-      <legend>Tipo de centro</legend>
-      <div class="opciones">
-        <label class="opcion"><input type="radio" name="tipoCentro" value="comedor"> Comedor</label>
-        <label class="opcion"><input type="radio" name="tipoCentro" value="olla_comun"> Olla común</label>
-      </div>
-    </fieldset>
-
-    <div class="rejilla dos" style="margin-top:12px">
-      <div class="campo" data-campo="nombreCentro">
-        <label for="nombreCentro">Nombre del centro de atención</label>
-        <input id="nombreCentro" name="nombreCentro" type="text" autocomplete="off">
-      </div>
-      <div class="campo" data-campo="codigoPca">
-        <label for="codigoPca">Código de PCA N.º</label>
-        <input id="codigoPca" name="codigoPca" type="text" inputmode="numeric" autocomplete="off">
-      </div>
-    </div>
-
-    <div class="rejilla tres" style="margin-top:12px">
-      <div class="campo" data-campo="nombrePresidenta">
-        <label for="nombrePresidenta">Nombre de la presidenta</label>
-        <input id="nombrePresidenta" name="nombrePresidenta" type="text" autocomplete="off">
-      </div>
-      <div class="campo" data-campo="dniPresidenta">
-        <label for="dniPresidenta">DNI</label>
-        <input id="dniPresidenta" name="dniPresidenta" type="text" inputmode="numeric" maxlength="8" autocomplete="off">
-      </div>
-      <div class="campo" data-campo="celular">
-        <label for="celular">Celular N.º</label>
-        <input id="celular" name="celular" type="text" inputmode="numeric" maxlength="9" autocomplete="off">
-      </div>
-    </div>
+  <section class="bloque foco" id="bloque-hoy">
+    <h2 id="titulo-hoy">Asistencia de hoy</h2>
+    <p class="pista">Toca a quien vino; las raciones se cuentan solas.</p>
+    <div id="hoy"></div>
   </section>
 
-  <section class="bloque">
-    <h2>Periodo que se rinde</h2>
+  <section class="bloque apoyo">
+    <h2>Resumen del periodo</h2>
     <div class="rejilla dos">
-      <div class="campo" data-campo="periodo.tipo">
-        <label for="periodoTipo">Cada cuánto se entrega</label>
-        <select id="periodoTipo" name="periodoTipo">
-          <option value="semanal">Semanal</option>
-          <option value="quincenal">Quincenal</option>
-          <option value="mensual">Mensual</option>
-        </select>
-        <span class="pista">Al cambiarlo, la app propone fechas y etiqueta. Tú decides si las usas.</span>
+      <div class="campo">
+        <label for="periodoInicio">Desde</label>
+        <input id="periodoInicio" type="date">
       </div>
-      <div class="campo" data-campo="fechaRendicion">
-        <label for="fechaRendicion">Fecha de rendición</label>
-        <input id="fechaRendicion" name="fechaRendicion" type="date">
+      <div class="campo">
+        <label for="periodoFin">hasta</label>
+        <input id="periodoFin" type="date">
       </div>
     </div>
-
-    <div id="sugerencia-periodo"></div>
-
-    <div class="rejilla tres" style="margin-top:12px">
-      <div class="campo" data-campo="periodo.inicio">
-        <label for="periodoInicio">Inicio del periodo</label>
-        <input id="periodoInicio" name="periodoInicio" type="date">
-      </div>
-      <div class="campo" data-campo="periodo.fin">
-        <label for="periodoFin">Fin del periodo</label>
-        <input id="periodoFin" name="periodoFin" type="date">
-      </div>
-      <div class="campo" data-campo="periodo.etiqueta">
-        <label for="periodoEtiqueta">Texto para «Mes de rendición»</label>
-        <input id="periodoEtiqueta" name="periodoEtiqueta" type="text" autocomplete="off">
-        <span class="pista">Es lo que irá escrito en ese renglón del formato.</span>
-      </div>
-    </div>
+    <div id="resumen-raciones" class="resumen-chips" style="margin-top:12px"></div>
+    <p class="nota-calculo" id="nota-precio"></p>
   </section>
 
-  <section class="bloque">
-    <h2>Ingresos</h2>
+  <section class="bloque apoyo">
+    <h2>Precio del menú</h2>
+    <p class="pista">Se copia a cada día nuevo. Si un día fue distinto, se cambia en ese día.</p>
     <div class="rejilla dos">
-      <div class="campo" data-campo="montoSubsidio">
-        <label for="montoSubsidio">Monto del subsidio (S/)</label>
-        <input id="montoSubsidio" name="montoSubsidio" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off">
+      <div class="campo" data-campo="precio.normal">
+        <label for="precioNormal">Menú normal (S/)</label>
+        <input id="precioNormal" type="text" inputmode="decimal" placeholder="0.00">
       </div>
-      <div class="campo" data-campo="fechaAsignacion">
-        <label for="fechaAsignacion">Fecha de la asignación</label>
-        <input id="fechaAsignacion" name="fechaAsignacion" type="date">
+      <div class="campo" data-campo="precio.ayuda">
+        <label for="precioAyuda">Menú de ayuda social (S/)</label>
+        <input id="precioAyuda" type="text" inputmode="decimal" placeholder="0.00">
+        <span class="pista">Si es gratuito, escribe 0.00.</span>
       </div>
     </div>
   </section>
 
-  <section class="bloque">
-    <h2>Egresos</h2>
-    <p class="pista">
-      Una ficha por boleta. Si agrupa varios productos sin precio por unidad,
-      marca «varios» y escribe solo el monto total.
-    </p>
-    <div id="lista-egresos" data-campo="egresos"></div>
+  <section class="bloque apoyo">
+    <h2>Otros días</h2>
+    <p class="pista">Para corregir o completar días pasados.</p>
     <div class="acciones">
-      <button type="button" class="boton" id="agregar-egreso">+ Agregar compra</button>
-      <span class="estado-guardado" id="conteo-egresos"></span>
+      <button type="button" class="boton secundario" id="agregar-atencion">+ Registrar otro día</button>
     </div>
-
-    <div class="totales" data-campo="totales">
-      <div class="total-fila">
-        <span class="total-rotulo">Gastos con el subsidio económico</span>
-        <span class="total-valor" id="total-con-subsidio"></span>
-      </div>
-      <div class="total-fila">
-        <span class="total-rotulo">Aporte del centro de atención <em>(registrar de corresponder)</em></span>
-        <span class="total-valor" id="total-aporte"></span>
-      </div>
-      <div class="total-fila destacado">
-        <span class="total-rotulo"><strong>Total de rendición de gastos</strong></span>
-        <span class="total-valor" id="total-rendicion"></span>
-      </div>
-      <p class="nota-calculo">
-        Estos tres montos los calcula la aplicación sumando tus compras. No se
-        pueden escribir a mano: si alguno no cuadra, lo que hay que corregir es el
-        detalle de arriba.
-      </p>
-      <div id="resumen-origen" class="resumen-chips"></div>
-    </div>
+    <div id="lista-atenciones" style="margin-top:12px"></div>
   </section>
 
-  <section class="bloque">
-    <h2>Firmas</h2>
-    <p class="pista">Lo que va debajo de cada línea de firma. El sello se pone a mano.</p>
-    <div class="rejilla dos">
-      <fieldset>
-        <legend>Presidenta</legend>
-        <div class="campo" data-campo="nombrePresidentaFirma">
-          <label for="nombrePresidentaFirma">Nombre y apellido</label>
-          <input id="nombrePresidentaFirma" name="nombrePresidentaFirma" type="text" autocomplete="off">
-        </div>
-        <div class="campo" data-campo="dniPresidentaFirma" style="margin-top:8px">
-          <label for="dniPresidentaFirma">DNI N.º</label>
-          <input id="dniPresidentaFirma" name="dniPresidentaFirma" type="text" inputmode="numeric" maxlength="8" autocomplete="off">
-        </div>
-      </fieldset>
-      <fieldset>
-        <legend>Tesorera</legend>
-        <div class="campo" data-campo="nombreTesorera">
-          <label for="nombreTesorera">Nombre y apellido</label>
-          <input id="nombreTesorera" name="nombreTesorera" type="text" autocomplete="off">
-        </div>
-        <div class="campo" data-campo="dniTesorera" style="margin-top:8px">
-          <label for="dniTesorera">DNI N.º</label>
-          <input id="dniTesorera" name="dniTesorera" type="text" inputmode="numeric" maxlength="8" autocomplete="off">
-        </div>
-      </fieldset>
-    </div>
-  </section>
-
-  <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras escribes.</p>
+  <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras tocas.</p>
 
   <details class="plegable">
     <summary>Respaldos y privacidad</summary>
@@ -182,12 +76,11 @@
   </details>
 
   <p class="pie-nota">
-    El Formato B-1 es una Declaración Jurada (Art. 06, Ley 25035). La aplicación
-    calcula y revisa, pero no completa ni estima nada: todo lo escribiste tú.
-    La impresión sobre la plantilla oficial todavía no está disponible.
+    El día se guarda al marcar a la primera persona: abrir esta página no crea
+    días vacíos.
   </p>
 
 </main>
-<script type="module" src="./js/pagina-b1.js"></script>
+<script type="module" src="./js/pagina-asistencia.js"></script>
 </body>
 </html>

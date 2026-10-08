@@ -89,10 +89,12 @@ export function aplicarHallazgos(panel, hallazgos, alIrA) {
 
 // ------------------------------------------------------------------ navegación
 
+// La asistencia es la raíz: es la tarea diaria, y quien abre la dirección sin
+// más debe caer en ella, no en un formulario que se llena una vez al mes.
 const PAGINAS = [
-  { href: './asistencia.html', texto: 'Asistencia', clave: 'asistencia' },
+  { href: './', texto: 'Asistencia', clave: 'asistencia' },
   { href: './padron.html', texto: 'Padrón', clave: 'padron' },
-  { href: './index.html', texto: 'Formato B-1', clave: 'b1' },
+  { href: './formato-b1.html', texto: 'Formato B-1', clave: 'b1' },
   { href: './calendario.html', texto: 'Entregas', clave: 'calendario' },
   { href: './pruebas.html', texto: 'Pruebas', clave: 'pruebas' }
 ];

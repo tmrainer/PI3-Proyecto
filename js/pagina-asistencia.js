@@ -1,4 +1,4 @@
-// pagina-asistencia.js — controlador de asistencia.html.
+// pagina-asistencia.js — controlador de index.html (la raíz del sitio).
 // Solo cablea: la interfaz vive en ui-asistencia.js, los cálculos en calculos.js.
 
 import { CLAVES, guardar, hoyIso, aCentimos, formatearSoles, nuevaAtencion } from './modelo.js';

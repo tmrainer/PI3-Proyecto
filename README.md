@@ -38,11 +38,11 @@ php -S localhost:8000   # PHP
 ```
 
 En VS Code también sirve la extensión **Live Server**: clic derecho sobre
-`asistencia.html` → *Open with Live Server*.
+`index.html` → *Open with Live Server*.
 
 ### No abras los archivos con doble clic
 
-Abrir `asistencia.html` directamente (`file:///…`) **no funciona**. La aplicación
+Abrir `index.html` directamente (`file:///…`) **no funciona**. La aplicación
 usa módulos ES, que el navegador bloquea por política de mismo origen cuando la
 página viene de `file://`. La pantalla saldrá en blanco o a medias.
 
@@ -85,8 +85,6 @@ Siempre a través de `http://localhost`, aunque el servidor sea tu propia máqui
 - [ ] **Quien come sin estar inscrito no tiene dónde anotarse.** Las raciones se
       cuentan de la asistencia, así que un visitante no registrado suma cero.
       ¿Se le inscribe, o hace falta una cuenta aparte?
-- [ ] La raíz del sitio abre el Formato B-1, pero la tarea diaria es pasar lista.
-      ¿Debería abrir `asistencia.html`?
 
 ### Probar con una usuaria real
 
