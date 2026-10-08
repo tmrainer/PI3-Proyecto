@@ -10,7 +10,7 @@ import {
   desgloseDelDia, recaudacionDelDiaCent, asistio, menuDe
 } from './calculos.js';
 import { estado, preciosActuales } from './estado.js';
-import { crear, campo } from './ui.js';
+import { crear, campo, icono } from './ui.js';
 
 // ctx: { fechaRef, titulo, onCambio(), onRepintar(), onResumen() }
 
@@ -25,7 +25,7 @@ export function filaToque(at, persona, ctx, alCambiar) {
   const menu = menuDe(at, persona.id) || menuPorDefecto(persona);
   const g = grupoEtario(persona, at.fecha || ctx.fechaRef);
 
-  const marca = crear('span', { clase: 'toque-marca', 'aria-hidden': 'true', texto: '✓' });
+  const marca = crear('span', { clase: 'toque-marca', 'aria-hidden': 'true' }, [icono('ok', { tam: 15 })]);
   const botonNombre = crear('button', {
     type: 'button', clase: 'toque-nombre',
     'aria-pressed': presente ? 'true' : 'false'

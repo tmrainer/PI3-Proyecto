@@ -24,6 +24,37 @@ export function crear(etiqueta, props = {}, hijos = []) {
   return el;
 }
 
+// Iconos SVG en línea: nítidos a cualquier tamaño y en cualquier plataforma,
+// a diferencia de los caracteres sueltos (✓ ✕ ▸), que cada sistema dibuja a su
+// manera. Siempre acompañados de texto: nunca son el único portador del
+// significado (AGENTS.md §5.9).
+const TRAZOS = {
+  ok: 'M20 6 9 17l-5-5',
+  error: 'M18 6 6 18M6 6l12 12',
+  aviso: 'M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+  reloj: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2',
+  flecha: 'm9 18 6-6-6-6'
+};
+
+export function icono(nombre, { tam = 16, clase = 'icono' } = {}) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', tam);
+  svg.setAttribute('height', tam);
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2.2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('class', clase);
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('d', TRAZOS[nombre] || TRAZOS.aviso);
+  svg.appendChild(path);
+  return svg;
+}
+
 /** Campo etiquetado: la combinación que se repite en todos los formularios. */
 export function campo(etiqueta, control, pista) {
   return crear('div', { clase: 'campo' }, [
@@ -105,7 +136,7 @@ export function bannerAlerta(alerta, { mostrarEnlace = true } = {}) {
 
   if (!alerta.configurado) {
     caja.append(
-      crear('span', { clase: 'banner-icono', 'aria-hidden': 'true', texto: '◷' }),
+      icono('reloj', { tam: 17, clase: 'icono banner-icono' }),
       crear('span', { clase: 'banner-texto', texto: alerta.mensaje }),
       mostrarEnlace ? crear('a', { clase: 'banner-enlace', href: './calendario.html', texto: 'Configurar entregas' }) : null
     );
@@ -117,7 +148,7 @@ export function bannerAlerta(alerta, { mostrarEnlace = true } = {}) {
     : alerta.diasRestantes === 0 ? 'hoy' : `faltan ${alerta.diasRestantes} día(s)`;
 
   caja.append(
-    crear('span', { clase: 'banner-icono', 'aria-hidden': 'true', texto: nivel === 'vencida' ? '⚠' : '◷' }),
+    icono(nivel === 'vencida' ? 'aviso' : 'reloj', { tam: 17, clase: 'icono banner-icono' }),
     crear('span', { clase: 'banner-titulo', texto: TEXTO_NIVEL[nivel] + ':' }),
     crear('span', { clase: 'banner-cuenta', texto: cuenta }),
     crear('span', { clase: 'banner-texto', texto: alerta.mensaje }),
@@ -209,7 +240,7 @@ export function exportarTodo() {
 
 // ------------------------------------------- panel de validación compartido
 
-const ICONOS = { error: '✕', advertencia: '!' };
+const ICONO_HALLAZGO = { error: 'error', advertencia: 'aviso' };
 
 /**
  * Pinta el panel de hallazgos. Nunca modifica datos: solo informa.
@@ -222,19 +253,21 @@ export function pintarPanel(contenedor, hallazgos, { alIrA } = {}) {
 
   const resumen = crear('p', { clase: 'panel-resumen' });
   if (hallazgos.length === 0) {
-    resumen.append(crear('span', { clase: 'pastilla ok', texto: '✓ Sin observaciones' }));
+    resumen.append(crear('span', { clase: 'pastilla ok' }, [
+      icono('ok', { tam: 14 }), ' Sin observaciones'
+    ]));
   } else {
     if (errores.length) {
-      resumen.append(crear('span', {
-        clase: 'pastilla error',
-        texto: `✕ ${errores.length} error${errores.length === 1 ? '' : 'es'}`
-      }));
+      resumen.append(crear('span', { clase: 'pastilla error' }, [
+        icono('error', { tam: 14 }),
+        ` ${errores.length} error${errores.length === 1 ? '' : 'es'}`
+      ]));
     }
     if (avisos.length) {
-      resumen.append(crear('span', {
-        clase: 'pastilla advertencia',
-        texto: `! ${avisos.length} advertencia${avisos.length === 1 ? '' : 's'}`
-      }));
+      resumen.append(crear('span', { clase: 'pastilla advertencia' }, [
+        icono('aviso', { tam: 14 }),
+        ` ${avisos.length} advertencia${avisos.length === 1 ? '' : 's'}`
+      ]));
     }
   }
   contenedor.append(resumen);
@@ -247,7 +280,7 @@ export function pintarPanel(contenedor, hallazgos, { alIrA } = {}) {
   const lista = crear('ul', { clase: 'panel-lista' });
   for (const hall of [...errores, ...avisos]) {
     const item = crear('li', { clase: `panel-item ${hall.severidad}` }, [
-      crear('span', { clase: 'panel-icono', 'aria-hidden': 'true', texto: ICONOS[hall.severidad] }),
+      icono(ICONO_HALLAZGO[hall.severidad], { tam: 15, clase: 'icono panel-icono' }),
       crear('span', { clase: 'panel-tipo', texto: hall.severidad === 'error' ? 'Error:' : 'Advertencia:' }),
       crear('span', { clase: 'panel-mensaje', texto: ' ' + hall.mensaje })
     ]);
@@ -307,7 +340,7 @@ export function pintarAvisosAlmacenamiento(contenedor) {
   contenedor.textContent = '';
   if (avisos.length === 0) return;
   contenedor.append(crear('div', { clase: 'aviso-sistema', role: 'alert' },
-    avisos.map((a) => crear('p', { texto: '⚠ ' + a }))));
+    avisos.map((a) => crear('p', {}, [icono('aviso', { tam: 15 }), ' ' + a]))));
 }
 
 export { leer, guardar, CLAVES };

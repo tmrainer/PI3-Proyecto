@@ -11,7 +11,7 @@ import { montarAltaPersona, pintarListaPersonas } from './ui-personas.js';
 import { montarImportacion } from './ui-importar.js';
 import { pintarReportePadron, filasComoTexto } from './ui-reportes.js';
 import {
-  $, crear, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
+  $, crear, icono, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
   pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo
 } from './ui.js';
 
@@ -81,12 +81,14 @@ async function pintarEstadoEscaneo() {
   }));
   const soporta = await soportaCamaraPdf417();
   caja.append(crear('div', { clase: 'resumen-chips' }, [
-    crear('span', {
-      clase: 'chip',
-      texto: soporta ? '✓ Este navegador podría leer PDF417 con la cámara'
-        : '✕ Este navegador no lee PDF417 con la cámara'
-    }),
-    crear('span', { clase: 'chip', texto: '✓ Un lector de mano tipo teclado funcionará siempre' })
+    crear('span', { clase: 'chip' }, [
+      icono(soporta ? 'ok' : 'error', { tam: 14 }),
+      soporta ? ' Este navegador podría leer PDF417 con la cámara'
+        : ' Este navegador no lee PDF417 con la cámara'
+    ]),
+    crear('span', { clase: 'chip' }, [
+      icono('ok', { tam: 14 }), ' Un lector de mano tipo teclado funcionará siempre'
+    ])
   ]));
   caja.append(crear('p', {
     clase: 'pista',

@@ -7,7 +7,7 @@ import {
 } from './calculos.js';
 import { validarAfiliado } from './validaciones.js';
 import { estado } from './estado.js';
-import { $, crear, campo } from './ui.js';
+import { $, crear, campo, icono } from './ui.js';
 
 // ctx: { fechaRef, busqueda, filtro, conteo, onCambio(), onRepintar() }
 
@@ -260,7 +260,7 @@ function filaAfiliado(a, ctx) {
   const boton = crear('button', {
     type: 'button', clase: 'persona-fila', 'aria-expanded': 'false'
   }, [
-    crear('span', { clase: 'persona-flecha', 'aria-hidden': 'true', texto: '▸' }),
+    icono('flecha', { tam: 15, clase: 'icono persona-flecha' }),
     crear('span', { clase: 'persona-texto' }, [nombre, meta]),
     errores ? crear('span', { clase: 'persona-falta', texto: 'faltan datos' }) : null
   ]);
