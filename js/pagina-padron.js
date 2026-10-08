@@ -12,7 +12,7 @@ import { montarImportacion } from './ui-importar.js';
 import { pintarReportePadron, filasComoTexto } from './ui-reportes.js';
 import {
   $, crear, icono, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
-  pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo
+  pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo
 } from './ui.js';
 
 cargar();
@@ -177,3 +177,5 @@ montarImportacion(ctx);
 repintar();
 pintarEstadoEscaneo();
 guardarYa();   // consolida la migración del padrón si la hubo
+
+avisarAlSalirDelCampo(validar);

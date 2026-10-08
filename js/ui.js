@@ -76,7 +76,31 @@ export function irACampo(nombre, { antesDeBuscar } = {}) {
   if (caja.tagName === 'DETAILS') caja.open = true;
   caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
   const control = caja.querySelector('input, select, textarea');
-  if (control && !control.disabled) control.focus({ preventScroll: true });
+  if (control && !control.disabled) {
+    // Si se llega aquí desde el panel es justo para ver qué pasa con el campo.
+    control.dataset.tocado = '1';
+    control.focus({ preventScroll: true });
+  }
+}
+
+/**
+ * Marca cada campo como visitado al salir de él, y revalida. Sin esto, o se
+ * regaña de entrada o no se avisa hasta el final.
+ */
+export function avisarAlSalirDelCampo(alRevalidar) {
+  document.addEventListener('focusout', (ev) => {
+    const c = ev.target;
+    if (!c || !c.matches || !c.matches('input, select, textarea')) return;
+    if (c.dataset.tocado === '1') return;
+    c.dataset.tocado = '1';
+    if (alRevalidar) alRevalidar();
+  });
+}
+
+/** Marca todos los campos como visitados: para antes de entregar o imprimir. */
+export function mostrarTodosLosAvisos(alRevalidar) {
+  for (const c of document.querySelectorAll('input, select, textarea')) c.dataset.tocado = '1';
+  if (alRevalidar) alRevalidar();
 }
 
 /** Marca los campos con hallazgos y pinta el panel. */
@@ -305,16 +329,56 @@ export function pintarPanel(contenedor, hallazgos, { alIrA } = {}) {
   ]));
 }
 
-/** Marca o limpia un campo con problema. No toca su valor. */
+let contadorMensaje = 0;
+
+/**
+ * Marca o limpia un campo con problema. No toca su valor.
+ *
+ * El mensaje va JUNTO al campo y enlazado con aria-describedby: con el error
+ * solo en el panel, un lector de pantalla anuncia «campo inválido» sin decir
+ * por qué, y hay que ir a buscarlo a otra parte de la página.
+ */
 export function marcarCampo(elemento, hallazgos) {
   if (!elemento) return;
   const propios = hallazgos || [];
   const error = propios.some((x) => x.severidad === 'error');
-  elemento.classList.toggle('con-error', error);
-  elemento.classList.toggle('con-aviso', !error && propios.length > 0);
-  if (elemento.matches('input, select, textarea')) {
-    elemento.setAttribute('aria-invalid', error ? 'true' : 'false');
+
+  const control = elemento.matches('input, select, textarea')
+    ? elemento
+    : elemento.querySelector('input, select, textarea');
+
+  // El rojo tampoco se enciende antes de tiempo: un campo vacío que nadie ha
+  // visitado todavía no es un campo mal puesto.
+  const tocado = !control || control.dataset.tocado === '1';
+  elemento.classList.toggle('con-error', error && tocado);
+  elemento.classList.toggle('con-aviso', !error && propios.length > 0 && tocado);
+
+  if (!control) return;
+  control.setAttribute('aria-invalid', error && tocado ? 'true' : 'false');
+
+  // El mensaje en línea cuelga del contenedor del campo, no del control.
+  const caja = elemento.matches('.campo') ? elemento : control.closest('.campo');
+  if (!caja) return;
+
+  // Un formulario recién abierto no está «mal»: está vacío. El mensaje en
+  // línea solo aparece en los campos por los que ya se pasó. El panel de
+  // arriba sigue listando todo, para repasar antes de entregar.
+  let msg = caja.querySelector(':scope > .campo-error');
+  if (propios.length === 0 || !tocado) {
+    if (msg) {
+      control.removeAttribute('aria-describedby');
+      msg.remove();
+    }
+    return;
   }
+  if (!msg) {
+    contadorMensaje += 1;
+    msg = crear('p', { clase: 'campo-error', id: `msg-campo-${contadorMensaje}` });
+    caja.append(msg);
+  }
+  msg.textContent = propios[0].mensaje;
+  msg.classList.toggle('es-error', error);
+  control.setAttribute('aria-describedby', msg.id);
 }
 
 // ---------------------------------------------- sugerencias (AGENTS.md §2)

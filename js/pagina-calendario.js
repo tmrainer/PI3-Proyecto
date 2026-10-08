@@ -7,7 +7,7 @@ import { alertaProximaEntrega, agendaEntregas, PERIODICIDADES } from './alertas.
 import { validarCalendario } from './validaciones.js';
 import {
   $, crear, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
-  marcarCampo, bannerAlerta, pintarAvisosAlmacenamiento
+  marcarCampo, bannerAlerta, pintarAvisosAlmacenamiento, avisarAlSalirDelCampo
 } from './ui.js';
 
 let calendario = leer(CLAVES.calendario, calendarioVacio());
@@ -149,3 +149,5 @@ for (const [clave, , detalle] of PERIODICIDADES) {
 pintarBanner();
 pintarAgenda();
 refrescarValidacion();
+
+avisarAlSalirDelCampo(refrescarValidacion);

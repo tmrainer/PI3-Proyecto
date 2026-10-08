@@ -12,7 +12,8 @@
 <link rel="stylesheet" href="./estilos.css">
 </head>
 <body data-pagina="b1">
-<main>
+<a class="saltar-al-contenido" href="#principal">Saltar al contenido</a>
+<main id="principal" tabindex="-1">
 
   <div id="avisos-sistema"></div>
   <div id="banner"></div>
@@ -33,26 +34,26 @@
     <div class="rejilla dos" style="margin-top:12px">
       <div class="campo" data-campo="nombreCentro">
         <label for="nombreCentro">Nombre del centro de atención</label>
-        <input id="nombreCentro" name="nombreCentro" type="text" autocomplete="off">
+        <input id="nombreCentro" required aria-required="true" name="nombreCentro" type="text" autocomplete="off">
       </div>
       <div class="campo" data-campo="codigoPca">
         <label for="codigoPca">Código de PCA N.º</label>
-        <input id="codigoPca" name="codigoPca" type="text" inputmode="numeric" autocomplete="off">
+        <input id="codigoPca" required aria-required="true" name="codigoPca" type="text" inputmode="numeric" autocomplete="off">
       </div>
     </div>
 
     <div class="rejilla tres" style="margin-top:12px">
       <div class="campo" data-campo="nombrePresidenta">
         <label for="nombrePresidenta">Nombre de la presidenta</label>
-        <input id="nombrePresidenta" name="nombrePresidenta" type="text" autocomplete="off">
+        <input id="nombrePresidenta" required aria-required="true" name="nombrePresidenta" type="text" autocomplete="off">
       </div>
       <div class="campo" data-campo="dniPresidenta">
         <label for="dniPresidenta">DNI</label>
-        <input id="dniPresidenta" name="dniPresidenta" type="text" inputmode="numeric" maxlength="8" autocomplete="off">
+        <input id="dniPresidenta" required aria-required="true" name="dniPresidenta" type="text" inputmode="numeric" maxlength="8" autocomplete="off">
       </div>
       <div class="campo" data-campo="celular">
         <label for="celular">Celular N.º</label>
-        <input id="celular" name="celular" type="text" inputmode="numeric" maxlength="9" autocomplete="off">
+        <input id="celular" required aria-required="true" name="celular" type="text" inputmode="numeric" maxlength="9" autocomplete="off">
       </div>
     </div>
   </section>
@@ -71,7 +72,7 @@
       </div>
       <div class="campo" data-campo="fechaRendicion">
         <label for="fechaRendicion">Fecha de rendición</label>
-        <input id="fechaRendicion" name="fechaRendicion" type="date">
+        <input id="fechaRendicion" required aria-required="true" name="fechaRendicion" type="date">
       </div>
     </div>
 
@@ -80,15 +81,15 @@
     <div class="rejilla tres" style="margin-top:12px">
       <div class="campo" data-campo="periodo.inicio">
         <label for="periodoInicio">Inicio del periodo</label>
-        <input id="periodoInicio" name="periodoInicio" type="date">
+        <input id="periodoInicio" required aria-required="true" name="periodoInicio" type="date">
       </div>
       <div class="campo" data-campo="periodo.fin">
         <label for="periodoFin">Fin del periodo</label>
-        <input id="periodoFin" name="periodoFin" type="date">
+        <input id="periodoFin" required aria-required="true" name="periodoFin" type="date">
       </div>
       <div class="campo" data-campo="periodo.etiqueta">
         <label for="periodoEtiqueta">Texto para «Mes de rendición»</label>
-        <input id="periodoEtiqueta" name="periodoEtiqueta" type="text" autocomplete="off">
+        <input id="periodoEtiqueta" required aria-required="true" name="periodoEtiqueta" type="text" autocomplete="off">
         <span class="pista">Es lo que irá escrito en ese renglón del formato.</span>
       </div>
     </div>
@@ -99,11 +100,11 @@
     <div class="rejilla dos">
       <div class="campo" data-campo="montoSubsidio">
         <label for="montoSubsidio">Monto del subsidio (S/)</label>
-        <input id="montoSubsidio" name="montoSubsidio" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off">
+        <input id="montoSubsidio" required aria-required="true" name="montoSubsidio" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off">
       </div>
       <div class="campo" data-campo="fechaAsignacion">
         <label for="fechaAsignacion">Fecha de la asignación</label>
-        <input id="fechaAsignacion" name="fechaAsignacion" type="date">
+        <input id="fechaAsignacion" required aria-required="true" name="fechaAsignacion" type="date">
       </div>
     </div>
   </section>

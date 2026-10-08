@@ -376,6 +376,10 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
     asegurarHoyGuardado();
     refrescar();
     refrescarBotonFaltan();
+    // Con el filtro puesto, quien acaba de marcarse ya no pertenece a la
+    // lista: hay que volver a pintarla para que salga. pintarLista() conserva
+    // la posición del foco, que es justo para lo que se escribió.
+    if (soloSinMarcar) pintarLista();
   };
 
   function pintarLista() {

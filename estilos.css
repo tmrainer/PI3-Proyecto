@@ -534,3 +534,33 @@ section.bloque.apoyo h2 { font-size: .98rem; color: var(--verde-700); }
 /* Un estado vacío puede ofrecer la salida, no solo describir el hueco. */
 .vacio-mensaje p { margin: 0 0 12px; }
 .vacio-mensaje .boton { display: inline-block; text-decoration: none; }
+
+/* ---------------------------------------------- accesibilidad del teclado
+
+   Saltar la navegación: sin esto hay que tabular por cada pestaña en cada
+   página antes de llegar al contenido. Invisible hasta que recibe el foco. */
+.saltar-al-contenido {
+  position: absolute; left: 8px; top: -60px; z-index: 50;
+  background: var(--verde-900); color: #fff; padding: 11px 16px;
+  border-radius: 0 0 var(--radio) var(--radio); text-decoration: none; font-weight: 600;
+  transition: top .12s;
+}
+.saltar-al-contenido:focus { top: 0; }
+main:focus { outline: none; }
+
+/* El mensaje de error vive junto al campo, no solo en el panel de arriba. */
+.campo-error {
+  margin: 2px 0 0; font-size: .82rem; font-weight: 500; color: var(--aviso);
+}
+.campo-error.es-error { color: var(--error); }
+
+/* Campo obligatorio: se avisa antes de fallar, no después. El selector mira
+   dentro del contenedor, no solo al hermano inmediato de la etiqueta. */
+.campo:has(input[required]) > label::after,
+.campo:has(select[required]) > label::after {
+  content: " *"; color: var(--error); font-weight: 700;
+}
+.campo.con-error > label::after, .campo.con-aviso > label::after { content: ""; }
+
+/* El enlace del aviso de entrega llegaba a 22px de alto: WCAG 2.2 pide 24. */
+.banner-enlace { display: inline-block; padding: 3px 2px; }

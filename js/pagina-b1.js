@@ -11,7 +11,8 @@ import { sugerenciasEncabezado, instantaneaCentro } from './sugerencias.js';
 import { alertaProximaEntrega } from './alertas.js';
 import {
   $, crear, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
-  marcarCampo, cajaSugerencia, bannerAlerta, pintarAvisosAlmacenamiento
+  marcarCampo, cajaSugerencia, bannerAlerta, pintarAvisosAlmacenamiento,
+  avisarAlSalirDelCampo
 } from './ui.js';
 
 // ------------------------------------------------------------------- estado
@@ -458,3 +459,5 @@ montarPeriodo();
 pintarEgresos();
 refrescarTotales();
 refrescarValidacion();
+
+avisarAlSalirDelCampo(refrescarValidacion);

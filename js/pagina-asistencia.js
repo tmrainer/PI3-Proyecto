@@ -9,7 +9,7 @@ import { estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, p
 import { pintarAsistenciaDeHoy, pintarOtrosDias } from './ui-asistencia.js';
 import {
   $, crear, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
-  pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo
+  pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo
 } from './ui.js';
 
 cargar();
@@ -116,3 +116,5 @@ $('#agregar-atencion').addEventListener('click', () => {
 
 repintar();
 guardarYa();   // consolida la migración del padrón si la hubo
+
+avisarAlSalirDelCampo(validar);
