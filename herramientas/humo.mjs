@@ -383,9 +383,18 @@ try {
   fallo = true;
   console.error('La prueba se interrumpió:', e.message);
 } finally {
+  // Esperar a que Chrome termine antes de borrar su perfil: si no, sigue
+  // escribiendo en él y el borrado falla (ENOTEMPTY). Limpiar es secundario:
+  // un fallo aquí no debe tapar los resultados.
+  const salio = new Promise((ok) => chrome.proc.once('exit', ok));
   chrome.proc.kill();
+  await Promise.race([salio, pausa(5000)]);
   servidor.close();
-  fs.rmSync(chrome.perfil, { recursive: true, force: true });
+  try {
+    fs.rmSync(chrome.perfil, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  } catch (e) {
+    console.error(`Aviso: no se pudo borrar el perfil temporal ${chrome.perfil}: ${e.code}`);
+  }
 }
 
 for (const r of resultados) {
