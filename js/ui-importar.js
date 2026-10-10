@@ -4,7 +4,7 @@
 import { etiquetaGrupoEtario } from './calculos.js';
 import { prepararImportacion, filasImportables } from './importar.js';
 import { estado, guardarYa } from './estado.js';
-import { $, crear } from './ui.js';
+import { buscar, crearElemento } from './ui.js';
 
 // ctx: { estadoTexto, onRepintar() }
 
@@ -16,12 +16,12 @@ import { $, crear } from './ui.js';
 let importacionPendiente = null;
 
 export function montarImportacion(ctx) {
-  const area = $('#pegarPadron');
-  const archivo = $('#archivoPadron');
-  const vista = $('#vista-importacion');
-  const btnRevisar = $('#revisar-importacion');
-  const btnConfirmar = $('#confirmar-importacion');
-  const btnCancelar = $('#cancelar-importacion');
+  const area = buscar('#pegarPadron');
+  const archivo = buscar('#archivoPadron');
+  const vista = buscar('#vista-importacion');
+  const btnRevisar = buscar('#revisar-importacion');
+  const btnConfirmar = buscar('#confirmar-importacion');
+  const btnCancelar = buscar('#cancelar-importacion');
 
   archivo.addEventListener('change', async () => {
     const f = archivo.files && archivo.files[0];
@@ -31,7 +31,7 @@ export function montarImportacion(ctx) {
       revisar();
     } catch (e) {
       vista.textContent = '';
-      vista.append(crear('p', { clase: 'aviso-sistema', texto: 'No se pudo leer el archivo.' }));
+      vista.append(crearElemento('p', { clase: 'aviso-sistema', texto: 'No se pudo leer el archivo.' }));
     }
     archivo.value = '';
   });
@@ -51,7 +51,7 @@ export function montarImportacion(ctx) {
     vista.textContent = '';
 
     if (r.error) {
-      vista.append(crear('div', { clase: 'aviso-sistema' }, [crear('p', { texto: r.error })]));
+      vista.append(crearElemento('div', { clase: 'aviso-sistema' }, [crearElemento('p', { texto: r.error })]));
       btnConfirmar.hidden = true;
       btnCancelar.hidden = false;
       importacionPendiente = null;
@@ -61,45 +61,45 @@ export function montarImportacion(ctx) {
     importacionPendiente = r;
     const entran = filasImportables(r.filas);
 
-    const chips = crear('div', { clase: 'imp-resumen' }, [
-      crear('span', { clase: 'chip', html: `Se importarán: <b>${entran.length}</b>` }),
-      r.resumen.incompleta ? crear('span', { clase: 'chip', html: `Con datos que faltan: <b>${r.resumen.incompleta}</b>` }) : null,
-      r.resumen.duplicada ? crear('span', { clase: 'chip', html: `Ya están en el padrón: <b>${r.resumen.duplicada}</b>` }) : null,
-      r.resumen.vacia ? crear('span', { clase: 'chip', html: `Filas vacías: <b>${r.resumen.vacia}</b>` }) : null
+    const chips = crearElemento('div', { clase: 'imp-resumen' }, [
+      crearElemento('span', { clase: 'chip', html: `Se importarán: <b>${entran.length}</b>` }),
+      r.resumen.incompleta ? crearElemento('span', { clase: 'chip', html: `Con datos que faltan: <b>${r.resumen.incompleta}</b>` }) : null,
+      r.resumen.duplicada ? crearElemento('span', { clase: 'chip', html: `Ya están en el padrón: <b>${r.resumen.duplicada}</b>` }) : null,
+      r.resumen.vacia ? crearElemento('span', { clase: 'chip', html: `Filas vacías: <b>${r.resumen.vacia}</b>` }) : null
     ]);
     vista.append(chips);
 
     if (r.sinReconocer.length) {
-      vista.append(crear('p', {
+      vista.append(crearElemento('p', {
         clase: 'pista',
         texto: 'Columnas que no se reconocieron y se ignoran: ' + r.sinReconocer.join(', ') + '.'
       }));
     }
 
-    const cuerpo = crear('tbody');
+    const cuerpo = crearElemento('tbody');
     for (const f of r.filas.slice(0, 50)) {
       const a = f.afiliado;
-      cuerpo.append(crear('tr', { clase: `imp-fila-${f.estado}` }, [
-        crear('td', { clase: 'num', texto: String(f.linea) }),
-        crear('td', { texto: f.nombreCompleto || '—' }),
-        crear('td', { texto: a.numeroDocumento || '—' }),
-        crear('td', { texto: a.grupoEtarioManual ? etiquetaGrupoEtario(a.grupoEtarioManual)
+      cuerpo.append(crearElemento('tr', { clase: `imp-fila-${f.estado}` }, [
+        crearElemento('td', { clase: 'num', texto: String(f.linea) }),
+        crearElemento('td', { texto: f.nombreCompleto || '—' }),
+        crearElemento('td', { texto: a.numeroDocumento || '—' }),
+        crearElemento('td', { texto: a.grupoEtarioManual ? etiquetaGrupoEtario(a.grupoEtarioManual)
           : (a.fechaNacimiento ? 'por fecha de nacimiento' : '—') }),
-        crear('td', { texto: a.tipoAfiliado === 'caso_social' ? 'Ayuda social'
+        crearElemento('td', { texto: a.tipoAfiliado === 'caso_social' ? 'Ayuda social'
           : a.tipoAfiliado === 'habitual' ? 'Habitual' : '—' }),
-        crear('td', { texto: f.avisos.join('; ') || 'lista' })
+        crearElemento('td', { texto: f.avisos.join('; ') || 'lista' })
       ]));
     }
-    vista.append(crear('div', { clase: 'tabla-desplazable' }, [
-      crear('table', { clase: 'tabla' }, [
-        crear('thead', {}, [crear('tr', {},
+    vista.append(crearElemento('div', { clase: 'tabla-desplazable' }, [
+      crearElemento('table', { clase: 'tabla' }, [
+        crearElemento('thead', {}, [crearElemento('tr', {},
           ['Fila', 'Nombre', 'Documento', 'Grupo', 'Tipo', 'Estado']
-            .map((t) => crear('th', { texto: t })))]),
+            .map((t) => crearElemento('th', { texto: t })))]),
         cuerpo
       ])
     ]));
     if (r.filas.length > 50) {
-      vista.append(crear('p', { clase: 'pista', texto: `… y ${r.filas.length - 50} fila(s) más.` }));
+      vista.append(crearElemento('p', { clase: 'pista', texto: `… y ${r.filas.length - 50} fila(s) más.` }));
     }
 
     btnConfirmar.hidden = entran.length === 0;

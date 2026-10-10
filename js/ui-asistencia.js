@@ -10,7 +10,7 @@ import {
   desgloseDelDia, recaudacionDelDiaCent, asistio, menuDe
 } from './calculos.js';
 import { estado, preciosActuales } from './estado.js';
-import { crear, campo, icono } from './ui.js';
+import { crearElemento, campo, icono } from './ui.js';
 
 // ctx: { fechaRef, titulo, onCambio(), onRepintar(), onResumen() }
 
@@ -25,19 +25,19 @@ export function filaToque(at, persona, ctx, alCambiar) {
   const menu = menuDe(at, persona.id) || menuPorDefecto(persona);
   const g = grupoEtario(persona, at.fecha || ctx.fechaRef);
 
-  const marca = crear('span', { clase: 'toque-marca', 'aria-hidden': 'true' }, [icono('ok', { tam: 15 })]);
-  const botonNombre = crear('button', {
+  const marca = crearElemento('span', { clase: 'toque-marca', 'aria-hidden': 'true' }, [icono('ok', { tam: 15 })]);
+  const botonNombre = crearElemento('button', {
     type: 'button', clase: 'toque-nombre',
     'aria-pressed': presente ? 'true' : 'false'
   }, [
     marca,
-    crear('span', { clase: 'toque-texto' }, [
+    crearElemento('span', { clase: 'toque-texto' }, [
       nombreCompleto(persona),
-      crear('span', { clase: 'toque-sub', texto: g ? etiquetaGrupoEtario(g) : 'Sin grupo' })
+      crearElemento('span', { clase: 'toque-sub', texto: g ? etiquetaGrupoEtario(g) : 'Sin grupo' })
     ])
   ]);
 
-  const botonMenu = crear('button', {
+  const botonMenu = crearElemento('button', {
     type: 'button', clase: 'toque-menu', 'data-menu': menu,
     title: 'Cambiar el menú de esta persona solo para este día',
     texto: menu === 'ayuda_social' ? 'Social' : 'Normal'
@@ -50,7 +50,7 @@ export function filaToque(at, persona, ctx, alCambiar) {
   etiquetarMenu(menu);
   botonMenu.disabled = !presente;
 
-  const fila = crear('div', { clase: `toque${presente ? ' presente' : ''}` }, [botonNombre, botonMenu]);
+  const fila = crearElemento('div', { clase: `toque${presente ? ' presente' : ''}` }, [botonNombre, botonMenu]);
 
   function pintar() {
     const hay = asistio(at, persona.id);
@@ -95,7 +95,7 @@ export function filaToque(at, persona, ctx, alCambiar) {
 function fichaAtencion(at, ctx) {
   const idp = at.id.slice(0, 8);
 
-  const fFecha = crear('input', { id: `at-fecha-${idp}`, type: 'date', value: at.fecha || '' });
+  const fFecha = crearElemento('input', { id: `at-fecha-${idp}`, type: 'date', value: at.fecha || '' });
   fFecha.addEventListener('input', () => {
     at.fecha = fFecha.value;
     pintarLista();
@@ -104,7 +104,7 @@ function fichaAtencion(at, ctx) {
   });
 
   const soles = (prop, id) => {
-    const el = crear('input', {
+    const el = crearElemento('input', {
       id, type: 'text', inputmode: 'decimal', placeholder: '0.00', value: formatearSoles(at[prop])
     });
     el.addEventListener('input', () => {
@@ -118,21 +118,21 @@ function fichaAtencion(at, ctx) {
   const fPrecioNormal = soles('precioMenuNormalCent', `at-pn-${idp}`);
   const fPrecioAyuda = soles('precioMenuAyudaSocialCent', `at-pa-${idp}`);
 
-  const fNota = crear('input', { id: `at-nota-${idp}`, type: 'text', value: at.nota || '', autocomplete: 'off' });
+  const fNota = crearElemento('input', { id: `at-nota-${idp}`, type: 'text', value: at.nota || '', autocomplete: 'off' });
   fNota.addEventListener('input', () => { at.nota = fNota.value; ctx.onCambio(); });
 
-  const contadores = crear('div', { clase: 'resumen-chips' });
-  const avisoLegado = crear('p', { clase: 'asistencia-resumen' });
+  const contadores = crearElemento('div', { clase: 'resumen-chips' });
+  const avisoLegado = crearElemento('p', { clase: 'asistencia-resumen' });
 
   function refrescarResumenDia() {
     const d = desgloseDelDia(at);
     const recaudado = recaudacionDelDiaCent(at);
     contadores.textContent = '';
     contadores.append(
-      crear('span', { clase: 'chip', html: `Raciones: <b>${d.total}</b>` }),
-      crear('span', { clase: 'chip', html: `Normal: <b>${d.normal}</b>` }),
-      crear('span', { clase: 'chip', html: `Ayuda social: <b>${d.ayudaSocial}</b>` }),
-      crear('span', {
+      crearElemento('span', { clase: 'chip', html: `Raciones: <b>${d.total}</b>` }),
+      crearElemento('span', { clase: 'chip', html: `Normal: <b>${d.normal}</b>` }),
+      crearElemento('span', { clase: 'chip', html: `Ayuda social: <b>${d.ayudaSocial}</b>` }),
+      crearElemento('span', {
         clase: 'chip',
         html: recaudado === null
           ? 'Recaudado: <b>—</b>'
@@ -146,10 +146,10 @@ function fichaAtencion(at, ctx) {
   }
 
   // ---- lista de un toque ----
-  const buscador = crear('input', {
+  const buscador = crearElemento('input', {
     id: `at-buscar-${idp}`, type: 'search', placeholder: 'Buscar por nombre…', autocomplete: 'off'
   });
-  const listaAsistencia = crear('div', { clase: 'lista-toque' });
+  const listaAsistencia = crearElemento('div', { clase: 'lista-toque' });
   let filtro = '';
   buscador.addEventListener('input', () => { filtro = buscador.value.trim().toLowerCase(); pintarLista(); });
 
@@ -160,7 +160,7 @@ function fichaAtencion(at, ctx) {
       .sort((a, b) => nombreCompleto(a).localeCompare(nombreCompleto(b), 'es'));
 
     if (activos.length === 0) {
-      listaAsistencia.append(crear('p', {
+      listaAsistencia.append(crearElemento('p', {
         clase: 'pista',
         texto: filtro ? 'Nadie coincide con esa búsqueda.'
           : 'No hay personas activas en el padrón para esa fecha.'
@@ -190,28 +190,28 @@ function fichaAtencion(at, ctx) {
   refrescarResumenDia();
 
   const esHoy = at.fecha === hoyIso();
-  const resumenCorto = crear('span', { clase: 'dia-resumen' });
+  const resumenCorto = crearElemento('span', { clase: 'dia-resumen' });
   function refrescarResumenCorto() {
     const d = desgloseDelDia(at);
     const rec = recaudacionDelDiaCent(at);
     resumenCorto.textContent = '';
-    resumenCorto.append(crear('span', { clase: 'dato-fuerte', texto: `${d.total} raciones` }));
+    resumenCorto.append(crearElemento('span', { clase: 'dato-fuerte', texto: `${d.total} raciones` }));
     if (d.ayudaSocial) {
-      resumenCorto.append(crear('span', { texto: `${d.ayudaSocial} de ayuda social` }));
+      resumenCorto.append(crearElemento('span', { texto: `${d.ayudaSocial} de ayuda social` }));
     }
     if (rec !== null) {
-      resumenCorto.append(crear('span', { texto: `S/ ${formatearSoles(rec)}` }));
+      resumenCorto.append(crearElemento('span', { texto: `S/ ${formatearSoles(rec)}` }));
     }
   }
   refrescarResumenCorto();
   const refrescarTodo = () => { refrescarResumenDia(); refrescarResumenCorto(); };
 
-  const caja = crear('details', {
+  const caja = crearElemento('details', {
     clase: 'dia', id: `ficha-${at.id}`, 'data-campo': `atencion.${at.id}`
   }, [
-    crear('summary', {}, [
-      crear('span', { clase: 'dia-fecha', texto: at.fecha ? aDdMmAa(at.fecha) : 'Sin fecha' }),
-      esHoy ? crear('span', { clase: 'dia-hoy', texto: 'HOY' }) : null,
+    crearElemento('summary', {}, [
+      crearElemento('span', { clase: 'dia-fecha', texto: at.fecha ? aDdMmAa(at.fecha) : 'Sin fecha' }),
+      esHoy ? crearElemento('span', { clase: 'dia-hoy', texto: 'HOY' }) : null,
       resumenCorto
     ])
   ]);
@@ -222,14 +222,14 @@ function fichaAtencion(at, ctx) {
   caja.addEventListener('toggle', () => {
     if (!caja.open || cuerpo) return;
     pintarLista();
-    cuerpo = crear('div', { clase: 'dia-cuerpo' }, [
-      crear('div', { clase: 'rejilla dos' }, [campo('Fecha', fFecha), campo('Nota', fNota)]),
+    cuerpo = crearElemento('div', { clase: 'dia-cuerpo' }, [
+      crearElemento('div', { clase: 'rejilla dos' }, [campo('Fecha', fFecha), campo('Nota', fNota)]),
       contadores,
       avisoLegado,
-      crear('div', { clase: 'acciones', style: 'margin-top:10px' }, [
-        crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Marcar todos', onclick: () => marcarTodos(true) }),
-        crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Quitar todos', onclick: () => marcarTodos(false) }),
-        crear('button', {
+      crearElemento('div', { clase: 'acciones', style: 'margin-top:10px' }, [
+        crearElemento('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Marcar todos', onclick: () => marcarTodos(true) }),
+        crearElemento('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Quitar todos', onclick: () => marcarTodos(false) }),
+        crearElemento('button', {
           type: 'button', clase: 'boton diminuto peligro', texto: 'Quitar el día',
           onclick: () => {
             if (!confirm('¿Quitar este día? También se borra su asistencia.')) return;
@@ -239,19 +239,19 @@ function fichaAtencion(at, ctx) {
           }
         })
       ]),
-      crear('div', { clase: 'campo', style: 'margin-top:10px' }, [
-        crear('label', { for: buscador.id, texto: 'Buscar persona' }), buscador
+      crearElemento('div', { clase: 'campo', style: 'margin-top:10px' }, [
+        crearElemento('label', { for: buscador.id, texto: 'Buscar persona' }), buscador
       ]),
       listaAsistencia,
-      crear('details', { clase: 'asistencia', style: 'margin-top:10px' }, [
-        crear('summary', { texto: 'Precio del menú de este día' }),
-        crear('p', {
+      crearElemento('details', { clase: 'asistencia', style: 'margin-top:10px' }, [
+        crearElemento('summary', { texto: 'Precio del menú de este día' }),
+        crearElemento('p', {
           clase: 'pista',
           texto: at.precioTomadoDeConfig
             ? 'Tomado del precio que fijaste arriba. Cámbialo solo si ese día fue distinto.'
             : 'Precio propio de este día.'
         }),
-        crear('div', { clase: 'rejilla dos' }, [
+        crearElemento('div', { clase: 'rejilla dos' }, [
           campo('Menú normal (S/)', fPrecioNormal),
           campo('Menú de ayuda social (S/)', fPrecioAyuda)
         ])
@@ -271,7 +271,7 @@ export function pintarOtrosDias(lista, ctx) {
     .filter((at) => at.fecha !== hoy)        // hoy va arriba, en su propia sección
     .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
   if (ordenadas.length === 0) {
-    lista.append(crear('p', {
+    lista.append(crearElemento('p', {
       clase: 'vacio-mensaje',
       texto: 'Aquí aparecerán los días pasados, para corregirlos si hace falta.'
     }));
@@ -303,7 +303,7 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
 
   if (ctx.titulo) {
     ctx.titulo.textContent = 'Asistencia de hoy';
-    ctx.titulo.append(crear('span', { clase: 'titulo-fecha', texto: aDdMmAa(hoy) }));
+    ctx.titulo.append(crearElemento('span', { clase: 'titulo-fecha', texto: aDdMmAa(hoy) }));
   }
 
   atencionDeHoy = estado.padron.atenciones.find((o) => o.fecha === hoy) || null;
@@ -313,11 +313,11 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   }
   const at = atencionDeHoy;
 
-  const cuenta = crear('span', { clase: 'hoy-cuenta' });
-  const detalle = crear('span', { clase: 'hoy-detalle' });
+  const cuenta = crearElemento('span', { clase: 'hoy-cuenta' });
+  const detalle = crearElemento('span', { clase: 'hoy-detalle' });
   // Marcar a alguien cambia el conteo; sin esto, quien usa lector de pantalla
   // toca y no recibe confirmación de nada.
-  const resumenVivo = crear('p', { clase: 'oculto-visual', role: 'status', 'aria-live': 'polite' });
+  const resumenVivo = crearElemento('p', { clase: 'oculto-visual', role: 'status', 'aria-live': 'polite' });
   const activos = afiliadosActivos(estado.padron, hoy);
 
   function refrescar() {
@@ -332,23 +332,23 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
     }
     const rec = recaudacionDelDiaCent(at);
     detalle.textContent = '';
-    detalle.append(crear('span', { texto: `${d.normal} con menú normal` }));
-    if (d.ayudaSocial) detalle.append(crear('span', { texto: `${d.ayudaSocial} de ayuda social` }));
+    detalle.append(crearElemento('span', { texto: `${d.normal} con menú normal` }));
+    if (d.ayudaSocial) detalle.append(crearElemento('span', { texto: `${d.ayudaSocial} de ayuda social` }));
     detalle.append(rec === null
-      ? crear('span', { clase: 'dato-falta', texto: 'falta el precio del menú' })
-      : crear('span', { texto: `S/ ${formatearSoles(rec)}` }));
+      ? crearElemento('span', { clase: 'dato-falta', texto: 'falta el precio del menú' })
+      : crearElemento('span', { texto: `S/ ${formatearSoles(rec)}` }));
   }
 
-  const buscador = crear('input', {
+  const buscador = crearElemento('input', {
     id: 'hoy-buscar', type: 'search', placeholder: 'Buscar por nombre…', autocomplete: 'off'
   });
   buscador.value = filtroHoy;
-  const lista = crear('div', { clase: 'lista-toque' });
+  const lista = crearElemento('div', { clase: 'lista-toque' });
 
   // Cerrar la lista es buscar a los pocos que faltan entre decenas de filas ya
   // marcadas. Con el filtro puesto, cada toque los va quitando de en medio y la
   // lista se vacía cuando no queda nadie: eso mismo es la señal de que terminó.
-  const botonFaltan = crear('button', {
+  const botonFaltan = crearElemento('button', {
     type: 'button', clase: 'boton diminuto secundario', 'aria-pressed': 'false'
   });
 
@@ -399,12 +399,12 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
       // Una pantalla vacía es una invitación a hacer algo, no un aviso. Cuando
       // falta el padrón entero, lo que hace falta es el camino para empezarlo.
       if (activos.length === 0) {
-        lista.append(crear('div', { clase: 'vacio-mensaje' }, [
-          crear('p', { texto: 'Para pasar lista hace falta tener personas inscritas.' }),
-          crear('a', { clase: 'boton', href: './padron.html', texto: 'Inscribir a la primera persona' })
+        lista.append(crearElemento('div', { clase: 'vacio-mensaje' }, [
+          crearElemento('p', { texto: 'Para pasar lista hace falta tener personas inscritas.' }),
+          crearElemento('a', { clase: 'boton', href: './padron.html', texto: 'Inscribir a la primera persona' })
         ]));
       } else {
-        lista.append(crear('p', {
+        lista.append(crearElemento('p', {
           clase: 'vacio-mensaje',
           texto: soloSinMarcar
             ? 'No falta nadie: ya pasaste lista completa.'
@@ -456,15 +456,15 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
 
   caja.append(
     resumenVivo,
-    crear('div', { clase: 'hoy-barra' }, [
+    crearElemento('div', { clase: 'hoy-barra' }, [
       cuenta, detalle,
-      crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Marcar a todos', onclick: () => marcarTodos(true) }),
-      crear('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Quitar a todos', onclick: () => marcarTodos(false) }),
+      crearElemento('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Marcar a todos', onclick: () => marcarTodos(true) }),
+      crearElemento('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Quitar a todos', onclick: () => marcarTodos(false) }),
       botonFaltan
     ]),
     // El buscador solo hace falta cuando la lista no cabe de un vistazo.
-    activos.length > 12 ? crear('div', { clase: 'campo' }, [
-      crear('label', { for: buscador.id, texto: 'Buscar' }), buscador
+    activos.length > 12 ? crearElemento('div', { clase: 'campo' }, [
+      crearElemento('label', { for: buscador.id, texto: 'Buscar' }), buscador
     ]) : null,
     lista
   );

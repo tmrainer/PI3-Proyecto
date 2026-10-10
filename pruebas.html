@@ -49,7 +49,7 @@
 
 <script type="module">
 import { ejecutar } from './js/casos-prueba.js';
-import { crear, montarCabecera } from './js/ui.js';
+import { crearElemento, montarCabecera } from './js/ui.js';
 
 montarCabecera('pruebas', 'Aserciones en el navegador, sin dependencias');
 
@@ -57,8 +57,8 @@ const resultados = ejecutar();
 const fallan = resultados.filter((r) => r.estado === 'falla');
 
 const resumen = document.getElementById('resumen');
-resumen.append(crear('p', { clase: 'panel-resumen' }, [
-  crear('span', {
+resumen.append(crearElemento('p', { clase: 'panel-resumen' }, [
+  crearElemento('span', {
     clase: fallan.length ? 'pastilla error' : 'pastilla ok',
     texto: fallan.length
       ? `✕ ${fallan.length} de ${resultados.length} fallan`
@@ -71,13 +71,13 @@ let grupoActual = null;
 for (const r of resultados) {
   if (r.grupo !== grupoActual) {
     grupoActual = r.grupo;
-    lista.append(crear('h3', { clase: 'grupo-titulo', texto: grupoActual }));
+    lista.append(crearElemento('h3', { clase: 'grupo-titulo', texto: grupoActual }));
   }
-  lista.append(crear('div', { clase: `caso ${r.estado}` }, [
-    crear('span', { clase: 'marca', texto: r.estado === 'pasa' ? '✓' : '✕' }),
-    crear('span', {}, [
+  lista.append(crearElemento('div', { clase: `caso ${r.estado}` }, [
+    crearElemento('span', { clase: 'marca', texto: r.estado === 'pasa' ? '✓' : '✕' }),
+    crearElemento('span', {}, [
       r.nombre,
-      r.detalle ? crear('span', { clase: 'detalle', texto: r.detalle }) : null
+      r.detalle ? crearElemento('span', { clase: 'detalle', texto: r.detalle }) : null
     ])
   ]));
 }

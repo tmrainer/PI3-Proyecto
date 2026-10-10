@@ -10,7 +10,7 @@ import { validarRendicion } from './validaciones.js';
 import { sugerenciasEncabezado, instantaneaCentro } from './sugerencias.js';
 import { alertaProximaEntrega } from './alertas.js';
 import {
-  $, crear, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
+  buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
   marcarCampo, cajaSugerencia, bannerAlerta, pintarAvisosAlmacenamiento,
   avisarAlSalirDelCampo
 } from './ui.js';
@@ -33,7 +33,7 @@ const guardarDiferido = debounce(() => {
   guardar(CLAVES.rendiciones, rendiciones);
   config.ultimoCentro = instantaneaCentro(rendicion);
   guardar(CLAVES.config, config);
-  $('#estado-guardado').textContent = 'Guardado en este dispositivo.';
+  buscar('#estado-guardado').textContent = 'Guardado en este dispositivo.';
 }, 400);
 
 function cambio() {
@@ -46,7 +46,7 @@ function cambio() {
 
 /** Texto simple: el modelo recibe exactamente lo escrito, sin transformar. */
 function enlazarTexto(idInput, leerValor, escribirValor, { soloDigitos = false } = {}) {
-  const el = $('#' + idInput);
+  const el = buscar('#' + idInput);
   if (!el) return;
   el.value = leerValor() || '';
   el.addEventListener('input', () => {
@@ -67,22 +67,22 @@ function enlazarTexto(idInput, leerValor, escribirValor, { soloDigitos = false }
 function desmarcarPropuesto(id) {
   if (!propuestos.has(id)) return;
   propuestos.delete(id);
-  const el = $('#' + id);
+  const el = buscar('#' + id);
   if (el) el.classList.remove('propuesto');
-  const marca = $(`#marca-${id}`);
+  const marca = buscar(`#marca-${id}`);
   if (marca) marca.remove();
 }
 
 function aceptarSugerencia(id, valor) {
-  const el = $('#' + id);
+  const el = buscar('#' + id);
   if (!el) return;
   el.value = valor;
   el.dispatchEvent(new Event('input', { bubbles: true }));
   propuestos.add(id);
   el.classList.add('propuesto');
-  if (!$(`#marca-${id}`)) {
+  if (!buscar(`#marca-${id}`)) {
     el.insertAdjacentElement('afterend',
-      crear('span', { id: `marca-${id}`, clase: 'marca-propuesto', texto: 'Dato propuesto — revísalo' }));
+      crearElemento('span', { id: `marca-${id}`, clase: 'marca-propuesto', texto: 'Dato propuesto — revísalo' }));
   }
 }
 
@@ -116,7 +116,7 @@ function montarEncabezado() {
 }
 
 function montarSugerenciasEncabezado() {
-  const caja = $('#sugerencias-encabezado');
+  const caja = buscar('#sugerencias-encabezado');
   caja.textContent = '';
   // Una sugerencia NUNCA se aplica sola: solo se ofrece (AGENTS.md §2).
   const props = sugerenciasEncabezado(config);
@@ -126,12 +126,12 @@ function montarSugerenciasEncabezado() {
   });
   if (pendientes.length === 0) return;
 
-  caja.append(crear('p', {
+  caja.append(crearElemento('p', {
     clase: 'pista',
     texto: 'Tienes datos de una rendición anterior. Puedes usarlos o escribirlos de nuevo.'
   }));
-  caja.append(crear('div', { clase: 'acciones' }, [
-    crear('button', {
+  caja.append(crearElemento('div', { clase: 'acciones' }, [
+    crearElemento('button', {
       type: 'button', clase: 'boton secundario',
       texto: `Usar los datos del centro (${pendientes.length})`,
       onclick: () => {
@@ -149,7 +149,7 @@ function montarSugerenciasEncabezado() {
         montarSugerenciasEncabezado();
       }
     }),
-    crear('span', {
+    crearElemento('span', {
       clase: 'sugerencia-proc',
       texto: pendientes[0][1].procedencia
     })
@@ -159,7 +159,7 @@ function montarSugerenciasEncabezado() {
 // -------------------------------------------------------------------- periodo
 
 function montarPeriodo() {
-  const selTipo = $('#periodoTipo');
+  const selTipo = buscar('#periodoTipo');
   selTipo.value = rendicion.periodo.tipo || 'mensual';
   selTipo.addEventListener('change', () => {
     rendicion.periodo.tipo = selTipo.value;
@@ -175,24 +175,24 @@ function montarPeriodo() {
 }
 
 function mostrarPropuestaPeriodo() {
-  const caja = $('#sugerencia-periodo');
+  const caja = buscar('#sugerencia-periodo');
   caja.textContent = '';
   const ref = rendicion.fechaRendicion || hoyIso();
   const p = proponerPeriodo(rendicion.periodo.tipo || 'mensual', ref);
   const yaIgual = rendicion.periodo.inicio === p.inicio && rendicion.periodo.fin === p.fin;
   if (yaIgual && rendicion.periodo.etiqueta) return;
 
-  const fila = crear('div', { clase: 'sugerencia' }, [
-    crear('span', { clase: 'sugerencia-etiqueta', texto: 'Sugerencia' }),
-    crear('span', { clase: 'sugerencia-valor', texto: `${p.inicio} a ${p.fin}` }),
-    crear('span', { clase: 'sugerencia-proc', texto: `según la fecha ${ref}` }),
-    crear('button', {
+  const fila = crearElemento('div', { clase: 'sugerencia' }, [
+    crearElemento('span', { clase: 'sugerencia-etiqueta', texto: 'Sugerencia' }),
+    crearElemento('span', { clase: 'sugerencia-valor', texto: `${p.inicio} a ${p.fin}` }),
+    crearElemento('span', { clase: 'sugerencia-proc', texto: `según la fecha ${ref}` }),
+    crearElemento('button', {
       type: 'button', clase: 'boton diminuto', texto: 'Usar estas fechas',
       onclick: () => {
         rendicion.periodo.inicio = p.inicio;
         rendicion.periodo.fin = p.fin;
-        $('#periodoInicio').value = p.inicio;
-        $('#periodoFin').value = p.fin;
+        buscar('#periodoInicio').value = p.inicio;
+        buscar('#periodoFin').value = p.fin;
         cambio();
         mostrarPropuestaPeriodo();
       }
@@ -200,21 +200,21 @@ function mostrarPropuestaPeriodo() {
   ]);
   caja.append(fila);
 
-  const etiquetas = crear('div', { clase: 'sugerencia' }, [
-    crear('span', { clase: 'sugerencia-etiqueta', texto: 'Texto sugerido' })
+  const etiquetas = crearElemento('div', { clase: 'sugerencia' }, [
+    crearElemento('span', { clase: 'sugerencia-etiqueta', texto: 'Texto sugerido' })
   ]);
   for (const alt of p.alternativas) {
-    etiquetas.append(crear('button', {
+    etiquetas.append(crearElemento('button', {
       type: 'button', clase: 'boton diminuto', texto: alt,
       onclick: () => {
         rendicion.periodo.etiqueta = alt;
-        $('#periodoEtiqueta').value = alt;
+        buscar('#periodoEtiqueta').value = alt;
         cambio();
         mostrarPropuestaPeriodo();
       }
     }));
   }
-  etiquetas.append(crear('span', { clase: 'sugerencia-proc', texto: 'elige uno o escribe el tuyo' }));
+  etiquetas.append(crearElemento('span', { clase: 'sugerencia-proc', texto: 'elige uno o escribe el tuyo' }));
   caja.append(etiquetas);
 }
 
@@ -228,29 +228,29 @@ const ORIGENES = [
 ];
 
 function campo(etiqueta, control, pista) {
-  return crear('div', { clase: 'campo' }, [
-    crear('label', { for: control.id, texto: etiqueta }),
+  return crearElemento('div', { clase: 'campo' }, [
+    crearElemento('label', { for: control.id, texto: etiqueta }),
     control,
-    pista ? crear('span', { clase: 'pista', texto: pista }) : null
+    pista ? crearElemento('span', { clase: 'pista', texto: pista }) : null
   ]);
 }
 
 function fichaEgreso(fila, indice) {
   const idp = fila.id.slice(0, 8);
 
-  const fFecha = crear('input', { id: `e-fecha-${idp}`, type: 'date', value: fila.fechaCompra || '' });
+  const fFecha = crearElemento('input', { id: `e-fecha-${idp}`, type: 'date', value: fila.fechaCompra || '' });
   fFecha.addEventListener('input', () => { fila.fechaCompra = fFecha.value; cambio(); });
 
-  const fDesc = crear('input', { id: `e-desc-${idp}`, type: 'text', value: fila.descripcion || '', autocomplete: 'off' });
+  const fDesc = crearElemento('input', { id: `e-desc-${idp}`, type: 'text', value: fila.descripcion || '', autocomplete: 'off' });
   fDesc.addEventListener('input', () => { fila.descripcion = fDesc.value; cambio(); });
 
-  const fCant = crear('input', {
+  const fCant = crearElemento('input', {
     id: `e-cant-${idp}`, type: 'text', inputmode: 'decimal', autocomplete: 'off',
     value: fila.cantidad === null || fila.cantidad === undefined ? '' : String(fila.cantidad)
   });
   fCant.addEventListener('input', () => { fila.cantidad = aNumero(fCant.value); cambio(); });
 
-  const chkCant = crear('input', { id: `e-cantv-${idp}`, type: 'checkbox' });
+  const chkCant = crearElemento('input', { id: `e-cantv-${idp}`, type: 'checkbox' });
   chkCant.checked = !!fila.cantidadVarios;
   chkCant.addEventListener('change', () => {
     fila.cantidadVarios = chkCant.checked;
@@ -260,13 +260,13 @@ function fichaEgreso(fila, indice) {
   });
   fCant.disabled = !!fila.cantidadVarios;
 
-  const fUnidad = crear('select', { id: `e-unid-${idp}` },
-    [crear('option', { value: '', texto: '—' })].concat(
-      UNIDADES.map((u) => crear('option', { value: u, texto: u }))));
+  const fUnidad = crearElemento('select', { id: `e-unid-${idp}` },
+    [crearElemento('option', { value: '', texto: '—' })].concat(
+      UNIDADES.map((u) => crearElemento('option', { value: u, texto: u }))));
   fUnidad.value = fila.unidadMedida || '';
   fUnidad.addEventListener('change', () => { fila.unidadMedida = fUnidad.value; cambio(); });
 
-  const fRuc = crear('input', {
+  const fRuc = crearElemento('input', {
     id: `e-ruc-${idp}`, type: 'text', inputmode: 'numeric', maxlength: '11',
     value: fila.rucProveedor || '', autocomplete: 'off'
   });
@@ -276,28 +276,28 @@ function fichaEgreso(fila, indice) {
     cambio();
   });
 
-  const fProv = crear('input', {
+  const fProv = crearElemento('input', {
     id: `e-prov-${idp}`, type: 'text', value: fila.proveedorNombre || '', autocomplete: 'off'
   });
   fProv.addEventListener('input', () => { fila.proveedorNombre = fProv.value; cambio(); });
 
-  const fSerie = crear('input', {
+  const fSerie = crearElemento('input', {
     id: `e-serie-${idp}`, type: 'text', value: fila.boletaSerie || '', autocomplete: 'off', placeholder: 'E001'
   });
   fSerie.addEventListener('input', () => { fila.boletaSerie = fSerie.value; cambio(); });
 
-  const fCorr = crear('input', {
+  const fCorr = crearElemento('input', {
     id: `e-corr-${idp}`, type: 'text', value: fila.boletaCorrelativo || '', autocomplete: 'off', placeholder: '000143'
   });
   fCorr.addEventListener('input', () => { fila.boletaCorrelativo = fCorr.value; cambio(); });
 
-  const fPrecio = crear('input', {
+  const fPrecio = crearElemento('input', {
     id: `e-pu-${idp}`, type: 'text', inputmode: 'decimal', autocomplete: 'off',
     value: formatearSoles(fila.precioUnitarioCent)
   });
   fPrecio.addEventListener('input', () => { fila.precioUnitarioCent = aCentimos(fPrecio.value); cambio(); });
 
-  const chkPrecio = crear('input', { id: `e-puv-${idp}`, type: 'checkbox' });
+  const chkPrecio = crearElemento('input', { id: `e-puv-${idp}`, type: 'checkbox' });
   chkPrecio.checked = !!fila.precioUnitarioVarios;
   chkPrecio.addEventListener('change', () => {
     fila.precioUnitarioVarios = chkPrecio.checked;
@@ -307,21 +307,21 @@ function fichaEgreso(fila, indice) {
   });
   fPrecio.disabled = !!fila.precioUnitarioVarios;
 
-  const fMonto = crear('input', {
+  const fMonto = crearElemento('input', {
     id: `e-total-${idp}`, type: 'text', inputmode: 'decimal', autocomplete: 'off',
     value: formatearSoles(fila.montoTotalCent), placeholder: '0.00'
   });
   fMonto.addEventListener('input', () => { fila.montoTotalCent = aCentimos(fMonto.value); cambio(); });
 
-  const fOrigen = crear('select', { id: `e-origen-${idp}` },
-    ORIGENES.map(([v, t]) => crear('option', { value: v, texto: t })));
+  const fOrigen = crearElemento('select', { id: `e-origen-${idp}` },
+    ORIGENES.map(([v, t]) => crearElemento('option', { value: v, texto: t })));
   fOrigen.value = fila.origenFondo || 'subsidio';
   fOrigen.addEventListener('change', () => { fila.origenFondo = fOrigen.value; cambio(); });
 
-  return crear('article', { clase: 'ficha', id: `ficha-${fila.id}`, 'data-campo': `egreso.${fila.id}` }, [
-    crear('div', { clase: 'ficha-cabecera' }, [
-      crear('span', { clase: 'ficha-numero', texto: `Compra ${indice + 1}` }),
-      crear('button', {
+  return crearElemento('article', { clase: 'ficha', id: `ficha-${fila.id}`, 'data-campo': `egreso.${fila.id}` }, [
+    crearElemento('div', { clase: 'ficha-cabecera' }, [
+      crearElemento('span', { clase: 'ficha-numero', texto: `Compra ${indice + 1}` }),
+      crearElemento('button', {
         type: 'button', clase: 'boton diminuto peligro', texto: 'Quitar',
         onclick: () => {
           if (!confirm(`¿Quitar la compra ${indice + 1}? Esto borra lo que escribiste en esa ficha.`)) return;
@@ -332,32 +332,32 @@ function fichaEgreso(fila, indice) {
         }
       })
     ]),
-    crear('div', { clase: 'rejilla dos' }, [
+    crearElemento('div', { clase: 'rejilla dos' }, [
       campo('Fecha de la compra', fFecha),
       campo('Descripción de la compra', fDesc)
     ]),
-    crear('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
-      crear('div', { clase: 'campo' }, [
-        crear('label', { for: fCant.id, texto: 'Cantidad' }),
+    crearElemento('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
+      crearElemento('div', { clase: 'campo' }, [
+        crearElemento('label', { for: fCant.id, texto: 'Cantidad' }),
         fCant,
-        crear('label', { clase: 'opcion' }, [chkCant, 'La boleta dice «varios»'])
+        crearElemento('label', { clase: 'opcion' }, [chkCant, 'La boleta dice «varios»'])
       ]),
       campo('Unidad de medida', fUnidad),
       campo('Origen del dinero', fOrigen, 'No va al formato; sirve para tus cuentas.')
     ]),
-    crear('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
+    crearElemento('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
       campo('RUC del proveedor', fRuc),
       campo('Nombre del proveedor', fProv, 'No va al formato. Sirve para recordar su RUC.'),
-      crear('div', { clase: 'rejilla dos' }, [
+      crearElemento('div', { clase: 'rejilla dos' }, [
         campo('Serie', fSerie),
         campo('Correlativo', fCorr)
       ])
     ]),
-    crear('div', { clase: 'rejilla dos', style: 'margin-top:10px' }, [
-      crear('div', { clase: 'campo' }, [
-        crear('label', { for: fPrecio.id, texto: 'Precio unitario (S/)' }),
+    crearElemento('div', { clase: 'rejilla dos', style: 'margin-top:10px' }, [
+      crearElemento('div', { clase: 'campo' }, [
+        crearElemento('label', { for: fPrecio.id, texto: 'Precio unitario (S/)' }),
         fPrecio,
-        crear('label', { clase: 'opcion' }, [chkPrecio, 'La boleta dice «varios»'])
+        crearElemento('label', { clase: 'opcion' }, [chkPrecio, 'La boleta dice «varios»'])
       ]),
       campo('Monto total de la boleta (S/)', fMonto, 'Este es el número que suma.')
     ])
@@ -365,10 +365,10 @@ function fichaEgreso(fila, indice) {
 }
 
 function pintarEgresos() {
-  const lista = $('#lista-egresos');
+  const lista = buscar('#lista-egresos');
   lista.textContent = '';
   rendicion.egresos.forEach((fila, i) => lista.append(fichaEgreso(fila, i)));
-  $('#conteo-egresos').textContent =
+  buscar('#conteo-egresos').textContent =
     `${rendicion.egresos.length} ficha(s). La hoja del formato tiene 17 filas.`;
 }
 
@@ -377,7 +377,7 @@ function pintarEgresos() {
 function refrescarTotales() {
   const t = totales(rendicion);
   const pon = (id, valor, ocultarCero) => {
-    const el = $('#' + id);
+    const el = buscar('#' + id);
     const mostrar = valor !== null && !(ocultarCero && valor === 0);
     el.textContent = mostrar ? 'S/ ' + formatearSoles(valor) : '';
     el.classList.toggle('vacio', !mostrar);
@@ -388,12 +388,12 @@ function refrescarTotales() {
   pon('total-rendicion', t.total, false);
 
   const po = gastoPorOrigen(rendicion);
-  const caja = $('#resumen-origen');
+  const caja = buscar('#resumen-origen');
   caja.textContent = '';
   const etiquetas = { subsidio: 'Subsidio', ayuda_social: 'Ayuda social', aporte_propio: 'Aporte propio' };
   for (const [clave, etiqueta] of Object.entries(etiquetas)) {
     if (!po[clave]) continue;
-    caja.append(crear('span', { clase: 'chip', html: `${etiqueta}: <b>S/ ${formatearSoles(po[clave])}</b>` }));
+    caja.append(crearElemento('span', { clase: 'chip', html: `${etiqueta}: <b>S/ ${formatearSoles(po[clave])}</b>` }));
   }
 }
 
@@ -401,7 +401,7 @@ function refrescarTotales() {
 
 function refrescarValidacion() {
   const hallazgos = validarRendicion(rendicion);
-  pintarPanel($('#panel'), hallazgos, { alIrA: irACampo });
+  pintarPanel(buscar('#panel'), hallazgos, { alIrA: irACampo });
 
   for (const caja of document.querySelectorAll('[data-campo]')) {
     const propios = hallazgos.filter((x) => x.campo === caja.dataset.campo);
@@ -422,11 +422,11 @@ function irACampo(campo) {
 // ------------------------------------------------------------------- arranque
 
 montarCabecera('b1', 'Ollas comunes y comedores de Villa María del Triunfo');
-pintarAvisosAlmacenamiento($('#avisos-sistema'));
+pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
 const bannerB1 = bannerAlerta(alertaProximaEntrega(leer(CLAVES.calendario, calendarioVacio()), hoyIso()));
-if (bannerB1) $('#banner').append(bannerB1);
-$('#privacidad').append(bloquePrivacidad());
-$('#barra-datos').append(barraDatos({
+if (bannerB1) buscar('#banner').append(bannerB1);
+buscar('#privacidad').append(bloquePrivacidad());
+buscar('#barra-datos').append(barraDatos({
   alImportar: (datos) => {
     if (!datos || !Array.isArray(datos.rendiciones)) {
       alert('El archivo no contiene rendiciones. No se cambió nada.');
@@ -441,7 +441,7 @@ $('#barra-datos').append(barraDatos({
   alBorrar: () => location.reload()
 }));
 
-$('#agregar-egreso').addEventListener('click', () => {
+buscar('#agregar-egreso').addEventListener('click', () => {
   rendicion.egresos.push(nuevoEgreso());
   pintarEgresos();
   cambio();

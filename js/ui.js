@@ -5,10 +5,37 @@ import {
   CLAVES, leer, guardar, borrarTodo, descargarJson, avisosAlmacenamiento, hoyIso
 } from './modelo.js';
 
-export const $ = (sel, raiz = document) => raiz.querySelector(sel);
-export const $$ = (sel, raiz = document) => [...raiz.querySelectorAll(sel)];
+/**
+ * El primer elemento que coincide con un selector CSS (querySelector).
+ * No lee ni escribe datos de la aplicación: solo consulta el DOM.
+ * @param {string} sel  selector CSS
+ * @param {ParentNode} [raiz=document]  dónde buscar
+ * @returns {?Element}  null si no hay coincidencia
+ */
+export const buscar = (sel, raiz = document) => raiz.querySelector(sel);
 
-export function crear(etiqueta, props = {}, hijos = []) {
+/**
+ * Crea un elemento DOM con sus propiedades e hijos en una sola llamada.
+ * No lo inserta en la página: lo devuelve para que quien llama lo agregue.
+ * No lee ni escribe datos de la aplicación.
+ *
+ * Cómo se interpreta cada clave de `props`:
+ * - `clase`  -> `className`
+ * - `texto`  -> `textContent` (seguro: no interpreta HTML)
+ * - `html`   -> `innerHTML` (SÍ interpreta HTML: solo con texto propio, nunca
+ *              con datos escritos por la usuaria)
+ * - `onX` con una función -> `addEventListener('X', fn)` (p. ej. `onclick`)
+ * - cualquier otra -> atributo HTML; `true` lo pone vacío (`disabled=""`) y
+ *   `null`, `undefined` o `false` lo omiten.
+ *
+ * @param {string} etiqueta  nombre de la etiqueta HTML ('div', 'button'…)
+ * @param {Object} [props={}]
+ * @param {(Node|string|null|undefined)|Array<Node|string|null|undefined>} [hijos=[]]
+ *   uno o varios hijos; los textos se convierten en nodos de texto y los
+ *   null/undefined se saltan, para poder escribir hijos condicionales.
+ * @returns {HTMLElement}
+ */
+export function crearElemento(etiqueta, props = {}, hijos = []) {
   const el = document.createElement(etiqueta);
   for (const [k, v] of Object.entries(props)) {
     if (k === 'clase') el.className = v;
@@ -57,10 +84,10 @@ export function icono(nombre, { tam = 16, clase = 'icono' } = {}) {
 
 /** Campo etiquetado: la combinación que se repite en todos los formularios. */
 export function campo(etiqueta, control, pista) {
-  return crear('div', { clase: 'campo' }, [
-    crear('label', { for: control.id, texto: etiqueta }),
+  return crearElemento('div', { clase: 'campo' }, [
+    crearElemento('label', { for: control.id, texto: etiqueta }),
     control,
-    pista ? crear('span', { clase: 'pista', texto: pista }) : null
+    pista ? crearElemento('span', { clase: 'pista', texto: pista }) : null
   ]);
 }
 
@@ -130,11 +157,11 @@ export function montarCabecera(claveActiva, subtitulo) {
   // La cabecera ya está en el HTML: solo se rellena. Cuando la construía aquí
   // y la insertaba al principio, el contenido ya pintado saltaba 111 px hacia
   // abajo (Lighthouse medía un CLS de 0,258).
-  const nav = $('.cabecera .nav');
+  const nav = buscar('.cabecera .nav');
   if (!nav) return;
   nav.textContent = '';
   for (const p of PAGINAS) {
-    nav.append(crear('a', {
+    nav.append(crearElemento('a', {
       href: p.href,
       clase: p.clave === claveActiva ? 'nav-enlace activo' : 'nav-enlace',
       'aria-current': p.clave === claveActiva ? 'page' : null,
@@ -142,7 +169,7 @@ export function montarCabecera(claveActiva, subtitulo) {
     }));
   }
   if (subtitulo) {
-    const sub = $('.cabecera-sub');
+    const sub = buscar('.cabecera-sub');
     if (sub) sub.textContent = subtitulo;
   }
 }
@@ -164,13 +191,13 @@ const TEXTO_NIVEL = {
 export function bannerAlerta(alerta, { mostrarEnlace = true } = {}) {
   if (!alerta) return null;
   const nivel = alerta.nivel || 'lejana';
-  const caja = crear('div', { clase: `banner-alerta ${nivel}`, role: 'status' });
+  const caja = crearElemento('div', { clase: `banner-alerta ${nivel}`, role: 'status' });
 
   if (!alerta.configurado) {
     caja.append(
       icono('reloj', { tam: 17, clase: 'icono banner-icono' }),
-      crear('span', { clase: 'banner-texto', texto: alerta.mensaje }),
-      mostrarEnlace ? crear('a', { clase: 'banner-enlace', href: './calendario.html', texto: 'Configurar entregas' }) : null
+      crearElemento('span', { clase: 'banner-texto', texto: alerta.mensaje }),
+      mostrarEnlace ? crearElemento('a', { clase: 'banner-enlace', href: './calendario.html', texto: 'Configurar entregas' }) : null
     );
     return caja;
   }
@@ -181,10 +208,10 @@ export function bannerAlerta(alerta, { mostrarEnlace = true } = {}) {
 
   caja.append(
     icono(nivel === 'vencida' ? 'aviso' : 'reloj', { tam: 17, clase: 'icono banner-icono' }),
-    crear('span', { clase: 'banner-titulo', texto: TEXTO_NIVEL[nivel] + ':' }),
-    crear('span', { clase: 'banner-cuenta', texto: cuenta }),
-    crear('span', { clase: 'banner-texto', texto: alerta.mensaje }),
-    mostrarEnlace ? crear('a', { clase: 'banner-enlace', href: './calendario.html', texto: 'Ver entregas' }) : null
+    crearElemento('span', { clase: 'banner-titulo', texto: TEXTO_NIVEL[nivel] + ':' }),
+    crearElemento('span', { clase: 'banner-cuenta', texto: cuenta }),
+    crearElemento('span', { clase: 'banner-texto', texto: alerta.mensaje }),
+    mostrarEnlace ? crearElemento('a', { clase: 'banner-enlace', href: './calendario.html', texto: 'Ver entregas' }) : null
   );
   return caja;
 }
@@ -192,20 +219,20 @@ export function bannerAlerta(alerta, { mostrarEnlace = true } = {}) {
 // --------------------------------------------------- aviso de privacidad (§9)
 
 export function bloquePrivacidad() {
-  return crear('details', { clase: 'privacidad' }, [
-    crear('summary', { texto: 'Dónde se guardan estos datos' }),
-    crear('div', { clase: 'privacidad-cuerpo' }, [
-      crear('p', {
+  return crearElemento('details', { clase: 'privacidad' }, [
+    crearElemento('summary', { texto: 'Dónde se guardan estos datos' }),
+    crearElemento('div', { clase: 'privacidad-cuerpo' }, [
+      crearElemento('p', {
         texto: 'Todo lo que escribes se guarda únicamente en este navegador y en ' +
           'este dispositivo. No se envía a ningún servidor: la aplicación funciona ' +
           'sin internet y no tiene a dónde mandar nada.'
       }),
-      crear('p', {
+      crearElemento('p', {
         texto: 'Eso también significa que se pierde si borras los datos de ' +
           'navegación, si usas una ventana de incógnito o si abres la página en ' +
           'otro equipo. Exporta un respaldo cada cierto tiempo.'
       }),
-      crear('p', {
+      crearElemento('p', {
         texto: 'El archivo de respaldo contiene nombres, números de documento y el ' +
           'registro de asistencia de personas reales. No lo compartas por WhatsApp ' +
           'ni por correo sin cifrar.'
@@ -217,7 +244,7 @@ export function bloquePrivacidad() {
 // -------------------------------------------------- barra de datos (respaldos)
 
 export function barraDatos({ alImportar, alBorrar }) {
-  const entrada = crear('input', {
+  const entrada = crearElemento('input', {
     type: 'file', accept: 'application/json', clase: 'oculto-visual', id: 'importar-archivo'
   });
   entrada.addEventListener('change', async () => {
@@ -233,14 +260,14 @@ export function barraDatos({ alImportar, alBorrar }) {
     entrada.value = '';
   });
 
-  return crear('div', { clase: 'barra-datos' }, [
-    crear('button', {
+  return crearElemento('div', { clase: 'barra-datos' }, [
+    crearElemento('button', {
       type: 'button', clase: 'boton secundario',
       onclick: () => exportarTodo(), texto: 'Exportar respaldo'
     }),
-    crear('label', { clase: 'boton secundario', for: 'importar-archivo', texto: 'Importar respaldo' }),
+    crearElemento('label', { clase: 'boton secundario', for: 'importar-archivo', texto: 'Importar respaldo' }),
     entrada,
-    crear('button', {
+    crearElemento('button', {
       type: 'button', clase: 'boton peligro',
       texto: 'Borrar todo',
       onclick: () => {
@@ -283,20 +310,20 @@ export function pintarPanel(contenedor, hallazgos, { alIrA } = {}) {
   const errores = hallazgos.filter((x) => x.severidad === 'error');
   const avisos = hallazgos.filter((x) => x.severidad === 'advertencia');
 
-  const resumen = crear('p', { clase: 'panel-resumen' });
+  const resumen = crearElemento('p', { clase: 'panel-resumen' });
   if (hallazgos.length === 0) {
-    resumen.append(crear('span', { clase: 'pastilla ok' }, [
+    resumen.append(crearElemento('span', { clase: 'pastilla ok' }, [
       icono('ok', { tam: 14 }), ' Sin observaciones'
     ]));
   } else {
     if (errores.length) {
-      resumen.append(crear('span', { clase: 'pastilla error' }, [
+      resumen.append(crearElemento('span', { clase: 'pastilla error' }, [
         icono('error', { tam: 14 }),
         ` ${errores.length} error${errores.length === 1 ? '' : 'es'}`
       ]));
     }
     if (avisos.length) {
-      resumen.append(crear('span', { clase: 'pastilla advertencia' }, [
+      resumen.append(crearElemento('span', { clase: 'pastilla advertencia' }, [
         icono('aviso', { tam: 14 }),
         ` ${avisos.length} advertencia${avisos.length === 1 ? '' : 's'}`
       ]));
@@ -309,15 +336,15 @@ export function pintarPanel(contenedor, hallazgos, { alIrA } = {}) {
   // Con pocos hallazgos se ven directos; con muchos, el panel no puede comerse
   // media pantalla, así que el detalle se pliega y se abre a voluntad.
   const muchos = hallazgos.length > 3;
-  const lista = crear('ul', { clase: 'panel-lista' });
+  const lista = crearElemento('ul', { clase: 'panel-lista' });
   for (const hall of [...errores, ...avisos]) {
-    const item = crear('li', { clase: `panel-item ${hall.severidad}` }, [
+    const item = crearElemento('li', { clase: `panel-item ${hall.severidad}` }, [
       icono(ICONO_HALLAZGO[hall.severidad], { tam: 15, clase: 'icono panel-icono' }),
-      crear('span', { clase: 'panel-tipo', texto: hall.severidad === 'error' ? 'Error:' : 'Advertencia:' }),
-      crear('span', { clase: 'panel-mensaje', texto: ' ' + hall.mensaje })
+      crearElemento('span', { clase: 'panel-tipo', texto: hall.severidad === 'error' ? 'Error:' : 'Advertencia:' }),
+      crearElemento('span', { clase: 'panel-mensaje', texto: ' ' + hall.mensaje })
     ]);
     if (alIrA) {
-      item.append(crear('button', {
+      item.append(crearElemento('button', {
         type: 'button', clase: 'enlace-ir',
         texto: 'Ir al dato',
         onclick: () => alIrA(hall.campo)
@@ -327,8 +354,8 @@ export function pintarPanel(contenedor, hallazgos, { alIrA } = {}) {
   }
 
   if (!muchos) { contenedor.append(lista); return; }
-  contenedor.append(crear('details', { clase: 'panel-detalle' }, [
-    crear('summary', { texto: `Ver qué falta (${hallazgos.length})` }),
+  contenedor.append(crearElemento('details', { clase: 'panel-detalle' }, [
+    crearElemento('summary', { texto: `Ver qué falta (${hallazgos.length})` }),
     lista
   ]));
 }
@@ -377,7 +404,7 @@ export function marcarCampo(elemento, hallazgos) {
   }
   if (!msg) {
     contadorMensaje += 1;
-    msg = crear('p', { clase: 'campo-error', id: `msg-campo-${contadorMensaje}` });
+    msg = crearElemento('p', { clase: 'campo-error', id: `msg-campo-${contadorMensaje}` });
     caja.append(msg);
   }
   msg.textContent = propios[0].mensaje;
@@ -393,11 +420,11 @@ export function marcarCampo(elemento, hallazgos) {
  */
 export function cajaSugerencia(propuesta, alAceptar) {
   if (!propuesta) return null;
-  return crear('p', { clase: 'sugerencia' }, [
-    crear('span', { clase: 'sugerencia-etiqueta', texto: 'Sugerencia' }),
-    crear('span', { clase: 'sugerencia-valor', texto: String(propuesta.valor) }),
-    crear('span', { clase: 'sugerencia-proc', texto: propuesta.procedencia }),
-    crear('button', {
+  return crearElemento('p', { clase: 'sugerencia' }, [
+    crearElemento('span', { clase: 'sugerencia-etiqueta', texto: 'Sugerencia' }),
+    crearElemento('span', { clase: 'sugerencia-valor', texto: String(propuesta.valor) }),
+    crearElemento('span', { clase: 'sugerencia-proc', texto: propuesta.procedencia }),
+    crearElemento('button', {
       type: 'button', clase: 'boton diminuto',
       texto: 'Usar este dato',
       onclick: () => alAceptar(propuesta.valor)
@@ -411,8 +438,8 @@ export function pintarAvisosAlmacenamiento(contenedor) {
   const avisos = avisosAlmacenamiento();
   contenedor.textContent = '';
   if (avisos.length === 0) return;
-  contenedor.append(crear('div', { clase: 'aviso-sistema', role: 'alert' },
-    avisos.map((a) => crear('p', {}, [icono('aviso', { tam: 15 }), ' ' + a]))));
+  contenedor.append(crearElemento('div', { clase: 'aviso-sistema', role: 'alert' },
+    avisos.map((a) => crearElemento('p', {}, [icono('aviso', { tam: 15 }), ' ' + a]))));
 }
 
 export { leer, guardar, CLAVES };

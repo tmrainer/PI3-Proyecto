@@ -6,7 +6,7 @@ import {
 import { alertaProximaEntrega, agendaEntregas, PERIODICIDADES } from './alertas.js';
 import { validarCalendario } from './validaciones.js';
 import {
-  $, crear, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
+  buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
   marcarCampo, bannerAlerta, pintarAvisosAlmacenamiento, avisarAlSalirDelCampo
 } from './ui.js';
 
@@ -16,7 +16,7 @@ if (!Array.isArray(calendario.diasDeAviso)) calendario.diasDeAviso = [7, 3, 1];
 
 const guardarDiferido = debounce(() => {
   guardar(CLAVES.calendario, calendario);
-  $('#estado-guardado').textContent = 'Guardado en este dispositivo.';
+  buscar('#estado-guardado').textContent = 'Guardado en este dispositivo.';
 }, 400);
 
 function cambio() {
@@ -27,7 +27,7 @@ function cambio() {
 }
 
 function pintarBanner() {
-  const caja = $('#banner');
+  const caja = buscar('#banner');
   caja.textContent = '';
   const b = bannerAlerta(alertaProximaEntrega(calendario, hoyIso()), { mostrarEnlace: false });
   if (b) caja.append(b);
@@ -50,18 +50,18 @@ function registroDe(fechaLimite) {
 }
 
 function pintarAgenda() {
-  const caja = $('#agenda');
+  const caja = buscar('#agenda');
   caja.textContent = '';
 
   if (!esIso(calendario.fechaLimiteBase)) {
-    caja.append(crear('p', {
+    caja.append(crearElemento('p', {
       clase: 'vacio-mensaje',
       texto: 'Indica arriba una fecha de entrega que conozcas y aquí aparecerán las siguientes.'
     }));
     return;
   }
 
-  const lista = crear('ul', { clase: 'agenda' });
+  const lista = crearElemento('ul', { clase: 'agenda' });
   for (const item of agendaEntregas(calendario, hoyIso(), 6)) {
     const reg = calendario.entregas.find((e) => e.fechaLimite === item.fechaLimite);
     const estado = reg ? reg.estado : 'pendiente';
@@ -71,18 +71,18 @@ function pintarAgenda() {
       : item.diasRestantes === 0 ? 'es hoy'
         : `faltan ${item.diasRestantes} día(s)`;
 
-    const selEstado = crear('select', {}, Object.entries(ETIQUETA_ESTADO)
-      .map(([v, t]) => crear('option', { value: v, texto: t })));
+    const selEstado = crearElemento('select', {}, Object.entries(ETIQUETA_ESTADO)
+      .map(([v, t]) => crearElemento('option', { value: v, texto: t })));
     selEstado.value = estado;
     selEstado.addEventListener('change', () => {
       registroDe(item.fechaLimite).estado = selEstado.value;
       cambio();
     });
 
-    lista.append(crear('li', { clase: `agenda-item ${item.nivel}` }, [
-      crear('span', { clase: 'agenda-fecha', texto: aDdMmAa(item.fechaLimite) }),
-      crear('span', { clase: 'agenda-dias', texto }),
-      crear('span', { clase: 'agenda-estado' }, [selEstado])
+    lista.append(crearElemento('li', { clase: `agenda-item ${item.nivel}` }, [
+      crearElemento('span', { clase: 'agenda-fecha', texto: aDdMmAa(item.fechaLimite) }),
+      crearElemento('span', { clase: 'agenda-dias', texto }),
+      crearElemento('span', { clase: 'agenda-estado' }, [selEstado])
     ]));
   }
   caja.append(lista);
@@ -90,7 +90,7 @@ function pintarAgenda() {
 
 function refrescarValidacion() {
   const hallazgos = validarCalendario(calendario);
-  pintarPanel($('#panel'), hallazgos, { alIrA: irACampo });
+  pintarPanel(buscar('#panel'), hallazgos, { alIrA: irACampo });
   for (const caja of document.querySelectorAll('[data-campo]')) {
     marcarCampo(caja, hallazgos.filter((x) => x.campo === caja.dataset.campo));
   }
@@ -107,9 +107,9 @@ function irACampo(campo) {
 // ------------------------------------------------------------------- arranque
 
 montarCabecera('calendario', 'Ollas comunes y comedores de Villa María del Triunfo');
-pintarAvisosAlmacenamiento($('#avisos-sistema'));
-$('#privacidad').append(bloquePrivacidad());
-$('#barra-datos').append(barraDatos({
+pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
+buscar('#privacidad').append(bloquePrivacidad());
+buscar('#barra-datos').append(barraDatos({
   alImportar: (datos) => {
     if (!datos || !datos.calendario) {
       alert('El archivo no contiene un calendario. No se cambió nada.');
@@ -122,15 +122,15 @@ $('#barra-datos').append(barraDatos({
   alBorrar: () => location.reload()
 }));
 
-const selPer = $('#periodicidad');
+const selPer = buscar('#periodicidad');
 selPer.value = calendario.periodicidad || 'mensual';
 selPer.addEventListener('change', () => { calendario.periodicidad = selPer.value; cambio(); });
 
-const fBase = $('#fechaBase');
+const fBase = buscar('#fechaBase');
 fBase.value = calendario.fechaLimiteBase || '';
 fBase.addEventListener('input', () => { calendario.fechaLimiteBase = fBase.value; cambio(); });
 
-const fAviso = $('#diasAviso');
+const fAviso = buscar('#diasAviso');
 fAviso.value = calendario.diasDeAviso.join(', ');
 fAviso.addEventListener('input', () => {
   const nums = fAviso.value.split(',')

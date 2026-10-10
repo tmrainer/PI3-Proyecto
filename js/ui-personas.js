@@ -7,28 +7,28 @@ import {
 } from './calculos.js';
 import { validarAfiliado } from './validaciones.js';
 import { estado } from './estado.js';
-import { $, crear, campo, icono } from './ui.js';
+import { buscar, crearElemento, campo, icono } from './ui.js';
 
 // ctx: { fechaRef, busqueda, filtro, conteo, onCambio(), onRepintar() }
 
 let altaGrupo = null;
 let altaTipo = null;
 export function montarAltaPersona(ctx) {
-  const cajaG = $('#alta-grupo');
+  const cajaG = buscar('#alta-grupo');
   for (const t of TRAMOS_ETARIOS) {
-    const r = crear('input', { type: 'radio', name: 'altaGrupo', value: t.clave, id: `ag-${t.clave}` });
+    const r = crearElemento('input', { type: 'radio', name: 'altaGrupo', value: t.clave, id: `ag-${t.clave}` });
     r.addEventListener('change', () => { altaGrupo = t.clave; });
-    cajaG.append(crear('label', { clase: 'opcion', for: r.id }, [r, `${t.etiqueta} (${t.detalle})`]));
+    cajaG.append(crearElemento('label', { clase: 'opcion', for: r.id }, [r, `${t.etiqueta} (${t.detalle})`]));
   }
-  const cajaT = $('#alta-tipo');
+  const cajaT = buscar('#alta-tipo');
   for (const t of TIPOS_AFILIADO) {
-    const r = crear('input', { type: 'radio', name: 'altaTipo', value: t.clave, id: `at-${t.clave}` });
+    const r = crearElemento('input', { type: 'radio', name: 'altaTipo', value: t.clave, id: `at-${t.clave}` });
     r.addEventListener('change', () => { altaTipo = t.clave; });
-    cajaT.append(crear('label', { clase: 'opcion', for: r.id }, [r, t.etiqueta]));
+    cajaT.append(crearElemento('label', { clase: 'opcion', for: r.id }, [r, t.etiqueta]));
   }
 
-  const fNac = $('#altaNacimiento');
-  const pistaG = crear('span', { clase: 'pista' });
+  const fNac = buscar('#altaNacimiento');
+  const pistaG = crearElemento('span', { clase: 'pista' });
   cajaG.parentElement.append(pistaG);
   fNac.addEventListener('input', () => {
     const tiene = esIso(fNac.value);
@@ -39,29 +39,29 @@ export function montarAltaPersona(ctx) {
       : '';
   });
 
-  $('#altaDoc').addEventListener('input', (ev) => {
-    if ($('#altaTipoDoc').value === 'dni') ev.target.value = ev.target.value.replace(/\D/g, '');
+  buscar('#altaDoc').addEventListener('input', (ev) => {
+    if (buscar('#altaTipoDoc').value === 'dni') ev.target.value = ev.target.value.replace(/\D/g, '');
   });
 
-  $('#agregar-afiliado').addEventListener('click', () => inscribir(ctx));
+  buscar('#agregar-afiliado').addEventListener('click', () => inscribir(ctx));
 
   // Enter en cualquier campo del alta inscribe, sin tener que buscar el botón.
   for (const id of ['altaPaterno', 'altaMaterno', 'altaNombres', 'altaDoc']) {
-    $('#' + id).addEventListener('keydown', (ev) => {
+    buscar('#' + id).addEventListener('keydown', (ev) => {
       if (ev.key === 'Enter') { ev.preventDefault(); inscribir(ctx); }
     });
   }
 }
 
 function inscribir(ctx) {
-  const msg = $('#alta-mensaje');
+  const msg = buscar('#alta-mensaje');
   const a = nuevoAfiliado();
-  a.apellidoPaterno = $('#altaPaterno').value.trim();
-  a.apellidoMaterno = $('#altaMaterno').value.trim();
-  a.nombres = $('#altaNombres').value.trim();
-  a.tipoDocumento = $('#altaTipoDoc').value;
-  a.numeroDocumento = $('#altaDoc').value.trim();
-  a.fechaNacimiento = $('#altaNacimiento').value;
+  a.apellidoPaterno = buscar('#altaPaterno').value.trim();
+  a.apellidoMaterno = buscar('#altaMaterno').value.trim();
+  a.nombres = buscar('#altaNombres').value.trim();
+  a.tipoDocumento = buscar('#altaTipoDoc').value;
+  a.numeroDocumento = buscar('#altaDoc').value.trim();
+  a.fechaNacimiento = buscar('#altaNacimiento').value;
   a.grupoEtarioManual = esIso(a.fechaNacimiento) ? null : altaGrupo;
   a.tipoAfiliado = altaTipo || '';
 
@@ -93,7 +93,7 @@ function inscribir(ctx) {
   estado.padron.afiliados.push(a);
   msg.textContent = `${nombreCompleto(a)} quedó inscrita.`;
   for (const id of ['altaPaterno', 'altaMaterno', 'altaNombres', 'altaDoc', 'altaNacimiento']) {
-    $('#' + id).value = '';
+    buscar('#' + id).value = '';
   }
   for (const r of document.querySelectorAll('input[name="altaGrupo"], input[name="altaTipo"]')) {
     r.checked = false;
@@ -101,14 +101,14 @@ function inscribir(ctx) {
   }
   altaGrupo = null;
   altaTipo = null;
-  $('#altaPaterno').focus();
+  buscar('#altaPaterno').focus();
   ctx.onRepintar();
 }
 
 function cuerpoAfiliado(a, ctx) {
   const idp = a.id.slice(0, 8);
   const texto = (prop, extra = {}) => {
-    const el = crear('input', Object.assign(
+    const el = crearElemento('input', Object.assign(
       { id: `a-${prop}-${idp}`, type: 'text', value: a[prop] || '', autocomplete: 'off' }, extra));
     el.addEventListener('input', () => {
       if (extra.inputmode === 'numeric') el.value = el.value.replace(/\D/g, '');
@@ -119,19 +119,19 @@ function cuerpoAfiliado(a, ctx) {
     return el;
   };
 
-  const fTipoDoc = crear('select', { id: `a-tipodoc-${idp}` }, [
-    crear('option', { value: 'dni', texto: 'DNI' }),
-    crear('option', { value: 'ce', texto: 'Carné de extranjería' })
+  const fTipoDoc = crearElemento('select', { id: `a-tipodoc-${idp}` }, [
+    crearElemento('option', { value: 'dni', texto: 'DNI' }),
+    crearElemento('option', { value: 'ce', texto: 'Carné de extranjería' })
   ]);
   fTipoDoc.value = a.tipoDocumento || 'dni';
   fTipoDoc.addEventListener('change', () => { a.tipoDocumento = fTipoDoc.value; ctx.onCambio(); });
 
-  const fNac = crear('input', { id: `a-nac-${idp}`, type: 'date', value: a.fechaNacimiento || '' });
-  const fGrupo = crear('select', { id: `a-grupo-${idp}` }, [
-    crear('option', { value: '', texto: '— elegir —' })
-  ].concat(TRAMOS_ETARIOS.map((t) => crear('option', { value: t.clave, texto: `${t.etiqueta} (${t.detalle})` }))));
+  const fNac = crearElemento('input', { id: `a-nac-${idp}`, type: 'date', value: a.fechaNacimiento || '' });
+  const fGrupo = crearElemento('select', { id: `a-grupo-${idp}` }, [
+    crearElemento('option', { value: '', texto: '— elegir —' })
+  ].concat(TRAMOS_ETARIOS.map((t) => crearElemento('option', { value: t.clave, texto: `${t.etiqueta} (${t.detalle})` }))));
   fGrupo.value = a.grupoEtarioManual || '';
-  const pistaGrupo = crear('span', { clase: 'pista' });
+  const pistaGrupo = crearElemento('span', { clase: 'pista' });
 
   function sincronizarGrupo() {
     const tiene = esIso(a.fechaNacimiento);
@@ -153,31 +153,31 @@ function cuerpoAfiliado(a, ctx) {
   });
   sincronizarGrupo();
 
-  const fTipo = crear('select', { id: `a-tipo-${idp}` }, [
-    crear('option', { value: '', texto: '— elegir —' })
-  ].concat(TIPOS_AFILIADO.map((t) => crear('option', { value: t.clave, texto: t.etiqueta }))));
+  const fTipo = crearElemento('select', { id: `a-tipo-${idp}` }, [
+    crearElemento('option', { value: '', texto: '— elegir —' })
+  ].concat(TIPOS_AFILIADO.map((t) => crearElemento('option', { value: t.clave, texto: t.etiqueta }))));
   fTipo.value = a.tipoAfiliado || '';
   fTipo.addEventListener('change', () => {
     a.tipoAfiliado = fTipo.value;
     ctx.onRepintar();
   });
 
-  const fSexo = crear('select', { id: `a-sexo-${idp}` }, [
-    crear('option', { value: '', texto: 'No indicado' }),
-    crear('option', { value: 'F', texto: 'F' }),
-    crear('option', { value: 'M', texto: 'M' })
+  const fSexo = crearElemento('select', { id: `a-sexo-${idp}` }, [
+    crearElemento('option', { value: '', texto: 'No indicado' }),
+    crearElemento('option', { value: 'F', texto: 'F' }),
+    crearElemento('option', { value: 'M', texto: 'M' })
   ]);
   fSexo.value = a.sexo || '';
   fSexo.addEventListener('change', () => { a.sexo = fSexo.value; ctx.onCambio(); });
 
-  const fAlta = crear('input', { id: `a-alta-${idp}`, type: 'date', value: a.altaEn || '' });
+  const fAlta = crearElemento('input', { id: `a-alta-${idp}`, type: 'date', value: a.altaEn || '' });
   fAlta.addEventListener('input', () => { a.altaEn = fAlta.value; ctx.onRepintar(); });
 
-  const editor = crear('div', { clase: 'persona-editor' });
+  const editor = crearElemento('div', { clase: 'persona-editor' });
 
   editor.append(
-    crear('div', { clase: 'acciones', style: 'margin:10px 0' }, [
-        crear('button', {
+    crearElemento('div', { clase: 'acciones', style: 'margin:10px 0' }, [
+        crearElemento('button', {
           type: 'button', clase: 'boton diminuto secundario',
           texto: a.activo ? 'Dar de baja' : 'Reactivar',
           onclick: () => {
@@ -195,7 +195,7 @@ function cuerpoAfiliado(a, ctx) {
             ctx.onRepintar();
           }
         }),
-        crear('button', {
+        crearElemento('button', {
           type: 'button', clase: 'boton diminuto peligro', texto: 'Borrar',
           onclick: () => {
             const nombre = nombreCompleto(a) || 'esta persona';
@@ -207,25 +207,25 @@ function cuerpoAfiliado(a, ctx) {
           }
         })
     ]),
-    crear('div', { clase: 'rejilla tres' }, [
+    crearElemento('div', { clase: 'rejilla tres' }, [
       campo('Apellido paterno', texto('apellidoPaterno')),
       campo('Apellido materno', texto('apellidoMaterno')),
       campo('Nombres', texto('nombres'))
     ]),
-    crear('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
+    crearElemento('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
       campo('Tipo de documento', fTipoDoc),
       campo('Número de documento', texto('numeroDocumento', { inputmode: 'numeric', maxlength: '12' }),
         'Obligatorio. DNI: 8 dígitos.'),
       campo('Tipo', fTipo, 'Define el menú que le toca por defecto.')
     ]),
-    crear('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
+    crearElemento('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
       campo('Fecha de nacimiento', fNac, 'Opcional.'),
-      crear('div', { clase: 'campo' }, [
-        crear('label', { for: fGrupo.id, texto: 'Grupo de edad' }), fGrupo, pistaGrupo
+      crearElemento('div', { clase: 'campo' }, [
+        crearElemento('label', { for: fGrupo.id, texto: 'Grupo de edad' }), fGrupo, pistaGrupo
       ]),
       campo('Sexo', fSexo, 'Opcional.')
     ]),
-    crear('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
+    crearElemento('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
       campo('Fecha de alta', fAlta),
       campo('Quién verificó los datos', texto('verificadoPor'),
         'Obligatorio si los datos vinieron de un escaneo.'),
@@ -240,8 +240,8 @@ function filaAfiliado(a, ctx) {
   const hallazgos = validarAfiliado(a, estado.padron);
   const errores = hallazgos.filter((x) => x.severidad === 'error').length;
 
-  const nombre = crear('span', { clase: 'persona-nombre', texto: nombreCompleto(a) || 'Persona sin nombre' });
-  const meta = crear('span', { clase: 'persona-meta' });
+  const nombre = crearElemento('span', { clase: 'persona-nombre', texto: nombreCompleto(a) || 'Persona sin nombre' });
+  const meta = crearElemento('span', { clase: 'persona-meta' });
 
   // El documento va primero y en cifras tabulares: es lo que se busca al
   // cotejar la lista contra un papel. Lo demás, detrás y más tenue.
@@ -250,31 +250,31 @@ function filaAfiliado(a, ctx) {
     meta.textContent = '';
 
     if (a.numeroDocumento) {
-      meta.append(crear('span', { clase: 'meta-doc', texto: a.numeroDocumento }));
+      meta.append(crearElemento('span', { clase: 'meta-doc', texto: a.numeroDocumento }));
     }
     const g = grupoEtario(a, ctx.fechaRef);
     const edad = esIso(a.fechaNacimiento) ? edadEnFecha(a.fechaNacimiento, ctx.fechaRef) : null;
-    meta.append(crear('span', {
+    meta.append(crearElemento('span', {
       texto: (g ? etiquetaGrupoEtario(g) : 'Sin grupo') + (edad === null ? '' : `, ${edad} años`)
     }));
     if (a.tipoAfiliado === 'caso_social') {
-      meta.append(crear('span', { clase: 'meta-social', texto: 'Ayuda social' }));
+      meta.append(crearElemento('span', { clase: 'meta-social', texto: 'Ayuda social' }));
     } else if (!a.tipoAfiliado) {
-      meta.append(crear('span', { texto: 'Sin tipo' }));
+      meta.append(crearElemento('span', { texto: 'Sin tipo' }));
     }
-    if (!a.activo) meta.append(crear('span', { texto: 'Dada de baja' }));
+    if (!a.activo) meta.append(crearElemento('span', { texto: 'Dada de baja' }));
   }
   refrescarMeta();
 
-  const boton = crear('button', {
+  const boton = crearElemento('button', {
     type: 'button', clase: 'persona-fila', 'aria-expanded': 'false'
   }, [
     icono('flecha', { tam: 15, clase: 'icono persona-flecha' }),
-    crear('span', { clase: 'persona-texto' }, [nombre, meta]),
-    errores ? crear('span', { clase: 'persona-falta', texto: 'faltan datos' }) : null
+    crearElemento('span', { clase: 'persona-texto' }, [nombre, meta]),
+    errores ? crearElemento('span', { clase: 'persona-falta', texto: 'faltan datos' }) : null
   ]);
 
-  const caja = crear('article', {
+  const caja = crearElemento('article', {
     clase: `persona${a.activo ? '' : ' inactiva'}`,
     id: `ficha-${a.id}`,
     'data-campo': `afiliado.${a.id}`
@@ -334,7 +334,7 @@ export function pintarListaPersonas(lista, ctx) {
     (incompletas ? `, ${incompletas} con datos incompletos.` : '.');
 
   if (visibles.length === 0) {
-    lista.append(crear('p', {
+    lista.append(crearElemento('p', {
       clase: 'vacio-mensaje',
       texto: estado.padron.afiliados.length === 0
         ? 'Todavía no hay nadie en el padrón. Usa el formulario de arriba.'

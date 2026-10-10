@@ -8,12 +8,12 @@ import { alertaProximaEntrega } from './alertas.js';
 import { estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, periodoPorDefecto } from './estado.js';
 import { pintarAsistenciaDeHoy, pintarOtrosDias } from './ui-asistencia.js';
 import {
-  $, crear, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
+  buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
   pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo
 } from './ui.js';
 
 cargar();
-alGuardar((t) => { $('#estado-guardado').textContent = t; });
+alGuardar((t) => { buscar('#estado-guardado').textContent = t; });
 
 const periodo = periodoPorDefecto();
 
@@ -27,17 +27,17 @@ const ctx = {
 
 function refrescar() {
   const r = resumenEconomicoRaciones(estado.padron, periodo.inicio, periodo.fin);
-  const caja = $('#resumen-raciones');
+  const caja = buscar('#resumen-raciones');
   caja.textContent = '';
   caja.append(
-    crear('span', { clase: 'chip', html: `Raciones: <b>${r.racionesTotales}</b>` }),
-    crear('span', { clase: 'chip', html: `Normales: <b>${r.racionesNormales}</b>` }),
-    crear('span', { clase: 'chip', html: `Ayuda social: <b>${r.racionesAyudaSocial}</b>` })
+    crearElemento('span', { clase: 'chip', html: `Raciones: <b>${r.racionesTotales}</b>` }),
+    crearElemento('span', { clase: 'chip', html: `Normales: <b>${r.racionesNormales}</b>` }),
+    crearElemento('span', { clase: 'chip', html: `Ayuda social: <b>${r.racionesAyudaSocial}</b>` })
   );
   if (r.recaudacionCent !== null) {
     caja.append(
-      crear('span', { clase: 'chip', html: `Recaudado: <b>S/ ${formatearSoles(r.recaudacionCent)}</b>` }),
-      crear('span', { clase: 'chip', html: `Promedio por ración: <b>S/ ${formatearSoles(r.precioPromedioRacionCent)}</b>` })
+      crearElemento('span', { clase: 'chip', html: `Recaudado: <b>S/ ${formatearSoles(r.recaudacionCent)}</b>` }),
+      crearElemento('span', { clase: 'chip', html: `Promedio por ración: <b>S/ ${formatearSoles(r.precioPromedioRacionCent)}</b>` })
     );
   }
 
@@ -54,7 +54,7 @@ function refrescar() {
   if (r.diasDeLegado) {
     partes.push(`${r.diasDeLegado} día(s) traen raciones anotadas a mano en la versión anterior.`);
   }
-  $('#nota-precio').textContent = partes.join(' ');
+  buscar('#nota-precio').textContent = partes.join(' ');
 
   validar();
 }
@@ -63,21 +63,21 @@ function validar() {
   const hallazgos = validarPadron(estado.padron)
     .filter((x) => x.campo.startsWith('atencion.') || x.campo.startsWith('precio.'))
     .concat(validarPreciosMenu(estado.config, estado.padron.atenciones.length > 0));
-  aplicarHallazgos($('#panel'), hallazgos, (c) => irACampo(c));
+  aplicarHallazgos(buscar('#panel'), hallazgos, (c) => irACampo(c));
 }
 
 function repintar() {
-  pintarAsistenciaDeHoy($('#hoy'), ctx);
-  pintarOtrosDias($('#lista-atenciones'), ctx);
+  pintarAsistenciaDeHoy(buscar('#hoy'), ctx);
+  pintarOtrosDias(buscar('#lista-atenciones'), ctx);
   refrescar();
 }
 
 // ------------------------------------------------------------------- arranque
 
 montarCabecera('asistencia', 'Ollas comunes y comedores de Villa María del Triunfo');
-pintarAvisosAlmacenamiento($('#avisos-sistema'));
-$('#privacidad').append(bloquePrivacidad());
-$('#barra-datos').append(barraDatos({
+pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
+buscar('#privacidad').append(bloquePrivacidad());
+buscar('#barra-datos').append(barraDatos({
   alImportar: (datos) => {
     if (!datos || !datos.padron) { alert('El archivo no contiene un padrón.'); return; }
     if (!confirm('Importar reemplazará el padrón que tienes ahora. ¿Continuar?')) return;
@@ -88,25 +88,25 @@ $('#barra-datos').append(barraDatos({
   alBorrar: () => location.reload()
 }));
 
-ctx.titulo = $('#titulo-hoy');
+ctx.titulo = buscar('#titulo-hoy');
 
 const b = bannerAlerta(alertaProximaEntrega(estado.calendario, hoyIso()));
-if (b) $('#banner').append(b);
+if (b) buscar('#banner').append(b);
 
-const fIni = $('#periodoInicio');
-const fFin = $('#periodoFin');
+const fIni = buscar('#periodoInicio');
+const fFin = buscar('#periodoFin');
 fIni.value = periodo.inicio;
 fFin.value = periodo.fin;
 fIni.addEventListener('input', () => { periodo.inicio = fIni.value || periodo.inicio; refrescar(); });
 fFin.addEventListener('input', () => { periodo.fin = fFin.value || periodo.fin; refrescar(); });
 
 for (const [id, prop] of [['precioNormal', 'precioMenuNormalCent'], ['precioAyuda', 'precioMenuAyudaSocialCent']]) {
-  const el = $('#' + id);
+  const el = buscar('#' + id);
   el.value = formatearSoles(estado.config[prop]);
   el.addEventListener('input', () => { estado.config[prop] = aCentimos(el.value); ctx.onCambio(); });
 }
 
-$('#agregar-atencion').addEventListener('click', () => {
+buscar('#agregar-atencion').addEventListener('click', () => {
   const at = nuevaAtencion(preciosActuales());
   estado.padron.atenciones.push(at);
   ctx.onRepintar();

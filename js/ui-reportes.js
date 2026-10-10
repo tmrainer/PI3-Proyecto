@@ -6,7 +6,7 @@ import {
   filasPadron, asistenciaPorAfiliado, afiliadosSinAsistencia, TRAMOS_ETARIOS
 } from './calculos.js';
 import { estado } from './estado.js';
-import { crear } from './ui.js';
+import { crearElemento } from './ui.js';
 
 // ctx: { fechaRef, inicio, fin }
 
@@ -17,36 +17,36 @@ export function pintarReportePadron(caja, ctx) {
     asistenciaPorAfiliado(estado.padron, ctx.inicio, ctx.fin).map((x) => [x.afiliadoId, x]));
 
   if (filas.length === 0) {
-    caja.append(crear('p', {
+    caja.append(crearElemento('p', {
       clase: 'vacio-mensaje',
       texto: 'El reporte sale del padrón. Inscribe personas o carga un archivo y aparecerán aquí.'
     }));
     return;
   }
 
-  const cuerpo = crear('tbody');
+  const cuerpo = crearElemento('tbody');
   for (const f of filas) {
     const as = asistencias.get(f.afiliadoId);
-    cuerpo.append(crear('tr', {}, [
-      crear('td', { clase: 'num', texto: String(f.n) }),
-      crear('td', { texto: f.apellidoPaterno }),
-      crear('td', { texto: f.apellidoMaterno }),
-      crear('td', { texto: f.nombres }),
-      crear('td', { texto: f.tipoDocumento }),
-      crear('td', { texto: f.numeroDocumento }),
-      crear('td', { texto: f.grupoEtarioEtiqueta || '—' }),
-      crear('td', { texto: f.edad === null ? '—' : String(f.edad) }),
-      crear('td', { texto: f.tipoAfiliadoEtiqueta || '—' }),
-      crear('td', { clase: 'num', texto: as ? String(as.dias) : '0' })
+    cuerpo.append(crearElemento('tr', {}, [
+      crearElemento('td', { clase: 'num', texto: String(f.n) }),
+      crearElemento('td', { texto: f.apellidoPaterno }),
+      crearElemento('td', { texto: f.apellidoMaterno }),
+      crearElemento('td', { texto: f.nombres }),
+      crearElemento('td', { texto: f.tipoDocumento }),
+      crearElemento('td', { texto: f.numeroDocumento }),
+      crearElemento('td', { texto: f.grupoEtarioEtiqueta || '—' }),
+      crearElemento('td', { texto: f.edad === null ? '—' : String(f.edad) }),
+      crearElemento('td', { texto: f.tipoAfiliadoEtiqueta || '—' }),
+      crearElemento('td', { clase: 'num', texto: as ? String(as.dias) : '0' })
     ]));
   }
 
-  caja.append(crear('div', { clase: 'tabla-desplazable' }, [
-    crear('table', { clase: 'tabla' }, [
-      crear('thead', {}, [crear('tr', {}, [
+  caja.append(crearElemento('div', { clase: 'tabla-desplazable' }, [
+    crearElemento('table', { clase: 'tabla' }, [
+      crearElemento('thead', {}, [crearElemento('tr', {}, [
         'N°', 'Ap. paterno', 'Ap. materno', 'Nombres', 'Doc.', 'Número',
         'Grupo de edad', 'Edad', 'Tipo', 'Días'
-      ].map((t) => crear('th', { texto: t })))]),
+      ].map((t) => crearElemento('th', { texto: t })))]),
       cuerpo
     ])
   ]));
@@ -58,18 +58,18 @@ export function pintarReportePadron(caja, ctx) {
     if (f.grupoEtario) porGrupo[f.grupoEtario] += 1;
     if (f.tipoAfiliado === 'caso_social') ayudaSocial += 1;
   }
-  const chips = crear('div', { clase: 'resumen-chips', style: 'margin-top:10px' }, [
-    crear('span', { clase: 'chip', html: `Total: <b>${filas.length}</b>` })
+  const chips = crearElemento('div', { clase: 'resumen-chips', style: 'margin-top:10px' }, [
+    crearElemento('span', { clase: 'chip', html: `Total: <b>${filas.length}</b>` })
   ]);
   for (const t of TRAMOS_ETARIOS) {
-    chips.append(crear('span', { clase: 'chip', html: `${t.etiqueta}: <b>${porGrupo[t.clave]}</b>` }));
+    chips.append(crearElemento('span', { clase: 'chip', html: `${t.etiqueta}: <b>${porGrupo[t.clave]}</b>` }));
   }
-  chips.append(crear('span', { clase: 'chip', html: `Ayuda social: <b>${ayudaSocial}</b>` }));
+  chips.append(crearElemento('span', { clase: 'chip', html: `Ayuda social: <b>${ayudaSocial}</b>` }));
   caja.append(chips);
 
   const ausentes = afiliadosSinAsistencia(estado.padron, ctx.inicio, ctx.fin);
   if (ausentes.length) {
-    caja.append(crear('p', {
+    caja.append(crearElemento('p', {
       clase: 'asistencia-resumen',
       texto: `${ausentes.length} persona(s) sin ninguna asistencia en el periodo: ` +
         ausentes.slice(0, 8).map(nombreCompleto).join(', ') + (ausentes.length > 8 ? '…' : '')
