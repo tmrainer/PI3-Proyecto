@@ -7,7 +7,7 @@
 import { nuevaAtencion, nombreCompleto, aDdMmAa, hoyIso, aCentimos, formatearSoles } from './modelo.js';
 import {
   afiliadosActivos, grupoEtario, etiquetaGrupoEtario, menuPorDefecto,
-  desgloseDelDia, recaudacionDelDiaCent, asistio, menuDe
+  desgloseDelDia, recaudacionDelDiaCent, asistio, menuDe, asistenciasConTodos
 } from './calculos.js';
 import { estado, preciosActuales } from './estado.js';
 import { crearElemento, campo, icono } from './ui.js';
@@ -174,10 +174,7 @@ function fichaAtencion(at, ctx) {
     const activos = afiliadosActivos(estado.padron, at.fecha);
     if (marcar) {
       at.legado = null;
-      at.asistencias = activos.map((p) => {
-        const previo = (at.asistencias || []).find((x) => x.afiliadoId === p.id);
-        return { afiliadoId: p.id, tipoMenu: previo ? previo.tipoMenu : menuPorDefecto(p) };
-      });
+      at.asistencias = asistenciasConTodos(at, activos);
     } else {
       at.asistencias = [];
     }
@@ -432,10 +429,7 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   function marcarTodos(marcar) {
     if (marcar) {
       at.legado = null;
-      at.asistencias = activos.map((p) => {
-        const previo = (at.asistencias || []).find((x) => x.afiliadoId === p.id);
-        return { afiliadoId: p.id, tipoMenu: previo ? previo.tipoMenu : menuPorDefecto(p) };
-      });
+      at.asistencias = asistenciasConTodos(at, activos);
     } else {
       at.asistencias = [];
     }

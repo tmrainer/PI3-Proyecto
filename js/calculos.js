@@ -200,6 +200,22 @@ export function asistio(at, afiliadoId) {
   return asistenciasDelDia(at).some((x) => x.afiliadoId === afiliadoId);
 }
 
+/**
+ * Las asistencias de un día con TODAS las personas de `activos` marcadas, para
+ * el botón «Marcar a todos». Quien ya estaba marcado conserva el menú que se le
+ * eligió ese día; los demás reciben el de su inscripción. No modifica `at`:
+ * devuelve un arreglo nuevo para asignarlo a `at.asistencias`.
+ * @param {?Object} at  una atención (un día)
+ * @param {Object[]} activos  afiliados a marcar
+ * @returns {Array<{afiliadoId: string, tipoMenu: 'normal'|'ayuda_social'}>}
+ */
+export function asistenciasConTodos(at, activos) {
+  return activos.map((p) => {
+    const previo = asistenciasDelDia(at).find((x) => x.afiliadoId === p.id);
+    return { afiliadoId: p.id, tipoMenu: previo ? previo.tipoMenu : menuPorDefecto(p) };
+  });
+}
+
 export function menuDe(at, afiliadoId) {
   const reg = asistenciasDelDia(at).find((x) => x.afiliadoId === afiliadoId);
   return reg ? reg.tipoMenu : null;

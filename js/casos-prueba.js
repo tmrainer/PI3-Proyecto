@@ -11,7 +11,7 @@ import {
   gastoPorOrigen, descuadreFila, edadEnFecha, grupoEtario, afiliadosActivos,
   racionesPeriodo, proponerPeriodo, duracionPeriodo, resumenEtario,
   racionesDelDia, desgloseDelDia, recaudacionDelDiaCent, resumenEconomicoRaciones,
-  asistenciaPorAfiliado, afiliadosSinAsistencia, conteoAsistenciaDelDia,
+  asistenciaPorAfiliado, afiliadosSinAsistencia, conteoAsistenciaDelDia, asistenciasConTodos,
   menuPorDefecto, filasPadron, TRAMOS_ETARIOS
 } from './calculos.js';
 import {
@@ -648,6 +648,25 @@ export const casos = [
       const sin = afiliadosSinAsistencia(p, '2026-09-01', '2026-09-30');
       igual(sin.length, 1);
       igual(sin[0].id, 'rosa');
+    }
+  },
+  {
+    grupo: 'Asistencia',
+    nombre: 'Marcar a todos conserva el menú ya elegido y da a los demás el de su inscripción',
+    fn: () => {
+      const ana = Object.assign(nuevoAfiliado(), { id: 'ana', tipoAfiliado: 'habitual' });
+      const rosa = Object.assign(nuevoAfiliado(), { id: 'rosa', tipoAfiliado: 'caso_social' });
+      const luz = Object.assign(nuevoAfiliado(), { id: 'luz', tipoAfiliado: 'habitual' });
+      // Ana ya estaba marcada y ese día comió el menú de ayuda social.
+      const at = Object.assign(nuevaAtencion(null), {
+        asistencias: [{ afiliadoId: 'ana', tipoMenu: 'ayuda_social' }]
+      });
+      const todas = asistenciasConTodos(at, [ana, rosa, luz]);
+      igual(todas.length, 3);
+      igual(todas[0].tipoMenu, 'ayuda_social', 'Ana conserva lo elegido ese día');
+      igual(todas[1].tipoMenu, 'ayuda_social', 'Rosa, por su inscripción');
+      igual(todas[2].tipoMenu, 'normal', 'Luz, por su inscripción');
+      igual(at.asistencias.length, 1, 'no modifica el día recibido');
     }
   },
   {
