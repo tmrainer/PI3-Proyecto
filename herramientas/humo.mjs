@@ -196,6 +196,13 @@ async function pestana(cdp) {
       if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text);
       return r.result.value;
     },
+    // Lo que hace una persona: trae la pestaña al frente y entonces la toca. En
+    // Chrome completo una pestaña de fondo queda «hidden» y sus temporizadores
+    // se frenan (un setTimeout de 400 ms tarda más de un segundo).
+    async actuar(expr) {
+      await cdp.enviar('Page.bringToFront', {}, sessionId);
+      return p.eval(expr);
+    },
     cerrar: () => cdp.enviar('Target.closeTarget', { targetId })
   };
   return p;
@@ -239,7 +246,7 @@ async function correr(base, cdp) {
         comprobar('reporte del padrón: 3 filas', filas === 3, String(filas));
         comprobar('reporte: los ausentes son las 2 filas con 0 días', aus.startsWith('2 persona(s)'), aus);
         // Sin permiso de portapapeles (como aquí) aparece el texto para copiar a mano.
-        await p.eval(`document.querySelector('#copiar-padron').click()`);
+        await p.actuar(`document.querySelector('#copiar-padron').click()`);
         await pausa(200);
         const tsv = await p.eval(`document.querySelector('#reporte-padron textarea')?.value || ''`);
         comprobar('reporte: «Copiar» da las 3 filas separadas por tabulador',
@@ -254,7 +261,7 @@ async function correr(base, cdp) {
     const p = await pestana(cdp);
     await p.ir(`${base}/__sembrar?padron=1`);
     await p.ir(`${base}/index.html`);
-    await p.eval(TOCAR('Beta'));
+    await p.actuar(TOCAR('Beta'));
     await p.ir('about:blank');                 // dispara pagehide de inmediato
     await p.ir(`${base}/index.html`);
     const r = await p.eval(TEXTO('.hoy-cuenta'));
@@ -269,10 +276,10 @@ async function correr(base, cdp) {
     const b = await pestana(cdp);
     await b.ir(`${base}/padron.html`);        // abierta ANTES de marcar en a
     await a.ir(`${base}/index.html`);
-    await a.eval(TOCAR('Gama'));
+    await a.actuar(TOCAR('Gama'));
     await pausa(700);
-    await b.eval(`document.querySelector('#ficha-alfa0001 .persona-fila').click()`);
-    await b.eval(ESCRIBIR('[id^="a-nombres-alfa0001"]', 'Editada'));
+    await b.actuar(`document.querySelector('#ficha-alfa0001 .persona-fila').click()`);
+    await b.actuar(ESCRIBIR('[id^="a-nombres-alfa0001"]', 'Editada'));
     await pausa(700);
     const ids = await a.eval(IDS_HOY);
     const nombre = await a.eval(`${PADRON_GUARDADO}.afiliados[0].nombres`);
@@ -291,11 +298,11 @@ async function correr(base, cdp) {
     await a.ir(`${base}/__sembrar?padron=1`);
     const b = await pestana(cdp);
     await b.ir(`${base}/padron.html`);
-    await b.eval(`document.querySelector('#ficha-alfa0001 .persona-fila').click()`);
-    await b.eval(`(() => { const el = document.querySelector('[id^="a-nombres-alfa0001"]');
+    await b.actuar(`document.querySelector('#ficha-alfa0001 .persona-fila').click()`);
+    await b.actuar(`(() => { const el = document.querySelector('[id^="a-nombres-alfa0001"]');
       el.focus(); el.setSelectionRange(2, 2); })()`);
     await a.ir(`${base}/index.html`);
-    await a.eval(TOCAR('Beta'));
+    await a.actuar(TOCAR('Beta'));
     await pausa(700);                          // b recibe el storage y repinta
     const vista = await b.eval(`({
       abierta: document.querySelector('#ficha-alfa0001 .persona-fila').getAttribute('aria-expanded'),
@@ -316,9 +323,9 @@ async function correr(base, cdp) {
     const b = await pestana(cdp);
     await b.ir(`${base}/formato-b1.html`);    // abierta ANTES de cambiar el precio
     await a.ir(`${base}/index.html`);
-    await a.eval(ESCRIBIR('#precioNormal', '4.50'));
+    await a.actuar(ESCRIBIR('#precioNormal', '4.50'));
     await pausa(700);
-    await b.eval(ESCRIBIR('#nombreCentro', 'Comedor de prueba'));
+    await b.actuar(ESCRIBIR('#nombreCentro', 'Comedor de prueba'));
     await pausa(700);
     const precio = await a.eval(`JSON.parse(localStorage.getItem('b1.config.v1')).precioMenuNormalCent`);
     comprobar('B-1 en otra pestaña: el precio nuevo del menú se conserva', precio === 450, String(precio));
@@ -333,10 +340,10 @@ async function correr(base, cdp) {
     await a.ir(`${base}/formato-b1.html`);
     const b = await pestana(cdp);
     await b.ir(`${base}/formato-b1.html`);
-    await a.eval(ESCRIBIR('#nombreCentro', 'Comedor Uno'));
+    await a.actuar(ESCRIBIR('#nombreCentro', 'Comedor Uno'));
     await pausa(1200);                         // b recibe el storage y se recarga
     const enB = await b.eval(`document.querySelector('#nombreCentro').value`);
-    await b.eval(ESCRIBIR('#codigoPca', '123'));
+    await b.actuar(ESCRIBIR('#codigoPca', '123'));
     await pausa(700);
     const r = await b.eval(`JSON.parse(localStorage.getItem('b1.rendiciones.v1'))[0]`);
     comprobar('dos pestañas del B-1: la otra se pone al día', enB === 'Comedor Uno', enB);
@@ -353,7 +360,7 @@ async function correr(base, cdp) {
     const p = await pestana(cdp);
     await p.ir(`${base}/__sembrar`);
     await p.ir(`${base}/formato-b1.html`);
-    await p.eval(ESCRIBIR('#nombreCentro', 'Comedor Dos'));
+    await p.actuar(ESCRIBIR('#nombreCentro', 'Comedor Dos'));
     await p.ir('about:blank');
     await p.ir(`${base}/formato-b1.html`);
     const v = await p.eval(`document.querySelector('#nombreCentro').value`);
