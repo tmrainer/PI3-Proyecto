@@ -652,6 +652,23 @@ export const casos = [
   },
   {
     grupo: 'Asistencia',
+    nombre: 'Sin asistencia mira a las activas a la fecha pedida, como la tabla del reporte',
+    fn: () => {
+      const p = padronVacio();
+      p.afiliados = [
+        Object.assign(nuevoAfiliado(), { id: 'ana', altaEn: '2026-09-01' }),
+        Object.assign(nuevoAfiliado(), { id: 'rosa', altaEn: '2026-09-20' })
+      ];
+      // Rosa entra el 20: al 15 todavía no está en el padrón ni en la tabla.
+      igual(afiliadosSinAsistencia(p, '2026-09-01', '2026-09-30').length, 2,
+        'por defecto, activas al cierre del periodo');
+      const alQuince = afiliadosSinAsistencia(p, '2026-09-01', '2026-09-30', '2026-09-15');
+      igual(alQuince.length, 1);
+      igual(alQuince[0].id, 'ana');
+    }
+  },
+  {
+    grupo: 'Asistencia',
     nombre: 'Persona marcada dos veces el mismo día es error',
     fn: () => {
       const p = padronVacio();
@@ -1070,6 +1087,24 @@ export const casos = [
       const incompleta = r.filas.find((f) => f.estado === 'incompleta');
       ok(/falta documento, grupo de edad, tipo/.test(incompleta.avisos.join()),
         'dice exactamente qué falta: ' + incompleta.avisos.join());
+    }
+  },
+  {
+    grupo: 'Importar',
+    nombre: 'Avisa que el grupo sacado de la edad queda fijo, sin cambiar la fila',
+    fn: () => {
+      const texto = [
+        'Apellido paterno\tNombres\tDNI\tEdad\tFecha de nacimiento\tTipo',
+        'Quispe\tRosa\t00000002\t34\t\tHabitual',
+        'Rojas\tLuz\t00000003\t34\t1990-05-01\tHabitual'
+      ].join('\n');
+      const r = prepararImportacion(texto, padronVacio());
+      const [soloEdad, conFecha] = r.filas;
+      igual(soloEdad.estado, 'lista', 'el aviso no la vuelve incompleta');
+      igual(soloEdad.afiliado.grupoEtarioManual, 'adulto');
+      ok(soloEdad.avisos.some((x) => /no cambiará solo/.test(x)), 'avisa: ' + soloEdad.avisos.join());
+      ok(!conFecha.avisos.some((x) => /no cambiará solo/.test(x)),
+        'con fecha de nacimiento el grupo se recalcula: no hace falta avisar');
     }
   },
   {

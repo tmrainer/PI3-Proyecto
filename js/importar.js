@@ -5,7 +5,7 @@
 // sale con sus avisos y es ella quien confirma la importación.
 
 import { normalizarNombre, esIso, hoyIso, uuid, nuevoAfiliado } from './modelo.js';
-import { TRAMOS_ETARIOS } from './calculos.js';
+import { grupoPorEdad } from './calculos.js';
 
 // --------------------------------------------------------------- lectura CSV
 
@@ -126,12 +126,6 @@ export function parsearGrupoEtario(texto) {
   return null;
 }
 
-export function grupoPorEdad(edad) {
-  if (!Number.isFinite(edad) || edad < 0) return null;
-  const tramo = TRAMOS_ETARIOS.find((x) => edad >= x.min && edad <= x.max);
-  return tramo ? tramo.clave : null;
-}
-
 export function parsearTipoAfiliado(texto) {
   const t = norm(texto);
   if (!t) return '';
@@ -219,6 +213,9 @@ export function prepararImportacion(texto, padron) {
       const edad = Number(String(val('edad')).replace(/\D/g, ''));
       grupo = grupoPorEdad(edad);
       if (!grupo) avisos.push('no se entendió la edad');
+      // Sin fecha de nacimiento, el grupo sacado de la edad se guarda fijo en
+      // grupoEtarioManual: no cambia cuando la persona cumple años.
+      else if (!fnac) avisos.push('grupo de edad sacado de la edad: no cambiará solo con los años, conviene anotar la fecha de nacimiento');
     }
     if (!fnac) a.grupoEtarioManual = grupo;
 

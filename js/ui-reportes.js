@@ -67,7 +67,7 @@ export function pintarReportePadron(caja, ctx) {
   chips.append(crearElemento('span', { clase: 'chip', html: `Ayuda social: <b>${ayudaSocial}</b>` }));
   caja.append(chips);
 
-  const ausentes = afiliadosSinAsistencia(estado.padron, ctx.inicio, ctx.fin);
+  const ausentes = afiliadosSinAsistencia(estado.padron, ctx.inicio, ctx.fin, ctx.fechaRef);
   if (ausentes.length) {
     caja.append(crearElemento('p', {
       clase: 'asistencia-resumen',

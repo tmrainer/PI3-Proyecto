@@ -115,6 +115,13 @@ export const TRAMOS_ETARIOS = [
   { clave: 'adulto_mayor', etiqueta: 'Adulto/a mayor', detalle: '60 a más', min: 60, max: Infinity }
 ];
 
+/** Clave del tramo etario para una edad en años. null si la edad no es válida. */
+export function grupoPorEdad(edad) {
+  if (!Number.isFinite(edad) || edad < 0) return null;
+  const tramo = TRAMOS_ETARIOS.find((t) => edad >= t.min && edad <= t.max);
+  return tramo ? tramo.clave : null;
+}
+
 /**
  * Se calcula SIEMPRE respecto a una fecha de referencia, nunca se congela al
  * alta: quien cumple 60 cambia de grupo sin que nadie tenga que acordarse.
@@ -123,10 +130,7 @@ export const TRAMOS_ETARIOS = [
 export function grupoEtario(afiliado, fechaRefIso) {
   if (!afiliado) return null;
   if (esIso(afiliado.fechaNacimiento)) {
-    const edad = edadEnFecha(afiliado.fechaNacimiento, fechaRefIso || hoyIso());
-    if (edad === null || edad < 0) return null;
-    const tramo = TRAMOS_ETARIOS.find((t) => edad >= t.min && edad <= t.max);
-    return tramo ? tramo.clave : null;
+    return grupoPorEdad(edadEnFecha(afiliado.fechaNacimiento, fechaRefIso || hoyIso()));
   }
   return afiliado.grupoEtarioManual || null;
 }
@@ -170,10 +174,28 @@ export function atencionesDelPeriodo(padron, inicioIso, finIso) {
     .filter((at) => esIso(at.fecha) && at.fecha >= inicioIso && at.fecha <= finIso);
 }
 
+/**
+ * Las asistencias marcadas de un día. Es la ÚNICA puerta de lectura de
+ * `atencion.asistencias`: asistio, menuDe, desgloseDelDia, asistenciaPorAfiliado
+ * y validarAtencion pasan por aquí. Quienes escriben ese arreglo están en
+ * ui-asistencia.js (filaToque y marcarTodos); ver ARCHITECTURE.md §b.
+ *
+ * Devuelve el MISMO arreglo guardado, no una copia: no mutarlo desde aquí.
+ * @param {?Object} at  una atención (un día) de `padron.atenciones`
+ * @returns {Array<{afiliadoId: string, tipoMenu: 'normal'|'ayuda_social'}>}
+ *   vacío si `at` falta o no tiene asistencias.
+ */
 export function asistenciasDelDia(at) {
   return Array.isArray(at && at.asistencias) ? at.asistencias : [];
 }
 
+/**
+ * ¿Está marcada esta persona en este día? Lee `at.asistencias` vía
+ * asistenciasDelDia. No escribe nada.
+ * @param {?Object} at  una atención (un día)
+ * @param {string} afiliadoId
+ * @returns {boolean}
+ */
 export function asistio(at, afiliadoId) {
   return asistenciasDelDia(at).some((x) => x.afiliadoId === afiliadoId);
 }
@@ -297,6 +319,20 @@ export function conteoAsistenciaDelDia(at) {
 /**
  * Días que asistió cada persona dentro de un periodo.
  * Devuelve [{ afiliadoId, dias, normal, ayudaSocial }] ordenado de más a menos.
+ *
+ * Lee `padron.atenciones` del periodo (atencionesDelPeriodo) y, de cada día,
+ * `at.asistencias` (asistenciasDelDia). No escribe nada. Es el punto donde el
+ * reporte del padrón y su CSV leen lo que se marcó en la pantalla de asistencia
+ * (ui-reportes.js: pintarReportePadron y filasComoTexto).
+ *
+ * Solo aparece quien asistió al menos un día: los demás no tienen fila.
+ * Los días migrados con `legado` no suman, porque no dicen quién vino.
+ *
+ * @param {{atenciones: Object[]}} padron  normalmente estado.padron
+ * @param {string} inicioIso  'AAAA-MM-DD', incluido
+ * @param {string} finIso     'AAAA-MM-DD', incluido
+ * @returns {Array<{afiliadoId: string, dias: number, normal: number, ayudaSocial: number}>}
+ *   vacío si alguna de las dos fechas no es válida.
  */
 export function asistenciaPorAfiliado(padron, inicioIso, finIso) {
   const mapa = new Map();
@@ -313,11 +349,16 @@ export function asistenciaPorAfiliado(padron, inicioIso, finIso) {
   return [...mapa.values()].sort((a, b) => b.dias - a.dias);
 }
 
-/** Personas activas del padrón que NO asistieron ni un día en el periodo. */
-export function afiliadosSinAsistencia(padron, inicioIso, finIso) {
+/**
+ * Personas activas del padrón que NO asistieron ni un día en el periodo.
+ * `activasAIso` dice a qué fecha se mira quién está activo; por defecto, al
+ * cierre del periodo. El reporte del padrón pasa su fechaRef, para que la lista
+ * coincida con las filas de su tabla que tienen 0 días.
+ */
+export function afiliadosSinAsistencia(padron, inicioIso, finIso, activasAIso = finIso) {
   const conAsistencia = new Set(
     asistenciaPorAfiliado(padron, inicioIso, finIso).map((x) => x.afiliadoId));
-  return afiliadosActivos(padron, finIso).filter((a) => !conAsistencia.has(a.id));
+  return afiliadosActivos(padron, activasAIso).filter((a) => !conAsistencia.has(a.id));
 }
 
 // ------------------------------------------------- §6.6 Reporte para el padrón
@@ -325,6 +366,23 @@ export function afiliadosSinAsistencia(padron, inicioIso, finIso) {
 // Filas listas para copiar al formato de padrón que pide la Municipalidad.
 // Solo ordena y numera datos ya ingresados: no completa ni deduce ninguno.
 
+/**
+ * Filas del reporte del padrón: personas activas a `fechaRefIso`, ordenadas por
+ * apellidos y nombres, y numeradas desde 1.
+ *
+ * Lee `padron.afiliados` (vía afiliadosActivos). NO lee asistencias: los días
+ * asistidos los agrega quien llama, con asistenciaPorAfiliado. No escribe nada.
+ *
+ * Edad y grupo etario se calculan a `fechaRefIso`, no se leen de lo guardado
+ * (salvo `grupoEtarioManual` cuando no hay fecha de nacimiento).
+ *
+ * @param {{afiliados: Object[]}} padron  normalmente estado.padron
+ * @param {string} [fechaRefIso]  'AAAA-MM-DD'; si no es válida, se usa hoy.
+ * @returns {Array<{n: number, afiliadoId: string, apellidoPaterno: string,
+ *   apellidoMaterno: string, nombres: string, tipoDocumento: string,
+ *   numeroDocumento: string, grupoEtario: ?string, grupoEtarioEtiqueta: string,
+ *   edad: ?number, tipoAfiliado: string, tipoAfiliadoEtiqueta: string, sexo: string}>}
+ */
 export function filasPadron(padron, fechaRefIso) {
   const ref = esIso(fechaRefIso) ? fechaRefIso : hoyIso();
   return afiliadosActivos(padron, ref)
