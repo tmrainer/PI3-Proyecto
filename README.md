@@ -62,6 +62,9 @@ Siempre a través de `http://localhost`, aunque el servidor sea tu propia máqui
       las columnas del reporte.
 - [ ] **Averiguar el formato del código de barras (PDF417) del DNI**, con
       muestras reales, antes de escribir el lector.
+      **PENDIENTE, aún no implementado**: el lector no existe todavía.
+      `js/escaneo-dni.js` es solo un esqueleto que devuelve los campos vacíos, y
+      la inscripción se hace a mano.
 
 ### Por preguntar
 
@@ -79,6 +82,7 @@ Siempre a través de `http://localhost`, aunque el servidor sea tu propia máqui
 - [ ] **Histórico de precios de compra** por insumo, con aviso de desviación.
 - [ ] **Consumo por origen de fondo**: el dato ya se captura, falta la pantalla.
 - [ ] **Lector del código de barras del DNI** para inscribir sin teclear.
+      **PENDIENTE, aún no implementado.**
 
 ### Por decidir
 

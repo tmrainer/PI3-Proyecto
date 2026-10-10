@@ -71,6 +71,13 @@ export function aNumero(texto) {
 
 // --------------------------------------------------------------------- fechas
 
+/**
+ * Fecha de hoy en hora LOCAL, como 'AAAA-MM-DD'. No usa toISOString(), que
+ * daría la fecha UTC (en Lima, ya "mañana" después de las 19:00).
+ * Es la fecha por defecto de casi todo: el día de atención nuevo, el alta, y
+ * la referencia de edad cuando no se pasa otra. No lee ni escribe datos guardados.
+ * @returns {string}
+ */
 export function hoyIso() {
   const d = new Date();
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -89,6 +96,13 @@ export function aIso(fecha) {
   return `${fecha.getFullYear()}-${pad2(fecha.getMonth() + 1)}-${pad2(fecha.getDate())}`;
 }
 
+/**
+ * ¿Tiene `valor` la FORMA 'AAAA-MM-DD'? Solo revisa el formato: '2024-02-31'
+ * pasa. Para saber si la fecha existe, usar aFecha(), que devuelve null si no.
+ * Se usa como guarda antes de comparar fechas como texto. No lee ni escribe datos.
+ * @param {*} valor
+ * @returns {boolean}
+ */
 export function esIso(valor) {
   return typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(valor);
 }
@@ -185,6 +199,16 @@ export function nuevoAfiliado() {
  *
  * Los precios son una COPIA del precio configurado al crear el día, para que el
  * histórico no cambie si mañana sube el menú. Editables por si ese día fue otro.
+ *
+ * Solo construye el objeto: NO lo agrega a `padron.atenciones` ni lo guarda.
+ * Quien llama decide cuándo (ver asegurarHoyGuardado en ui-asistencia.js).
+ * La fecha sale de hoyIso(); quien necesita otro día la sobrescribe.
+ *
+ * @param {{precioMenuNormalCent: ?number, precioMenuAyudaSocialCent: ?number}|null} precios
+ *   normalmente preciosActuales() de estado.js; null deja los precios vacíos.
+ * @returns {{id: string, fecha: string, asistencias: Array<{afiliadoId: string, tipoMenu: string}>,
+ *   precioMenuNormalCent: ?number, precioMenuAyudaSocialCent: ?number,
+ *   precioTomadoDeConfig: boolean, legado: ?Object, nota: string}}
  */
 export function nuevaAtencion(precios) {
   return {

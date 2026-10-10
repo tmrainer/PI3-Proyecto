@@ -39,8 +39,28 @@ const guardarDiferido = debounce(() => {
   avisarGuardado('Guardado en este dispositivo.');
 }, 400);
 
+/**
+ * Pide guardar `estado.padron` y `estado.config` en localStorage
+ * ('b1.padron.v1' y 'b1.config.v1'), 400 ms después del ÚLTIMO pedido: varios
+ * toques seguidos producen una sola escritura. Al terminar avisa con el texto
+ * de alGuardar().
+ *
+ * Es lo que llaman las páginas en cada cambio (ctx.onCambio). No guarda
+ * `estado.calendario`. Si se cierra la pestaña antes de los 400 ms, el último
+ * cambio se pierde.
+ * @returns {void}
+ */
 export function guardarPronto() { guardarDiferido(); }
 
+/**
+ * Guarda YA `estado.padron` y `estado.config` en localStorage ('b1.padron.v1'
+ * y 'b1.config.v1'), sin esperar y sin mostrar el aviso de «Guardado».
+ *
+ * Se usa al arrancar una página, para consolidar una migración del padrón, y
+ * tras una importación. No cancela un guardarPronto pendiente: ese volverá a
+ * escribir los mismos datos al cumplirse su plazo.
+ * @returns {void}
+ */
 export function guardarYa() {
   guardar(CLAVES.padron, estado.padron);
   guardar(CLAVES.config, estado.config);
