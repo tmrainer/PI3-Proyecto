@@ -4,7 +4,7 @@
 export const CLAVES = {
   rendiciones: 'b1.rendiciones.v1',
   padron: 'b1.padron.v1',
-  insumos: 'b1.insumos.v1',
+  insumos: 'b1.insumos.v1',       // reservada: catálogo de insumos (fase 6, AGENTS.md §4.3); hoy nada la usa
   calendario: 'b1.calendario.v1',
   config: 'b1.config.v1'
 };

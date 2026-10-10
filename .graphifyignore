@@ -1,0 +1,15 @@
+# Archivos que graphify no debe incluir en el grafo (sintaxis de .gitignore).
+# No afecta a la app ni a git.
+
+# Iconos: no aportan nada al modelo de datos ni al flujo.
+*.svg
+
+# Página de pruebas: sus llamadas directas a ui.js aparecían como
+# «conexiones sorprendentes» y desordenaban las comunidades.
+pruebas.html
+
+# Casos de prueba: formaban su propia comunidad y no describen la app.
+js/casos-prueba.js
+
+# Herramientas de desarrollo (prueba de humo): no son parte de la app.
+herramientas/
