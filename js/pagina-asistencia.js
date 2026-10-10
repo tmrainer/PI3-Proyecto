@@ -6,12 +6,14 @@ import { resumenEconomicoRaciones } from './calculos.js';
 import { validarPadron, validarPreciosMenu } from './validaciones.js';
 import { alertaProximaEntrega } from './alertas.js';
 import {
-  estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, periodoPorDefecto, vigilarPestanas
+  estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, periodoPorDefecto, vigilarPestanas,
+  descartarPendiente
 } from './estado.js';
 import { pintarAsistenciaDeHoy, pintarOtrosDias } from './ui-asistencia.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
-  pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo
+  pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo,
+  repintarConservandoVista
 } from './ui.js';
 
 cargar();
@@ -85,9 +87,10 @@ buscar('#barra-datos').append(barraDatos({
     if (!confirm('Importar reemplazará el padrón que tienes ahora. ¿Continuar?')) return;
     guardar(CLAVES.padron, datos.padron);
     if (datos.config) guardar(CLAVES.config, datos.config);
+    descartarPendiente();
     location.reload();
   },
-  alBorrar: () => location.reload()
+  alBorrar: () => { descartarPendiente(); location.reload(); }
 }));
 
 ctx.titulo = buscar('#titulo-hoy');
@@ -122,6 +125,6 @@ buscar('#agregar-atencion').addEventListener('click', () => {
 
 repintar();
 guardarYa();   // consolida la migración del padrón si la hubo
-vigilarPestanas(() => { pintarPrecios(); repintar(); });
+vigilarPestanas(() => repintarConservandoVista(() => { pintarPrecios(); repintar(); }));
 
 avisarAlSalirDelCampo(validar);

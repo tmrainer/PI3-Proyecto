@@ -279,6 +279,30 @@ async function correr(base, cdp) {
     await b.cerrar();
   }
 
+  // 3b. La recarga por otra pestaña no cierra la ficha que se está editando.
+  {
+    const a = await pestana(cdp);
+    await a.ir(`${base}/__sembrar?padron=1`);
+    const b = await pestana(cdp);
+    await b.ir(`${base}/padron.html`);
+    await b.eval(`document.querySelector('#ficha-alfa0001 .persona-fila').click()`);
+    await b.eval(`(() => { const el = document.querySelector('[id^="a-nombres-alfa0001"]');
+      el.focus(); el.setSelectionRange(2, 2); })()`);
+    await a.ir(`${base}/index.html`);
+    await a.eval(TOCAR('Beta'));
+    await pausa(700);                          // b recibe el storage y repinta
+    const vista = await b.eval(`({
+      abierta: document.querySelector('#ficha-alfa0001 .persona-fila').getAttribute('aria-expanded'),
+      foco: document.activeElement.id, cursor: document.activeElement.selectionStart,
+      dias: document.querySelector('#reporte-padron tbody tr:nth-child(2) td:last-child').textContent })`);
+    comprobar('otra pestaña guarda: la ficha abierta sigue abierta', vista.abierta === 'true', JSON.stringify(vista));
+    comprobar('otra pestaña guarda: el foco y el cursor siguen donde estaban',
+      vista.foco.startsWith('a-nombres-alfa0001') && vista.cursor === 2, JSON.stringify(vista));
+    comprobar('otra pestaña guarda: el reporte muestra lo nuevo', vista.dias === '1', JSON.stringify(vista));
+    await a.cerrar();
+    await b.cerrar();
+  }
+
   // 4. El B-1 abierto en otra pestaña no devuelve el precio del menú al viejo.
   {
     const a = await pestana(cdp);
@@ -294,6 +318,41 @@ async function correr(base, cdp) {
     comprobar('B-1 en otra pestaña: el precio nuevo del menú se conserva', precio === 450, String(precio));
     await a.cerrar();
     await b.cerrar();
+  }
+
+  // 5. Dos pestañas del B-1: lo escrito en una no lo borra la otra.
+  {
+    const a = await pestana(cdp);
+    await a.ir(`${base}/__sembrar`);
+    await a.ir(`${base}/formato-b1.html`);
+    const b = await pestana(cdp);
+    await b.ir(`${base}/formato-b1.html`);
+    await a.eval(ESCRIBIR('#nombreCentro', 'Comedor Uno'));
+    await pausa(1200);                         // b recibe el storage y se recarga
+    const enB = await b.eval(`document.querySelector('#nombreCentro').value`);
+    await b.eval(ESCRIBIR('#codigoPca', '123'));
+    await pausa(700);
+    const r = await b.eval(`JSON.parse(localStorage.getItem('b1.rendiciones.v1'))[0]`);
+    comprobar('dos pestañas del B-1: la otra se pone al día', enB === 'Comedor Uno', enB);
+    comprobar('dos pestañas del B-1: no se pisan',
+      r.nombreCentro === 'Comedor Uno' && r.codigoPca === '123', JSON.stringify([r.nombreCentro, r.codigoPca]));
+    comprobar('dos pestañas del B-1: sin errores de consola',
+      a.errores.length + b.errores.length === 0, [...a.errores, ...b.errores].join(' | '));
+    await a.cerrar();
+    await b.cerrar();
+  }
+
+  // 6. B-1: escribir y salir enseguida, antes de los 400 ms: no se pierde.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar`);
+    await p.ir(`${base}/formato-b1.html`);
+    await p.eval(ESCRIBIR('#nombreCentro', 'Comedor Dos'));
+    await p.ir('about:blank');
+    await p.ir(`${base}/formato-b1.html`);
+    const v = await p.eval(`document.querySelector('#nombreCentro').value`);
+    comprobar('B-1: salir justo después de escribir no lo pierde', v === 'Comedor Dos', v);
+    await p.cerrar();
   }
 }
 

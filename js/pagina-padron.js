@@ -7,14 +7,15 @@ import { validarPadron } from './validaciones.js';
 import { soportaCamaraPdf417 } from './escaneo-dni.js';
 import { alertaProximaEntrega } from './alertas.js';
 import {
-  estado, cargar, alGuardar, guardarPronto, guardarYa, periodoPorDefecto, vigilarPestanas
+  estado, cargar, alGuardar, guardarPronto, guardarYa, periodoPorDefecto, vigilarPestanas, descartarPendiente
 } from './estado.js';
 import { montarAltaPersona, pintarListaPersonas } from './ui-personas.js';
 import { montarImportacion } from './ui-importar.js';
 import { pintarReportePadron, filasComoTexto } from './ui-reportes.js';
 import {
   buscar, crearElemento, icono, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
-  pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo
+  pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo,
+  repintarConservandoVista
 } from './ui.js';
 
 cargar();
@@ -121,9 +122,10 @@ buscar('#barra-datos').append(barraDatos({
     if (!confirm('Importar reemplazará el padrón que tienes ahora. ¿Continuar?')) return;
     guardar(CLAVES.padron, migrarPadron(entrante));
     if (datos.config) guardar(CLAVES.config, datos.config);
+    descartarPendiente();
     location.reload();
   },
-  alBorrar: () => location.reload()
+  alBorrar: () => { descartarPendiente(); location.reload(); }
 }));
 
 ctx.conteo = buscar('#conteo-afiliados');
@@ -179,6 +181,6 @@ montarImportacion(ctx);
 repintar();
 pintarEstadoEscaneo();
 guardarYa();   // consolida la migración del padrón si la hubo
-vigilarPestanas(repintar);
+vigilarPestanas(() => repintarConservandoVista(repintar));
 
 avisarAlSalirDelCampo(validar);

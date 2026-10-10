@@ -27,7 +27,11 @@ if (!Array.isArray(rendicion.egresos) || rendicion.egresos.length === 0) {
 // Campos marcados como "venidos de una sugerencia" hasta que se editen (§2.4).
 const propuestos = new Set();
 
-const guardarDiferido = debounce(() => {
+// Hay un cambio que el guardado diferido todavía no escribió.
+let pendiente = false;
+
+function escribir() {
+  pendiente = false;
   rendicion.actualizadoEn = new Date().toISOString();
   rendiciones[0] = rendicion;
   guardar(CLAVES.rendiciones, rendiciones);
@@ -38,10 +42,30 @@ const guardarDiferido = debounce(() => {
   config = Object.assign(configVacia(), leer(CLAVES.config, {}),
     { ultimoCentro: instantaneaCentro(rendicion) });
   guardar(CLAVES.config, config);
+}
+
+const guardarDiferido = debounce(() => {
+  if (pendiente) escribir();
   buscar('#estado-guardado').textContent = 'Guardado en este dispositivo.';
 }, 400);
 
+// Igual que en estado.js (vigilarPestanas): al ocultarse o cerrarse la página se
+// escribe lo pendiente, y si otra pestaña guarda la rendición, esta se recarga
+// para no pisarla después con su copia vieja. Aquí se recarga la página entera:
+// el formulario engancha sus eventos al montarse y no se puede volver a montar.
+function escribirPendiente() { if (pendiente) escribir(); }
+addEventListener('pagehide', escribirPendiente);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') escribirPendiente();
+});
+addEventListener('storage', (e) => {
+  if (e.key !== null && e.key !== CLAVES.rendiciones) return;
+  pendiente = false;
+  location.reload();
+});
+
 function cambio() {
+  pendiente = true;
   guardarDiferido();
   refrescarTotales();
   refrescarValidacion();
@@ -441,9 +465,10 @@ buscar('#barra-datos').append(barraDatos({
     rendiciones = datos.rendiciones;
     guardar(CLAVES.rendiciones, rendiciones);
     if (datos.config) guardar(CLAVES.config, datos.config);
+    pendiente = false;   // si no, el pagehide de la recarga escribiría la copia vieja
     location.reload();
   },
-  alBorrar: () => location.reload()
+  alBorrar: () => { pendiente = false; location.reload(); }
 }));
 
 buscar('#agregar-egreso').addEventListener('click', () => {

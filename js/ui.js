@@ -443,3 +443,45 @@ export function pintarAvisosAlmacenamiento(contenedor) {
 }
 
 export { leer, guardar, CLAVES };
+
+// ----------------------------------------- repintar sin perder lo abierto
+
+/**
+ * Repinta con `pintar()` conservando lo que la persona tenía en pantalla: las
+ * fichas desplegadas y los <details> abiertos (los que tienen id «ficha-…»), el
+ * campo con el foco y su cursor, y el desplazamiento. Para los repintados que
+ * ella no pidió, como cuando otra pestaña guarda (estado.vigilarPestanas): sin
+ * esto, la ficha que estaba editando se le cerraría a mitad de escribir.
+ * @param {() => void} pintar
+ */
+export function repintarConservandoVista(pintar) {
+  const abiertas = [...document.querySelectorAll('[id^="ficha-"]')]
+    .filter((el) => el.open || el.querySelector(':scope > [aria-expanded="true"]'))
+    .map((el) => el.id);
+  const activo = document.activeElement;
+  let foco = null;
+  if (activo && activo.id) {
+    foco = { id: activo.id, ini: null, fin: null };
+    try { foco.ini = activo.selectionStart; foco.fin = activo.selectionEnd; } catch (e) { /* sin cursor */ }
+  }
+  const desplazamiento = window.scrollY;
+
+  pintar();
+
+  for (const id of abiertas) {
+    const el = document.getElementById(id);
+    if (!el) continue;                       // ya no existe en la otra versión
+    if (el.tagName === 'DETAILS') el.open = true;
+    else if (typeof el._desplegar === 'function') el._desplegar(true);
+  }
+  if (foco) {
+    const el = document.getElementById(foco.id);
+    if (el) {
+      el.focus({ preventScroll: true });
+      if (foco.ini !== null && typeof el.setSelectionRange === 'function') {
+        try { el.setSelectionRange(foco.ini, foco.fin); } catch (e) { /* tipo sin cursor */ }
+      }
+    }
+  }
+  window.scrollTo(0, desplazamiento);
+}

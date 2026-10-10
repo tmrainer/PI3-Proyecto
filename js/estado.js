@@ -72,6 +72,14 @@ export function guardarPronto() { pendiente = true; guardarDiferido(); }
 export function guardarYa() { escribir(); }
 
 /**
+ * Olvida un guardarPronto pendiente sin escribirlo. Para justo antes de
+ * recargar la página tras restaurar un respaldo o borrar todo: si no, el
+ * pagehide de la recarga escribiría la copia vieja encima.
+ * @returns {void}
+ */
+export function descartarPendiente() { pendiente = false; }
+
+/**
  * Cosas que pasan fuera de esta página y que hay que atender. Se llama una vez,
  * después de cargar().
  *
