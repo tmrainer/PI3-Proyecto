@@ -5,7 +5,9 @@ import { CLAVES, guardar, hoyIso, aCentimos, formatearSoles, nuevaAtencion } fro
 import { resumenEconomicoRaciones } from './calculos.js';
 import { validarPadron, validarPreciosMenu } from './validaciones.js';
 import { alertaProximaEntrega } from './alertas.js';
-import { estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, periodoPorDefecto } from './estado.js';
+import {
+  estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, periodoPorDefecto, vigilarPestanas
+} from './estado.js';
 import { pintarAsistenciaDeHoy, pintarOtrosDias } from './ui-asistencia.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
@@ -100,11 +102,15 @@ fFin.value = periodo.fin;
 fIni.addEventListener('input', () => { periodo.inicio = fIni.value || periodo.inicio; refrescar(); });
 fFin.addEventListener('input', () => { periodo.fin = fFin.value || periodo.fin; refrescar(); });
 
-for (const [id, prop] of [['precioNormal', 'precioMenuNormalCent'], ['precioAyuda', 'precioMenuAyudaSocialCent']]) {
+const CAMPOS_PRECIO = [['precioNormal', 'precioMenuNormalCent'], ['precioAyuda', 'precioMenuAyudaSocialCent']];
+function pintarPrecios() {
+  for (const [id, prop] of CAMPOS_PRECIO) buscar('#' + id).value = formatearSoles(estado.config[prop]);
+}
+for (const [id, prop] of CAMPOS_PRECIO) {
   const el = buscar('#' + id);
-  el.value = formatearSoles(estado.config[prop]);
   el.addEventListener('input', () => { estado.config[prop] = aCentimos(el.value); ctx.onCambio(); });
 }
+pintarPrecios();
 
 buscar('#agregar-atencion').addEventListener('click', () => {
   const at = nuevaAtencion(preciosActuales());
@@ -116,5 +122,6 @@ buscar('#agregar-atencion').addEventListener('click', () => {
 
 repintar();
 guardarYa();   // consolida la migración del padrón si la hubo
+vigilarPestanas(() => { pintarPrecios(); repintar(); });
 
 avisarAlSalirDelCampo(validar);

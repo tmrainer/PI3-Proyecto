@@ -50,6 +50,24 @@ Siempre a través de `http://localhost`, aunque el servidor sea tu propia máqui
 
 ---
 
+## Pruebas
+
+- **Cálculos y validaciones**: abre `http://localhost:8000/pruebas.html`. Las
+  aserciones corren en el navegador, sin instalar nada.
+- **Prueba de humo de la interfaz**: con Node 22 o más y un Chromium,
+
+  ```bash
+  node herramientas/humo.mjs
+  ```
+
+  Abre las cinco páginas en un Chromium sin ventana, vacías y con un padrón
+  ficticio, y falla si hay errores de consola. También comprueba que no se
+  pierda lo último marcado al salir de la página y que dos pestañas abiertas
+  no se pisen los datos. Usa un perfil temporal: no toca tus datos. Si no
+  encuentra Chromium, indícale la ruta con `CHROME=/ruta/a/chrome`.
+
+---
+
 ## Pendientes
 
 ### Hace falta datos para continuar

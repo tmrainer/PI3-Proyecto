@@ -31,7 +31,12 @@ const guardarDiferido = debounce(() => {
   rendicion.actualizadoEn = new Date().toISOString();
   rendiciones[0] = rendicion;
   guardar(CLAVES.rendiciones, rendiciones);
-  config.ultimoCentro = instantaneaCentro(rendicion);
+  // La config la comparte con la página de asistencia, que puede estar abierta
+  // en otra pestaña y cambiar el precio del menú. Se relee lo guardado y solo
+  // se toca el campo que administra esta página; guardar la copia leída al
+  // abrir devolvería el precio viejo.
+  config = Object.assign(configVacia(), leer(CLAVES.config, {}),
+    { ultimoCentro: instantaneaCentro(rendicion) });
   guardar(CLAVES.config, config);
   buscar('#estado-guardado').textContent = 'Guardado en este dispositivo.';
 }, 400);

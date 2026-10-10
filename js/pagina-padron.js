@@ -6,7 +6,9 @@ import { resumenEtario, afiliadosActivos, TRAMOS_ETARIOS } from './calculos.js';
 import { validarPadron } from './validaciones.js';
 import { soportaCamaraPdf417 } from './escaneo-dni.js';
 import { alertaProximaEntrega } from './alertas.js';
-import { estado, cargar, alGuardar, guardarPronto, guardarYa, periodoPorDefecto } from './estado.js';
+import {
+  estado, cargar, alGuardar, guardarPronto, guardarYa, periodoPorDefecto, vigilarPestanas
+} from './estado.js';
 import { montarAltaPersona, pintarListaPersonas } from './ui-personas.js';
 import { montarImportacion } from './ui-importar.js';
 import { pintarReportePadron, filasComoTexto } from './ui-reportes.js';
@@ -177,5 +179,6 @@ montarImportacion(ctx);
 repintar();
 pintarEstadoEscaneo();
 guardarYa();   // consolida la migración del padrón si la hubo
+vigilarPestanas(repintar);
 
 avisarAlSalirDelCampo(validar);
