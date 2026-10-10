@@ -66,6 +66,9 @@ Siempre a través de `http://localhost`, aunque el servidor sea tu propia máqui
   no se pisen los datos. Usa un perfil temporal: no toca tus datos. Si no
   encuentra Chromium, indícale la ruta con `CHROME=/ruta/a/chrome`.
 
+  GitHub la corre sola en cada push y en cada pull request
+  (`.github/workflows/pruebas.yml`).
+
 ---
 
 ## Pendientes

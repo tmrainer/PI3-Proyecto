@@ -1,0 +1,24 @@
+# Corre la prueba de humo en cada push y en cada pull request.
+# herramientas/humo.mjs abre las cinco páginas en Chrome sin ventana, falla
+# ante cualquier error de consola y también verifica que las aserciones de
+# pruebas.html pasen todas. No instala dependencias.
+
+name: Pruebas
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  humo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Prueba de humo (incluye las aserciones de pruebas.html)
+        env:
+          CHROME: /usr/bin/google-chrome   # viene instalado en ubuntu-latest
+        run: node herramientas/humo.mjs
