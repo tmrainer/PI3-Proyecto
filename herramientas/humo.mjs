@@ -238,6 +238,12 @@ async function correr(base, cdp) {
         const aus = await p.eval(TEXTO('#reporte-padron .asistencia-resumen'));
         comprobar('reporte del padrón: 3 filas', filas === 3, String(filas));
         comprobar('reporte: los ausentes son las 2 filas con 0 días', aus.startsWith('2 persona(s)'), aus);
+        // Sin permiso de portapapeles (como aquí) aparece el texto para copiar a mano.
+        await p.eval(`document.querySelector('#copiar-padron').click()`);
+        await pausa(200);
+        const tsv = await p.eval(`document.querySelector('#reporte-padron textarea')?.value || ''`);
+        comprobar('reporte: «Copiar» da las 3 filas separadas por tabulador',
+          tsv.split('\n').length === 4 && tsv.startsWith('N°\tApellido paterno'), JSON.stringify(tsv.slice(0, 60)));
       }
       await p.cerrar();
     }

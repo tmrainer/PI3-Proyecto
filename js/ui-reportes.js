@@ -1,12 +1,12 @@
 // ui-reportes.js — el padrón listo para copiar a un formato municipal.
 // Solo ordena y numera lo ya ingresado: no completa ni deduce ningún dato.
 
-import { nombreCompleto } from './modelo.js';
+import { nombreCompleto, hoyIso, descargarTexto } from './modelo.js';
 import {
   filasPadron, asistenciaPorAfiliado, afiliadosSinAsistencia, TRAMOS_ETARIOS
 } from './calculos.js';
 import { estado } from './estado.js';
-import { crearElemento } from './ui.js';
+import { buscar, crearElemento } from './ui.js';
 
 // ctx: { fechaRef, inicio, fin }
 
@@ -98,4 +98,35 @@ export function filasComoTexto(ctx, separador) {
     }).join(separador));
   }
   return lineas.join('\n');
+}
+
+/**
+ * Controles del reporte: el periodo de los días asistidos, y exportar como CSV
+ * o copiar para pegar en una hoja de cálculo. `alCambiarPeriodo` repinta.
+ */
+export function montarControlesReporte(ctx, alCambiarPeriodo) {
+  const rIni = buscar('#repInicio');
+  const rFin = buscar('#repFin');
+  rIni.value = ctx.inicio;
+  rFin.value = ctx.fin;
+  rIni.addEventListener('input', () => { ctx.inicio = rIni.value || ctx.inicio; alCambiarPeriodo(); });
+  rFin.addEventListener('input', () => { ctx.fin = rFin.value || ctx.fin; alCambiarPeriodo(); });
+
+  buscar('#descargar-padron').addEventListener('click', () => {
+    descargarTexto(`padron-${hoyIso()}.csv`, filasComoTexto(ctx, ','));
+  });
+
+  buscar('#copiar-padron').addEventListener('click', async () => {
+    const texto = filasComoTexto(ctx, '\t');
+    try {
+      await navigator.clipboard.writeText(texto);
+      buscar('#estado-guardado').textContent = 'Padrón copiado. Pégalo en tu hoja de cálculo.';
+    } catch (e) {
+      const area = crearElemento('textarea', { rows: '10', style: 'width:100%;margin-top:10px' });
+      area.value = texto;
+      buscar('#reporte-padron').append(
+        crearElemento('p', { clase: 'pista', texto: 'Tu navegador no dejó copiar solo. Selecciona y copia:' }), area);
+      area.select();
+    }
+  });
 }

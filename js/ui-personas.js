@@ -1,9 +1,10 @@
 // ui-personas.js — inscribir, listar y editar personas del padrón.
 // Dibuja; no calcula ni valida: eso vive en calculos.js y validaciones.js.
 
-import { nombreCompleto, normalizarNombre, nuevoAfiliado, esIso, hoyIso } from './modelo.js';
+import { nombreCompleto, normalizarNombre, nuevoAfiliado, esIso, hoyIso, debounce } from './modelo.js';
 import {
-  grupoEtario, etiquetaGrupoEtario, edadEnFecha, TRAMOS_ETARIOS, TIPOS_AFILIADO
+  grupoEtario, etiquetaGrupoEtario, edadEnFecha, resumenEtario, afiliadosActivos,
+  TRAMOS_ETARIOS, TIPOS_AFILIADO
 } from './calculos.js';
 import { validarAfiliado } from './validaciones.js';
 import { estado } from './estado.js';
@@ -343,4 +344,43 @@ export function pintarListaPersonas(lista, ctx) {
     return;
   }
   for (const a of visibles) lista.append(filaAfiliado(a, ctx));
+}
+
+// ------------------------------------------- resumen por grupos y filtros
+
+/** Chips con las activas y su reparto por grupo etario, a ctx.fechaRef. */
+export function pintarResumenEtario(caja, ctx) {
+  caja.textContent = '';
+  // Una fila de ceros no informa de nada.
+  const vacio = estado.padron.afiliados.length === 0;
+  buscar('#buscarAfiliado').closest('.rejilla').hidden = vacio;
+  buscar('#conteo-afiliados').hidden = vacio;
+  if (vacio) return;
+
+  const conteo = resumenEtario(estado.padron, ctx.fechaRef);
+  caja.append(crearElemento('span', {
+    clase: 'chip', html: `Activas: <b>${afiliadosActivos(estado.padron, ctx.fechaRef).length}</b>`
+  }));
+  for (const t of TRAMOS_ETARIOS) {
+    caja.append(crearElemento('span', { clase: 'chip', html: `${t.etiqueta}: <b>${conteo[t.clave]}</b>` }));
+  }
+  if (conteo.sin_dato) {
+    caja.append(crearElemento('span', { clase: 'chip', html: `Sin grupo: <b>${conteo.sin_dato}</b>` }));
+  }
+}
+
+/** Buscador y filtro de la lista: cambian ctx y repintan solo la lista. */
+export function montarFiltrosPersonas(lista, ctx) {
+  const fBuscar = buscar('#buscarAfiliado');
+  fBuscar.addEventListener('input', debounce(() => {
+    ctx.busqueda = fBuscar.value;
+    pintarListaPersonas(lista, ctx);
+  }, 150));
+
+  const fFiltro = buscar('#filtroAfiliado');
+  fFiltro.value = ctx.filtro;
+  fFiltro.addEventListener('change', () => {
+    ctx.filtro = fFiltro.value;
+    pintarListaPersonas(lista, ctx);
+  });
 }
