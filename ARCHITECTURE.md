@@ -152,7 +152,11 @@ transición de vista (`@view-transition`) con la cabecera y el menú quietos; lo
 módulos de cada página cargan con `blocking="render"`, para que se pinte de una
 vez y la transición capture la página completa. En el APK: barra de estado con
 íconos claros (`SystemBars`), pantalla de inicio de Android 12+
-(`res/values-v31/styles.xml`) y permiso de vibración.
+(`res/values-v31/styles.xml`: la figura del ícono y, abajo, el logo de UTEC
+sin texto), ícono temático de Android 13 (`ic_launcher_monochrome`) y permiso
+de vibración. Letra: Atkinson Hyperlegible Next en `fuentes/` (licencia en
+`fuentes/OFL.txt`), precargada en cada página. Pantallas vacías con
+`estadoVacio()` (`ui.js`): dibujo, qué es el lugar y un solo botón.
 
 **App Android y avisos con la app cerrada.** `app-android/` empaqueta la app
 web con Capacitor (ver su `LEEME.md`); `copiar-web.mjs` copia los archivos de

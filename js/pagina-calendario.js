@@ -8,7 +8,7 @@ import { validarCalendario, validarRendicion } from './validaciones.js';
 import { hayAvisosNativos, permisoDeAvisos, pedirPermisoDeAvisos, reprogramarAvisos } from './avisos-nativos.js';
 import {
   buscar, crearElemento, montarCabecera, pintarPanel,
-  marcarCampo, pintarAvisosAlmacenamiento, avisarAlSalirDelCampo, mostrarGuardado
+  marcarCampo, pintarAvisosAlmacenamiento, avisarAlSalirDelCampo, mostrarGuardado, estadoVacio
 } from './ui.js';
 
 let calendario = leer(CLAVES.calendario, calendarioVacio());
@@ -154,9 +154,9 @@ function pintarAgenda() {
   caja.textContent = '';
 
   if (!esIso(calendario.fechaLimiteBase)) {
-    caja.append(crearElemento('p', {
-      clase: 'vacio-mensaje',
-      texto: 'Aquí aparecerán las próximas entregas.'
+    caja.append(estadoVacio({
+      icono: 'calendario', titulo: 'Todavía no hay fechas',
+      texto: 'Pon arriba una fecha de entrega que conozcas y aquí verás las próximas.'
     }));
     return;
   }

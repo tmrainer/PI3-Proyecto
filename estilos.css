@@ -6,6 +6,14 @@
 
 /* ------------------------------------------------------------- tokens */
 
+/* Letra: Atkinson Hyperlegible Next (Braille Institute, licencia OFL en
+   fuentes/OFL.txt), hecha para leerse bien con poca vista: no confunde I, l y 1
+   ni O y 0, que importa en DNI, montos y fechas. Va dentro de la app, sin
+   internet; las páginas precargan la normal y la negrita. */
+@font-face { font-family: "Atkinson Next"; font-weight: 400; font-display: swap; src: url("./fuentes/atkinson-hyperlegible-next-400.woff2") format("woff2"); }
+@font-face { font-family: "Atkinson Next"; font-weight: 600; font-display: swap; src: url("./fuentes/atkinson-hyperlegible-next-600.woff2") format("woff2"); }
+@font-face { font-family: "Atkinson Next"; font-weight: 700; font-display: swap; src: url("./fuentes/atkinson-hyperlegible-next-700.woff2") format("woff2"); }
+
 :root {
   color-scheme: light;
 
@@ -132,7 +140,7 @@ body {
   margin: 0;
   background: var(--fondo);
   color: var(--tinta);
-  font: var(--t-texto)/1.5 system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
+  font: var(--t-texto)/1.5 "Atkinson Next", system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
 }
@@ -333,7 +341,7 @@ legend.obligatoria::after { content: " *"; color: var(--error); font-weight: 700
 }
 .opcion:has(input:checked) { background: var(--seleccion); border-color: var(--acento-texto); font-weight: 600; }
 
-.campo-error { margin: 2px 0 0; font-size: .82rem; font-weight: 500; color: var(--aviso); }
+.campo-error { margin: 2px 0 0; font-size: .82rem; font-weight: 400; color: var(--aviso); }
 .campo-error.es-error { color: var(--error); }
 
 /* --------------------------------------------------------------- botones
@@ -505,6 +513,12 @@ body[data-pagina="asistencia"] .panel { position: static; }
 }
 .toque.presente { background: var(--superficie-2); }
 .toque.presente .toque-marca { background: var(--acento); border-color: var(--acento); color: #fff; }
+/* Al marcar, el check aparece (150 ms); sin animación si el teléfono pide menos movimiento. */
+@media (prefers-reduced-motion: no-preference) {
+  .toque-marca { transition: background-color 150ms ease-out, border-color 150ms ease-out; }
+  .toque-marca .icono { transition: scale 150ms cubic-bezier(0.2, 0, 0, 1), opacity 150ms ease-out; }
+  .toque:not(.presente) .toque-marca .icono { scale: .25; opacity: 0; }
+}
 /* El menú de cada persona es una ficha chica dentro de la fila. */
 .toque-menu {
   flex: 0 0 auto; margin-right: var(--e3); min-height: 32px; padding: 0 var(--e3);
@@ -552,7 +566,7 @@ body[data-pagina="asistencia"] .panel { position: static; }
 .dia-cuerpo { padding: var(--e3) var(--e4) var(--e4); }
 
 .persona-meta, .dia-resumen, .hoy-detalle { display: flex; flex-wrap: wrap; gap: 2px var(--e3); align-items: baseline; }
-.meta-doc { font-variant-numeric: tabular-nums; color: var(--tinta); font-weight: 500; }
+.meta-doc { font-variant-numeric: tabular-nums; color: var(--tinta); font-weight: 400; }
 .meta-social { color: var(--acento-texto); font-weight: 700; }
 .dato-fuerte { color: var(--tinta); font-weight: 600; }
 .dato-falta { color: var(--aviso); font-weight: 600; }
@@ -562,6 +576,12 @@ body[data-pagina="asistencia"] .panel { position: static; }
   padding: var(--e6) var(--e4); border-radius: var(--r-m); background: var(--superficie-2);
 }
 .vacio-mensaje p { margin: 0 0 var(--e3); }
+.vacio-dibujo {
+  display: inline-grid; place-items: center; width: 80px; height: 80px; margin-bottom: var(--e3);
+  border-radius: 50%; background: var(--superficie); color: var(--acento-texto);
+}
+.vacio-titulo { font-size: 1.05rem; font-weight: 700; color: var(--tinta); }
+.vacio-mensaje.logrado .vacio-dibujo { background: var(--acento); color: #fff; }
 .vacio-mensaje .boton { text-decoration: none; }
 
 /* ------------------------------------------------- asistencia de hoy */
@@ -579,7 +599,7 @@ body[data-pagina="asistencia"] .panel { position: static; }
   margin-bottom: var(--e3); padding: var(--e3) var(--e4);
   background: var(--superficie); border-radius: var(--r-m); box-shadow: var(--sombra-1);
 }
-.hoy-cuenta { font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--titulo); }
+.hoy-cuenta { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--titulo); }
 .hoy-progreso { flex: 1 1 80px; height: 8px; border-radius: var(--r-redondo); background: var(--seleccion); overflow: hidden; min-width: 60px; }
 .hoy-progreso i { display: block; height: 100%; width: 0; background: var(--acento); transition: width .2s; }
 .hoy-detalle { font-size: .86rem; color: var(--tinta-suave); flex: 1 1 100%; }
@@ -594,7 +614,7 @@ body[data-pagina="asistencia"] .panel { position: static; }
 .sin-inscribir-titulo { margin: 0 0 var(--e2); font-weight: 700; color: var(--titulo); font-size: .95rem; }
 .sin-inscribir-fila { display: flex; align-items: center; gap: var(--e3); padding: var(--e1) 0; }
 .sin-inscribir-nombre { flex: 1 1 auto; }
-.sin-inscribir-valor { min-width: 2ch; text-align: center; font-weight: 800; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.sin-inscribir-valor { min-width: 2ch; text-align: center; font-weight: 700; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
 
 .titulo-fecha { font-weight: 400; color: var(--tinta-suave); font-size: .86rem; font-variant-numeric: tabular-nums; margin-left: 10px; }
 .asistencia { margin-top: var(--e3); }
@@ -718,7 +738,7 @@ table.tabla td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .aviso-abajo.ver { opacity: 1; visibility: visible; transform: none; }
 .aviso-abajo span { flex: 1; }
 .aviso-abajo button {
-  border: 0; background: none; color: #b9dba8; font: inherit; font-weight: 800;
+  border: 0; background: none; color: #b9dba8; font: inherit; font-weight: 700;
   min-height: 44px; padding: 0 var(--e3); border-radius: var(--r-s); cursor: pointer;
 }
 
@@ -779,7 +799,7 @@ body.por-pasos [data-paso]:not(.paso-actual) { display: none; }
 .hoy-tarjeta { background: var(--marca); color: #fff; border-radius: var(--r-l); padding: var(--e4) var(--e5); box-shadow: var(--sombra-1); margin-bottom: var(--e4); }
 .hoy-etiqueta { display: block; margin: 0; color: var(--marca-suave); font-size: .9rem; }
 .hoy-cifras { display: flex; flex-wrap: wrap; gap: 6px var(--e6); margin: var(--e1) 0 var(--e3); }
-.hoy-grande { display: block; font-size: var(--t-cifra); font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.hoy-grande { display: block; font-size: var(--t-cifra); font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .hoy-entrega {
   display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px var(--e3);
   border-radius: var(--r-m); background: rgba(255, 255, 255, .1); color: #fff; text-decoration: none; font-size: .95rem;
@@ -931,3 +951,15 @@ html { scroll-padding-top: calc(var(--alto-panel, 6rem) + var(--e2) + env(safe-a
 .zona-peligro h2 { color: var(--error); }
 #ultima-copia { margin: var(--e2) 0 var(--e3); }
 #ultima-copia.pendiente { color: var(--aviso); font-weight: 600; }
+
+/* Acerca de: el logo de UTEC en su versión de color o blanca según el modo. */
+.acerca-logo { display: flex; justify-content: center; padding: var(--e4) 0 var(--e3); }
+.acerca-logo img { width: 130px; height: auto; }
+.logo-oscuro { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) .logo-claro { display: none; }
+  :root:not([data-tema="claro"]) .logo-oscuro { display: block; }
+}
+:root[data-tema="oscuro"] .logo-claro { display: none; }
+:root[data-tema="oscuro"] .logo-oscuro { display: block; }
+.acerca p { text-align: center; text-wrap: balance; }

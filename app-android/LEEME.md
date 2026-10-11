@@ -79,8 +79,11 @@ número.
 
 ## Íconos
 
-`recursos/` tiene los SVG de los que salen el ícono, la pantalla de inicio y el
-ícono blanco de la notificación. Para regenerarlos: `bash recursos/generar.sh`
+`recursos/` tiene los SVG de los que salen el ícono (también su versión de un
+color, para el ícono temático de Android 13), la pantalla de inicio y el
+ícono blanco de la notificación, y `utec-blanco.png`, el logo que va abajo en
+la pantalla de inicio (de Wikimedia Commons, `File:UTEC-Logo.jpg`, pasado a
+blanco). Para regenerarlos: `bash recursos/generar.sh`
 (necesita ImageMagick 7).
 
 ## Permisos que pide

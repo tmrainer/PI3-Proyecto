@@ -10,7 +10,7 @@ import {
   desgloseDelDia, recaudacionDelDiaCent, asistio, menuDe, asistenciasConTodos, sinInscribirDelDia
 } from './calculos.js';
 import { estado, preciosActuales } from './estado.js';
-import { crearElemento, campo, icono, vigilarAltoFijo, chip, avatarPersona, avisoAbajo, vibrar } from './ui.js';
+import { crearElemento, campo, icono, vigilarAltoFijo, chip, avatarPersona, avisoAbajo, vibrar, estadoVacio } from './ui.js';
 
 // ctx: { fechaRef, titulo, onCambio(), onRepintar(), onResumen() }
 
@@ -464,17 +464,15 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
       // Una pantalla vacía es una invitación a hacer algo, no un aviso. Cuando
       // falta el padrón entero, lo que hace falta es el camino para empezarlo.
       if (activos.length === 0) {
-        lista.append(crearElemento('div', { clase: 'vacio-mensaje' }, [
-          crearElemento('p', { texto: 'Para pasar lista hace falta tener personas inscritas.' }),
-          crearElemento('a', { clase: 'boton', href: './padron.html', texto: 'Inscribir a la primera persona' })
-        ]));
-      } else {
-        lista.append(crearElemento('p', {
-          clase: 'vacio-mensaje',
-          texto: soloSinMarcar
-            ? 'No falta nadie: ya pasaste lista completa.'
-            : 'Nadie coincide con esa búsqueda.'
+        lista.append(estadoVacio({
+          icono: 'personas', titulo: 'Todavía no hay personas',
+          texto: 'Para pasar lista, primero inscribe a quienes vienen a la olla.',
+          boton: { texto: 'Inscribir a la primera persona', href: './padron.html#inscribir' }
         }));
+      } else if (soloSinMarcar) {
+        lista.append(estadoVacio({ icono: 'ok', titulo: 'Lista completa', texto: 'Ya marcaste a todos.', tono: 'logrado' }));
+      } else {
+        lista.append(estadoVacio({ icono: 'buscar', titulo: 'Nadie coincide con esa búsqueda' }));
       }
       refrescarBotonFaltan();
       return;

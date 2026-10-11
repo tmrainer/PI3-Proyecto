@@ -296,6 +296,20 @@ function montarBarraTitulo(claveActiva) {
 // Para quien lee con dificultad: la voz del propio teléfono (sin internet en
 // Android). Lee el título y lo que la página marcó con data-leer.
 
+/**
+ * Pantalla vacía: un dibujo grande, qué es este lugar y, si hay, un solo
+ * botón para empezar. Una pantalla vacía invita a hacer algo, no es un aviso.
+ * @param {{ icono: string, titulo: string, texto?: string, boton?: { texto: string, href: string }, tono?: string }} o
+ */
+export function estadoVacio({ icono: nombre, titulo, texto, boton, tono = '' }) {
+  return crearElemento('div', { clase: `vacio-mensaje ${tono}`.trim(), 'data-leer': '' }, [
+    crearElemento('span', { clase: 'vacio-dibujo', 'aria-hidden': 'true' }, [icono(nombre, { tam: 40 })]),
+    crearElemento('p', { clase: 'vacio-titulo', texto: titulo }),
+    texto ? crearElemento('p', { texto }) : null,
+    boton ? crearElemento('a', { clase: 'boton', href: boton.href, texto: boton.texto }) : null
+  ]);
+}
+
 /** La voz nativa del APK (plugin de Capacitor): el WebView de Android no trae speechSynthesis. */
 function vozNativa() {
   const C = window.Capacitor;

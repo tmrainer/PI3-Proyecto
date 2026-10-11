@@ -13,6 +13,8 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icono.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icono-180.png">
+<link rel="preload" href="./fuentes/atkinson-hyperlegible-next-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./fuentes/atkinson-hyperlegible-next-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="./estilos.css">
 <script src="./js/errores.js"></script>
 <script src="./js/preferencias.js"></script>
@@ -81,6 +83,16 @@
     <div class="acciones">
       <button type="button" class="boton secundario" id="como-se-usa">¿Cómo se usa?</button>
     </div>
+  </section>
+
+  <section class="bloque acerca" aria-labelledby="titulo-acerca">
+    <h2 id="titulo-acerca">Acerca de</h2>
+    <div class="acerca-logo">
+      <img class="logo-claro" src="./img/utec-color.webp" width="130" height="155" alt="UTEC, Universidad de Ingeniería y Tecnología">
+      <img class="logo-oscuro" src="./img/utec-blanco.webp" width="130" height="155" alt="UTEC, Universidad de Ingeniería y Tecnología">
+    </div>
+    <p data-leer>Proyecto de estudiantes de UTEC, hecho junto a las ollas comunes y comedores de Villa María del Triunfo.</p>
+    <p class="pista" id="version-app"></p>
   </section>
 
   <section class="bloque zona-peligro" aria-labelledby="titulo-borrar">

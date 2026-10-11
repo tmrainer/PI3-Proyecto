@@ -6,6 +6,9 @@
 // este equipo (claves «pi3.*», ver js/preferencias.js): no van en las copias.
 
 import { CLAVES, leer, hoyIso, cuantos, fechaLarga } from './modelo.js';
+
+/** Versión que se muestra en «Acerca de». Subirla junto con versionName del APK. */
+const VERSION_APP = '1.1';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, botonBorrarTodo,
   pintarAvisosAlmacenamiento, mostrarBienvenida, decir, puedeHablar, sincronizarBarras, avisoAbajo
@@ -81,6 +84,9 @@ if (!hayVoz) {
 
 // ---- ayuda ----
 buscar('#como-se-usa').addEventListener('click', () => mostrarBienvenida());
+
+// ---- acerca de ----
+buscar('#version-app').textContent = `Versión ${VERSION_APP}`;
 
 // Llegar con #copia (desde el aviso de copia) deja esa sección a la vista.
 if (location.hash === '#copia') buscar('#copia').scrollIntoView({ block: 'start' });
