@@ -54,7 +54,7 @@ php -S localhost:8000   # PHP
 ```
 
 En VS Code también sirve la extensión **Live Server**: clic derecho sobre
-`index.html` → *Open with Live Server*.
+`index.html` (el Inicio) → *Open with Live Server*.
 
 ### No abras los archivos con doble clic
 
@@ -93,7 +93,7 @@ sin un servidor. Cómo armarla, instalarla y firmarla: `app-android/LEEME.md`.
   node herramientas/humo.mjs
   ```
 
-  Abre las cinco páginas en un Chromium sin ventana, vacías y con un padrón
+  Abre las seis páginas en un Chromium sin ventana, vacías y con un padrón
   ficticio, y falla si hay errores de consola. También comprueba que no se
   pierda lo último marcado al salir de la página, que dos pestañas abiertas
   no se pisen los datos, que en un celular la lista se vea al abrir, que la
