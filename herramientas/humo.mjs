@@ -177,12 +177,17 @@ async function pestana(cdp) {
     if (msg.method === 'Runtime.consoleAPICalled' && ['error', 'assert'].includes(msg.params.type)) {
       errores.push(msg.params.args.map((a) => a.value ?? a.description).join(' '));
     }
+    // Lo que bloquea la política de contenido (CSP) no pasa por la consola de JS.
+    if (msg.method === 'Log.entryAdded' && /Content Security Policy/.test(msg.params.entry.text)) {
+      errores.push(msg.params.entry.text);
+    }
     if (msg.method === 'Runtime.exceptionThrown') {
       const d = msg.params.exceptionDetails;
       errores.push((d.exception && d.exception.description) || d.text);
     }
   });
   await cdp.enviar('Runtime.enable', {}, sessionId);
+  await cdp.enviar('Log.enable', {}, sessionId);
   await cdp.enviar('Page.enable', {}, sessionId);
   const p = {
     errores,
@@ -257,6 +262,25 @@ async function correr(base, cdp) {
       }
       await p.cerrar();
     }
+  }
+
+  // 1b. La política de contenido está puesta: un script en línea no corre.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/index.html`);
+    const r = await p.eval(`new Promise((ok) => {
+      document.addEventListener('securitypolicyviolation', (e) => ok(e.effectiveDirective), { once: true });
+      const s = document.createElement('script');
+      s.textContent = 'window.__inyectado = 1';
+      document.head.append(s);
+      setTimeout(() => ok(window.__inyectado ? 'corrió' : 'sin aviso'), 500);
+    })`);
+    comprobar('CSP: un script en línea no corre', r === 'script-src-elem', r);
+    await pausa(200);
+    // Y la prueba se entera: así una violación en las páginas cuenta como error.
+    comprobar('CSP: la prueba de humo detecta las violaciones',
+      p.errores.some((e) => /Content Security Policy/.test(e)), p.errores.join(' | ') || 'nada');
+    await p.cerrar();
   }
 
   // 2. Marcar a alguien y salir enseguida, antes de los 400 ms: no se pierde.

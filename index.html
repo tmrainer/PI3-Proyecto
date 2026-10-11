@@ -2,6 +2,9 @@
 <html lang="es-PE">
 <head>
 <meta charset="utf-8">
+<!-- La regla de AGENTS.md §3 (nada sale del dispositivo) la impone el navegador:
+     solo se cargan archivos de este mismo sitio y no hay scripts en línea. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Pasa lista del día en tu olla común o comedor: toca a quien vino y las raciones se cuentan solas.">
 <meta name="robots" content="noindex, nofollow">

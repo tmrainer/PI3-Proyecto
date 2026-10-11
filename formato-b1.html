@@ -2,6 +2,9 @@
 <html lang="es-PE">
 <head>
 <meta charset="utf-8">
+<!-- La regla de AGENTS.md §3 (nada sale del dispositivo) la impone el navegador:
+     solo se cargan archivos de este mismo sitio y no hay scripts en línea. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Llena y revisa el Formato B-1 de rendición de cuentas del Programa de Complementación Alimentaria.">
 <meta name="robots" content="noindex, nofollow">

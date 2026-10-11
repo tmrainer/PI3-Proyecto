@@ -2,6 +2,9 @@
 <html lang="es-PE">
 <head>
 <meta charset="utf-8">
+<!-- La regla de AGENTS.md §3 (nada sale del dispositivo) la impone el navegador:
+     solo se cargan archivos de este mismo sitio y no hay scripts en línea. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Comprobaciones automáticas de los cálculos y validaciones del Sistema de Asistencia.">
 <meta name="robots" content="noindex, nofollow">
@@ -47,40 +50,6 @@
   </p>
 </main>
 
-<script type="module">
-import { ejecutar } from './js/casos-prueba.js';
-import { crearElemento, montarCabecera } from './js/ui.js';
-
-montarCabecera('pruebas', 'Aserciones en el navegador, sin dependencias');
-
-const resultados = ejecutar();
-const fallan = resultados.filter((r) => r.estado === 'falla');
-
-const resumen = document.getElementById('resumen');
-resumen.append(crearElemento('p', { clase: 'panel-resumen' }, [
-  crearElemento('span', {
-    clase: fallan.length ? 'pastilla error' : 'pastilla ok',
-    texto: fallan.length
-      ? `✕ ${fallan.length} de ${resultados.length} fallan`
-      : `✓ ${resultados.length} de ${resultados.length} pasan`
-  })
-]));
-
-const lista = document.getElementById('lista');
-let grupoActual = null;
-for (const r of resultados) {
-  if (r.grupo !== grupoActual) {
-    grupoActual = r.grupo;
-    lista.append(crearElemento('h3', { clase: 'grupo-titulo', texto: grupoActual }));
-  }
-  lista.append(crearElemento('div', { clase: `caso ${r.estado}` }, [
-    crearElemento('span', { clase: 'marca', texto: r.estado === 'pasa' ? '✓' : '✕' }),
-    crearElemento('span', {}, [
-      r.nombre,
-      r.detalle ? crearElemento('span', { clase: 'detalle', texto: r.detalle }) : null
-    ])
-  ]));
-}
-</script>
+<script type="module" src="./js/pagina-pruebas.js"></script>
 </body>
 </html>
