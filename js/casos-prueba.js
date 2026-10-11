@@ -1224,34 +1224,48 @@ export const casos = [
 
   {
     grupo: 'Respaldos',
-    nombre: 'La asistencia compacta vuelve idéntica, y ocupa menos de la mitad',
+    nombre: 'La asistencia guardada en casillas vuelve idéntica y ocupa muy poco',
     fn: () => {
-      const u1 = '0f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a00';
-      const u2 = 'ffffffff-ffff-4fff-bfff-ffffffffffff';
+      const persona = (id) => ({ id, nombres: 'Prueba' });
+      const afiliados = ['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7'].map(persona);
       const at = {
         id: 'd1', fecha: '2026-10-10', precioMenuNormalCent: 300,
         asistencias: [
-          { afiliadoId: u2, tipoMenu: 'normal' },
-          { afiliadoId: u1, tipoMenu: 'ayuda_social' },
-          { afiliadoId: 'alfa0001', tipoMenu: 'normal' }
+          { afiliadoId: 'a7', tipoMenu: 'normal' },
+          { afiliadoId: 'a0', tipoMenu: 'ayuda_social' },
+          { afiliadoId: 'ya-no-esta', tipoMenu: 'normal' }
         ]
       };
       const raro = { id: 'd2', fecha: '2026-10-09', asistencias: [{ afiliadoId: 'x', tipoMenu: 'otro' }] };
-      const p = { version: 3, afiliados: [], atenciones: [at, raro] };
+      const doble = { id: 'd3', fecha: '2026-10-08', asistencias: [
+        { afiliadoId: 'a1', tipoMenu: 'normal' }, { afiliadoId: 'a1', tipoMenu: 'normal' }] };
+      const p = { version: 3, afiliados, atenciones: [at, raro, doble] };
       const e = empacarPadron(p);
-      ok(!JSON.stringify(e.atenciones[0]).includes('afiliadoId'), 'se empaca');
-      igual(e.atenciones[0].marcas.ids[0].length, 23, 'UUID corto');
+      ok(!JSON.stringify(e.atenciones[0].marcas.vino).includes('a7'), 'se empaca en casillas');
+      igual(e.atenciones[0].marcas.fuera.length, 1, 'quien ya no está va aparte, entero');
       igual(JSON.stringify(e.atenciones[1]), JSON.stringify(raro), 'lo raro se guarda tal cual');
-      const v = desempacarPadron(e).atenciones[0];
-      igual(JSON.stringify(v.asistencias), JSON.stringify(at.asistencias), 'mismo orden, ids y menús');
+      igual(JSON.stringify(e.atenciones[2]), JSON.stringify(doble), 'una marca doble se guarda tal cual');
+      const v = desempacarPadron(JSON.parse(JSON.stringify(e))).atenciones[0];
+      // Vuelve en el orden del padrón, con los mismos menús.
+      igual(JSON.stringify(v.asistencias), JSON.stringify([
+        { afiliadoId: 'a0', tipoMenu: 'ayuda_social' },
+        { afiliadoId: 'a7', tipoMenu: 'normal' },
+        { afiliadoId: 'ya-no-esta', tipoMenu: 'normal' }
+      ]));
       igual(v.precioMenuNormalCent, 300);
-      // El formato anterior se sigue leyendo igual.
+      // Lo que no viene empacado pasa igual.
       igual(JSON.stringify(desempacarPadron(p)), JSON.stringify(p));
-      // 40 personas: menos de la mitad que antes.
-      const ids = Array.from({ length: 40 }, (_, i) => u1.slice(0, -2) + String(i).padStart(2, '0'));
-      const dia = { version: 3, afiliados: [], atenciones: [{ id: 'd', fecha: '2026-10-10',
-        asistencias: ids.map((id) => ({ afiliadoId: id, tipoMenu: 'normal' })) }] };
-      ok(JSON.stringify(empacarPadron(dia)).length < JSON.stringify(dia).length / 2, 'menos de la mitad');
+      // El formato anterior (marcas.ids, UUID en 23 caracteres) se sigue leyendo.
+      const u = '0f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a00';
+      const viejo = desempacarPadron({ afiliados: [], atenciones: [{ id: 'v', fecha: '2026-10-01',
+        marcas: { ids: ['~Dx4tPEtaSYeKa1xNPi8aAA', 'alfa0001'], social: ['alfa0001'] } }] });
+      igual(JSON.stringify(viejo.atenciones[0].asistencias), JSON.stringify([
+        { afiliadoId: u, tipoMenu: 'normal' }, { afiliadoId: 'alfa0001', tipoMenu: 'ayuda_social' }]));
+      // 300 personas, todas vinieron: 50 caracteres de casillas.
+      const muchos = Array.from({ length: 300 }, (_, i) => persona(`p${i}`));
+      const dia = { version: 3, afiliados: muchos, atenciones: [{ id: 'd', fecha: '2026-10-10',
+        asistencias: muchos.map((x) => ({ afiliadoId: x.id, tipoMenu: 'normal' })) }] };
+      igual(empacarPadron(dia).atenciones[0].marcas.vino.length, 50);
     }
   },
 

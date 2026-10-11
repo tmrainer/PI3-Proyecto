@@ -456,7 +456,7 @@ async function correr(base, cdp) {
     const r = await p.eval(TEXTO('.hoy-cuenta'));
     comprobar('salir justo después de marcar: el toque queda guardado', r === '2 de 3', r);
     const crudo = await p.eval(`localStorage.getItem('b1.padron.v1')`);
-    comprobar('la asistencia se guarda compacta', crudo.includes('"marcas"') && !crudo.includes('afiliadoId'),
+    comprobar('la asistencia se guarda compacta', crudo.includes('"vino"') && !crudo.includes('afiliadoId'),
       crudo.slice(0, 120));
     await p.cerrar();
   }
@@ -591,6 +591,53 @@ async function correr(base, cdp) {
     await p.ir(`${base}/calendario.html`);
     const v = await p.eval(`document.querySelector('#periodicidad').value`);
     comprobar('Entregas: salir justo después de cambiar no lo pierde', v === 'semanal', v);
+    await p.cerrar();
+  }
+
+  // 6c. Un año de uso de una olla grande (300 personas, 365 días): cabe con
+  // holgura, abre rápido y un toque no se demora. Antes de las casillas y del
+  // índice de validación, esto llenaba el espacio y cada toque tardaba
+  // segundos en un celular modesto. Los límites son holgados (aquí no se
+  // frena la CPU): saltan si vuelve un recorrido de todos contra todos.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar`);
+    await p.eval(`(async () => {
+      const m = await import('./js/modelo.js');
+      const id = (n) => 'f0000000-0000-4000-8000-' + String(n).padStart(12, '0');
+      const afiliados = Array.from({ length: 300 }, (_, i) => ({
+        id: id(i), apellidoPaterno: 'Prueba' + i, apellidoMaterno: '', nombres: 'Persona',
+        numeroDocumento: String(10000000 + i), tipoDocumento: 'dni', fechaNacimiento: '1990-01-01',
+        grupoEtarioManual: null, sexo: '', tipoAfiliado: i % 5 ? 'habitual' : 'caso_social',
+        activo: true, altaEn: '2020-01-01', bajaEn: '', motivoBaja: '', origenDato: 'manual',
+        verificadoPor: '', nota: '' }));
+      const atenciones = Array.from({ length: 365 }, (_, d) => ({
+        id: id(100000 + d), fecha: new Date(Date.now() - (d + 1) * 864e5).toISOString().slice(0, 10),
+        asistencias: afiliados.filter((_, i) => (i * 7 + d) % 10 < 7).map((a) => ({
+          afiliadoId: a.id, tipoMenu: a.tipoAfiliado === 'caso_social' ? 'ayuda_social' : 'normal' })),
+        precioMenuNormalCent: 300, precioMenuAyudaSocialCent: 100, precioTomadoDeConfig: true,
+        legado: null, nota: '' }));
+      m.guardar('b1.padron.v1', { version: 3, afiliados, atenciones });
+    })()`);
+    const uso = await p.eval(`import('./js/modelo.js').then((m) => m.usoAlmacenamiento().fraccion)`);
+    comprobar('un año de 300 personas ocupa menos del 20 % del espacio', uso < 0.2, `${Math.round(uso * 100)} %`);
+    await p.ir(`${base}/index.html`);
+    const abrir = await p.eval(`Math.round(performance.getEntriesByType('navigation')[0].domContentLoadedEventEnd)`);
+    comprobar('con un año de datos, Asistencia abre en menos de 0,8 s', abrir < 800, `${abrir} ms`);
+    const toque = await p.actuar(`(async () => {
+      const t = performance.now();
+      document.querySelectorAll('#hoy .toque-nombre')[10].click();
+      const alInstante = performance.now() - t;
+      await new Promise((o) => setTimeout(o, 0));
+      await new Promise((o) => setTimeout(o, 0));
+      return [Math.round(alInstante), Math.round(performance.now() - t)];
+    })()`);
+    comprobar('con un año de datos, un toque marca al instante y todo se pone al día rápido',
+      toque[0] < 50 && toque[1] < 200, `${toque[0]} ms / ${toque[1]} ms`);
+    await p.ir(`${base}/padron.html`);
+    const padron = await p.eval(`Math.round(performance.getEntriesByType('navigation')[0].domContentLoadedEventEnd)`);
+    comprobar('con un año de datos, Padrón abre en menos de 0,8 s', padron < 800, `${padron} ms`);
+    comprobar('con un año de datos, sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
     await p.cerrar();
   }
 

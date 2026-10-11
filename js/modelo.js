@@ -339,47 +339,68 @@ export function avisosAlmacenamiento() {
 
 // ------------------------------------- asistencia compacta en localStorage
 
-// Cada día con 40 personas ocupaba ~3,1 KB: cada marca repetía
-// {"afiliadoId":"…","tipoMenu":"normal"}. A ese ritmo, el límite de Safari
-// (~5 MB) se llenaba en menos de 3 años. Guardada, la marca va como
-// marcas: { ids: [...], social: [...] } (el orden de ids es el de los toques;
-// social lista a quienes comieron menú de ayuda social). Es SOLO el formato en
-// localStorage: en memoria, en los cálculos y en los respaldos exportados la
-// forma sigue siendo asistencias: [{ afiliadoId, tipoMenu }]. leer() y
-// guardar() traducen solos; leer() entiende también el formato anterior.
+// Guardada como lista de marcas, la asistencia de 150 personas llenaba el
+// límite de Safari (~5 MB) en unos dos años, y con 300 en uno. Por eso cada día
+// se guarda como CASILLAS: una por persona, en el orden de padron.afiliados que
+// va en la MISMA clave guardada, 6 personas por carácter:
+//   marcas: { vino: 'texto', social: 'texto', fuera: [...] }
+// vino marca a quién vino; social, a quién comió menú de ayuda social; fuera
+// (rara vez) guarda tal cual las marcas de alguien que ya no está en el
+// padrón. 300 personas ocupan 50 caracteres por día, no ~4.800.
+//
+// Es SOLO el formato en localStorage: en memoria, en los cálculos y en los
+// respaldos exportados la forma sigue siendo asistencias: [{ afiliadoId,
+// tipoMenu }], en el orden del padrón. leer() y guardar() traducen solos;
+// leer() entiende también los dos formatos anteriores.
 
 const MENUS = new Set(['normal', 'ayuda_social']);
-
-// Un UUID (36 caracteres) va como «~» y sus 16 bytes en base64url (23 en
-// total). Solo los de la forma exacta que da crypto.randomUUID(), en
-// minúsculas: así la vuelta da el mismo texto, letra por letra. Cualquier otro
-// id pasa tal cual.
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 
-function idCorto(id) {
-  if (!UUID.test(id)) return id;   // (un id propio nunca empieza con «~»: lo da uuid())
-  const hex = id.replace(/-/g, '');
-  let bits = '';
-  for (const h of hex) bits += parseInt(h, 16).toString(2).padStart(4, '0');
-  bits += '0000';                                    // 128 bits -> 22 grupos de 6
-  let out = '~';
-  for (let i = 0; i < 132; i += 6) out += B64[parseInt(bits.slice(i, i + 6), 2)];
-  return out;
+/** Posiciones [0, 3, 7…] -> texto de casillas. */
+function aCasillas(posiciones) {
+  const grupos = [];
+  for (const i of posiciones) {
+    const g = Math.floor(i / 6);
+    while (grupos.length <= g) grupos.push(0);
+    grupos[g] |= 1 << (i % 6);
+  }
+  return grupos.map((n) => B64[n]).join('');
 }
 
+/** Texto de casillas -> posiciones marcadas, de menor a mayor. */
+function deCasillas(texto) {
+  const posiciones = [];
+  for (let g = 0; g < texto.length; g += 1) {
+    const n = B64.indexOf(texto[g]);
+    for (let b = 0; b < 6; b += 1) if (n & (1 << b)) posiciones.push(g * 6 + b);
+  }
+  return posiciones;
+}
+
+// Formato anterior (solo hubo copias de desarrollo): un UUID iba como «~» y
+// sus 16 bytes en base64url. Se sigue leyendo; ya no se escribe.
 function idLargo(id) {
   if (typeof id !== 'string' || id[0] !== '~' || id.length !== 23) return id;
-  let bits = '';
-  for (const c of id.slice(1)) bits += B64.indexOf(c).toString(2).padStart(6, '0');
   let hex = '';
-  for (let i = 0; i < 128; i += 4) hex += parseInt(bits.slice(i, i + 4), 2).toString(16);
+  let acumulado = 0;
+  let bits = 0;
+  for (const c of id.slice(1)) {
+    acumulado = (acumulado << 6) | B64.indexOf(c);
+    bits += 6;
+    while (bits >= 4 && hex.length < 32) {
+      bits -= 4;
+      hex += ((acumulado >> bits) & 15).toString(16);
+    }
+    acumulado &= (1 << bits) - 1;
+  }
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-/** Padrón tal como se guarda: la asistencia de cada día, compacta. */
+/** Padrón tal como se guarda: la asistencia de cada día, en casillas. */
 export function empacarPadron(padron) {
-  if (!padron || !Array.isArray(padron.atenciones)) return padron;
+  if (!padron || !Array.isArray(padron.atenciones) || !Array.isArray(padron.afiliados)) return padron;
+  const posicion = new Map();
+  padron.afiliados.forEach((a, i) => { if (a && !posicion.has(a.id)) posicion.set(a.id, i); });
   return {
     ...padron,
     atenciones: padron.atenciones.map((at) => {
@@ -387,14 +408,21 @@ export function empacarPadron(padron) {
       // Lo que no tiene la forma de siempre se guarda tal cual: nunca se pierde un dato.
       if (!Array.isArray(lista) || !lista.every((x) => x && typeof x.afiliadoId === 'string' &&
         MENUS.has(x.tipoMenu) && Object.keys(x).length === 2)) return at;
+      if (new Set(lista.map((x) => x.afiliadoId)).size !== lista.length) return at;
+      const vino = [];
+      const social = [];
+      const fuera = [];
+      for (const x of lista) {
+        const i = posicion.get(x.afiliadoId);
+        if (i === undefined) { fuera.push(x); continue; }
+        vino.push(i);
+        if (x.tipoMenu === 'ayuda_social') social.push(i);
+      }
       const { asistencias, ...resto } = at;
-      return {
-        ...resto,
-        marcas: {
-          ids: lista.map((x) => idCorto(x.afiliadoId)),
-          social: lista.filter((x) => x.tipoMenu === 'ayuda_social').map((x) => idCorto(x.afiliadoId))
-        }
-      };
+      const marcas = { vino: aCasillas(vino) };
+      if (social.length) marcas.social = aCasillas(social);
+      if (fuera.length) marcas.fuera = fuera;
+      return { ...resto, marcas };
     })
   };
 }
@@ -402,18 +430,30 @@ export function empacarPadron(padron) {
 /** El camino de vuelta de empacarPadron(). Lo que ya viene sin empacar, pasa igual. */
 export function desempacarPadron(padron) {
   if (!padron || !Array.isArray(padron.atenciones)) return padron;
+  const afiliados = Array.isArray(padron.afiliados) ? padron.afiliados : [];
   return {
     ...padron,
     atenciones: padron.atenciones.map((at) => {
-      if (!at || !at.marcas || !Array.isArray(at.marcas.ids)) return at;
+      const m = at && at.marcas;
+      if (!m) return at;
       const { marcas, ...resto } = at;
-      const social = new Set(marcas.social || []);
-      return {
-        ...resto,
-        asistencias: marcas.ids.map((id) => ({
-          afiliadoId: idLargo(id), tipoMenu: social.has(id) ? 'ayuda_social' : 'normal'
-        }))
-      };
+      if (typeof m.vino === 'string') {
+        const social = new Set(deCasillas(m.social || ''));
+        const asistencias = deCasillas(m.vino)
+          .filter((i) => afiliados[i])
+          .map((i) => ({ afiliadoId: afiliados[i].id, tipoMenu: social.has(i) ? 'ayuda_social' : 'normal' }));
+        return { ...resto, asistencias: asistencias.concat(Array.isArray(m.fuera) ? m.fuera : []) };
+      }
+      if (Array.isArray(m.ids)) {
+        const social = new Set(m.social || []);
+        return {
+          ...resto,
+          asistencias: m.ids.map((id) => ({
+            afiliadoId: idLargo(id), tipoMenu: social.has(id) ? 'ayuda_social' : 'normal'
+          }))
+        };
+      }
+      return at;
     })
   };
 }
@@ -464,7 +504,10 @@ export function leer(clave, porDefecto) {
 
 export function guardar(clave, valor) {
   try {
-    localStorage.setItem(clave, JSON.stringify(clave === CLAVES.padron ? empacarPadron(valor) : valor));
+    const texto = JSON.stringify(clave === CLAVES.padron ? empacarPadron(valor) : valor);
+    // Si no cambió nada, no se escribe: es más rápido y no despierta a las
+    // otras pestañas (evento storage) por gusto.
+    if (localStorage.getItem(clave) !== texto) localStorage.setItem(clave, texto);
     return true;
   } catch (e) {
     avisos.push(`No se pudo guardar en "${clave}". Puede que el almacenamiento ` +
