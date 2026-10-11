@@ -10,7 +10,7 @@ import {
   desgloseDelDia, recaudacionDelDiaCent, asistio, menuDe, asistenciasConTodos
 } from './calculos.js';
 import { estado, preciosActuales } from './estado.js';
-import { crearElemento, campo, icono, vigilarAltoFijo } from './ui.js';
+import { crearElemento, campo, icono, vigilarAltoFijo, chip } from './ui.js';
 
 // ctx: { fechaRef, titulo, onCambio(), onRepintar(), onResumen() }
 
@@ -129,15 +129,10 @@ function fichaAtencion(at, ctx) {
     const recaudado = recaudacionDelDiaCent(at);
     contadores.textContent = '';
     contadores.append(
-      crearElemento('span', { clase: 'chip', html: `Raciones: <b>${d.total}</b>` }),
-      crearElemento('span', { clase: 'chip', html: `Normal: <b>${d.normal}</b>` }),
-      crearElemento('span', { clase: 'chip', html: `Ayuda social: <b>${d.ayudaSocial}</b>` }),
-      crearElemento('span', {
-        clase: 'chip',
-        html: recaudado === null
-          ? 'Recaudado: <b>—</b>'
-          : `Recaudado: <b>S/ ${formatearSoles(recaudado)}</b>`
-      })
+      chip(`Raciones`, `${d.total}`),
+      chip(`Normal`, `${d.normal}`),
+      chip(`Ayuda social`, `${d.ayudaSocial}`),
+      chip('Recaudado', recaudado === null ? '—' : `S/ ${formatearSoles(recaudado)}`)
     );
     avisoLegado.textContent = d.origen === 'legado'
       ? `Estas ${d.total} raciones vienen anotadas a mano de la versión anterior. ` +

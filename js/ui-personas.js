@@ -8,7 +8,7 @@ import {
 } from './calculos.js';
 import { validarAfiliado } from './validaciones.js';
 import { estado } from './estado.js';
-import { buscar, crearElemento, campo, icono } from './ui.js';
+import { buscar, crearElemento, campo, icono, chip } from './ui.js';
 
 // ctx: { fechaRef, busqueda, filtro, conteo, onCambio(), onRepintar() }
 
@@ -358,14 +358,12 @@ export function pintarResumenEtario(caja, ctx) {
   if (vacio) return;
 
   const conteo = resumenEtario(estado.padron, ctx.fechaRef);
-  caja.append(crearElemento('span', {
-    clase: 'chip', html: `Activas: <b>${afiliadosActivos(estado.padron, ctx.fechaRef).length}</b>`
-  }));
+  caja.append(chip(`Activas`, `${afiliadosActivos(estado.padron, ctx.fechaRef).length}`));
   for (const t of TRAMOS_ETARIOS) {
-    caja.append(crearElemento('span', { clase: 'chip', html: `${t.etiqueta}: <b>${conteo[t.clave]}</b>` }));
+    caja.append(chip(`${t.etiqueta}`, `${conteo[t.clave]}`));
   }
   if (conteo.sin_dato) {
-    caja.append(crearElemento('span', { clase: 'chip', html: `Sin grupo: <b>${conteo.sin_dato}</b>` }));
+    caja.append(chip(`Sin grupo`, `${conteo.sin_dato}`));
   }
 }
 

@@ -6,7 +6,7 @@ import {
   filasPadron, asistenciaPorAfiliado, afiliadosSinAsistencia, TRAMOS_ETARIOS
 } from './calculos.js';
 import { estado } from './estado.js';
-import { buscar, crearElemento } from './ui.js';
+import { buscar, crearElemento, chip } from './ui.js';
 
 // ctx: { fechaRef, inicio, fin }
 
@@ -59,12 +59,12 @@ export function pintarReportePadron(caja, ctx) {
     if (f.tipoAfiliado === 'caso_social') ayudaSocial += 1;
   }
   const chips = crearElemento('div', { clase: 'resumen-chips', style: 'margin-top:10px' }, [
-    crearElemento('span', { clase: 'chip', html: `Total: <b>${filas.length}</b>` })
+    chip(`Total`, `${filas.length}`)
   ]);
   for (const t of TRAMOS_ETARIOS) {
-    chips.append(crearElemento('span', { clase: 'chip', html: `${t.etiqueta}: <b>${porGrupo[t.clave]}</b>` }));
+    chips.append(chip(`${t.etiqueta}`, `${porGrupo[t.clave]}`));
   }
-  chips.append(crearElemento('span', { clase: 'chip', html: `Ayuda social: <b>${ayudaSocial}</b>` }));
+  chips.append(chip(`Ayuda social`, `${ayudaSocial}`));
   caja.append(chips);
 
   const ausentes = afiliadosSinAsistencia(estado.padron, ctx.inicio, ctx.fin, ctx.fechaRef);

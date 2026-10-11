@@ -12,7 +12,7 @@ import { alertaProximaEntrega } from './alertas.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
   marcarCampo, cajaSugerencia, bannerAlerta, pintarAvisosAlmacenamiento,
-  avisarAlSalirDelCampo
+  avisarAlSalirDelCampo, chip
 } from './ui.js';
 
 // ------------------------------------------------------------------- estado
@@ -452,7 +452,7 @@ function refrescarTotales() {
   const etiquetas = { subsidio: 'Subsidio', ayuda_social: 'Ayuda social', aporte_propio: 'Aporte propio' };
   for (const [clave, etiqueta] of Object.entries(etiquetas)) {
     if (!po[clave]) continue;
-    caja.append(crearElemento('span', { clase: 'chip', html: `${etiqueta}: <b>S/ ${formatearSoles(po[clave])}</b>` }));
+    caja.append(chip(`${etiqueta}`, `S/ ${formatearSoles(po[clave])}`));
   }
 }
 

@@ -22,8 +22,6 @@ export const buscar = (sel, raiz = document) => raiz.querySelector(sel);
  * Cómo se interpreta cada clave de `props`:
  * - `clase`  -> `className`
  * - `texto`  -> `textContent` (seguro: no interpreta HTML)
- * - `html`   -> `innerHTML` (SÍ interpreta HTML: solo con texto propio, nunca
- *              con datos escritos por la usuaria)
  * - `onX` con una función -> `addEventListener('X', fn)` (p. ej. `onclick`)
  * - cualquier otra -> atributo HTML; `true` lo pone vacío (`disabled=""`) y
  *   `null`, `undefined` o `false` lo omiten.
@@ -40,7 +38,6 @@ export function crearElemento(etiqueta, props = {}, hijos = []) {
   for (const [k, v] of Object.entries(props)) {
     if (k === 'clase') el.className = v;
     else if (k === 'texto') el.textContent = v;
-    else if (k === 'html') el.innerHTML = v;
     else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
     else if (v !== null && v !== undefined && v !== false) el.setAttribute(k, v === true ? '' : v);
   }
@@ -49,6 +46,17 @@ export function crearElemento(etiqueta, props = {}, hijos = []) {
     el.appendChild(typeof h === 'string' ? document.createTextNode(h) : h);
   }
   return el;
+}
+
+/**
+ * Chip «Etiqueta: valor», con el valor en negrita. Arma los nodos uno por uno:
+ * la aplicación no usa innerHTML en ninguna parte.
+ * @param {string} etiqueta
+ * @param {string|number} valor
+ * @returns {HTMLElement}
+ */
+export function chip(etiqueta, valor) {
+  return crearElemento('span', { clase: 'chip' }, [`${etiqueta}: `, crearElemento('b', { texto: String(valor) })]);
 }
 
 // Iconos SVG en línea: nítidos a cualquier tamaño y en cualquier plataforma,

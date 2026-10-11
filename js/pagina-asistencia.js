@@ -13,7 +13,7 @@ import { pintarAsistenciaDeHoy, pintarOtrosDias } from './ui-asistencia.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
   pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo,
-  repintarConservandoVista
+  repintarConservandoVista, chip
 } from './ui.js';
 
 cargar();
@@ -34,14 +34,14 @@ function refrescar() {
   const caja = buscar('#resumen-raciones');
   caja.textContent = '';
   caja.append(
-    crearElemento('span', { clase: 'chip', html: `Raciones: <b>${r.racionesTotales}</b>` }),
-    crearElemento('span', { clase: 'chip', html: `Normales: <b>${r.racionesNormales}</b>` }),
-    crearElemento('span', { clase: 'chip', html: `Ayuda social: <b>${r.racionesAyudaSocial}</b>` })
+    chip(`Raciones`, `${r.racionesTotales}`),
+    chip(`Normales`, `${r.racionesNormales}`),
+    chip(`Ayuda social`, `${r.racionesAyudaSocial}`)
   );
   if (r.recaudacionCent !== null) {
     caja.append(
-      crearElemento('span', { clase: 'chip', html: `Recaudado: <b>S/ ${formatearSoles(r.recaudacionCent)}</b>` }),
-      crearElemento('span', { clase: 'chip', html: `Promedio por ración: <b>S/ ${formatearSoles(r.precioPromedioRacionCent)}</b>` })
+      chip(`Recaudado`, `S/ ${formatearSoles(r.recaudacionCent)}`),
+      chip(`Promedio por ración`, `S/ ${formatearSoles(r.precioPromedioRacionCent)}`)
     );
   }
 

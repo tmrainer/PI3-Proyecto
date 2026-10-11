@@ -4,7 +4,7 @@
 import { etiquetaGrupoEtario } from './calculos.js';
 import { prepararImportacion, filasImportables } from './importar.js';
 import { estado, guardarYa } from './estado.js';
-import { buscar, crearElemento } from './ui.js';
+import { buscar, crearElemento, chip } from './ui.js';
 
 // ctx: { estadoTexto, onRepintar() }
 
@@ -62,10 +62,10 @@ export function montarImportacion(ctx) {
     const entran = filasImportables(r.filas);
 
     const chips = crearElemento('div', { clase: 'imp-resumen' }, [
-      crearElemento('span', { clase: 'chip', html: `Se importarán: <b>${entran.length}</b>` }),
-      r.resumen.incompleta ? crearElemento('span', { clase: 'chip', html: `Con datos que faltan: <b>${r.resumen.incompleta}</b>` }) : null,
-      r.resumen.duplicada ? crearElemento('span', { clase: 'chip', html: `Ya están en el padrón: <b>${r.resumen.duplicada}</b>` }) : null,
-      r.resumen.vacia ? crearElemento('span', { clase: 'chip', html: `Filas vacías: <b>${r.resumen.vacia}</b>` }) : null
+      chip(`Se importarán`, `${entran.length}`),
+      r.resumen.incompleta ? chip(`Con datos que faltan`, `${r.resumen.incompleta}`) : null,
+      r.resumen.duplicada ? chip(`Ya están en el padrón`, `${r.resumen.duplicada}`) : null,
+      r.resumen.vacia ? chip(`Filas vacías`, `${r.resumen.vacia}`) : null
     ]);
     vista.append(chips);
 
