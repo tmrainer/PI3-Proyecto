@@ -33,7 +33,7 @@
 
   <details class="bloque desplegable" id="bloque-alta">
     <summary><h2>Inscribir a una persona</h2></summary>
-    <p class="pista">Los campos con * son obligatorios. El grupo de edad no hace falta si pones la fecha de nacimiento.</p>
+    <p class="pista">Los campos con * son obligatorios.</p>
     <div class="rejilla tres">
       <div class="campo">
         <label for="altaPaterno">Apellido paterno</label>
@@ -108,21 +108,17 @@
   </section>
 
   <section class="bloque apoyo">
-    <h2>Cargar un padrón desde Excel o CSV</h2>
-    <p class="pista">
-      Pega las filas con su fila de títulos. Nada se guarda hasta que revises.
-      Si tu padrón está en Excel (.xlsx), guárdalo antes como CSV («Guardar
-      como» → CSV) y elige ese archivo.
-    </p>
+    <h2>Cargar un padrón desde Excel</h2>
+    <p class="pista">Elige el archivo, o copia las filas con sus títulos y pégalas. Nada se guarda hasta que revises.</p>
     <div class="campo">
       <label for="pegarPadron">Pega aquí las filas (con la fila de títulos)</label>
       <textarea id="pegarPadron" rows="5" placeholder="Apellido paterno	Apellido materno	Nombres	DNI	Grupo de edad	Tipo"></textarea>
     </div>
     <div class="acciones" style="margin-top:10px">
-      <label class="boton secundario" for="archivoPadron">Elegir un archivo .csv</label>
-      <input type="file" id="archivoPadron" accept=".csv,.tsv,.txt,text/csv" class="oculto-visual">
+      <label class="boton secundario" for="archivoPadron">Elegir archivo de Excel</label>
+      <input type="file" id="archivoPadron" accept=".xlsx,.xls,.csv,.tsv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="oculto-visual">
       <button type="button" class="boton secundario" id="revisar-importacion">Revisar</button>
-      <button type="button" class="boton" id="confirmar-importacion" hidden>Importar</button>
+      <button type="button" class="boton" id="confirmar-importacion" hidden>Agregar</button>
       <button type="button" class="boton secundario" id="cancelar-importacion" hidden>Cancelar</button>
     </div>
     <div id="vista-importacion" style="margin-top:12px"></div>
@@ -142,32 +138,21 @@
       </div>
     </div>
     <div class="acciones" style="margin-top:10px">
-      <button type="button" class="boton secundario" id="copiar-padron">Copiar al portapapeles</button>
-      <button type="button" class="boton secundario" id="descargar-padron">Descargar CSV</button>
+      <button type="button" class="boton secundario" id="copiar-padron">Copiar</button>
+      <button type="button" class="boton secundario" id="descargar-padron">Descargar para Excel</button>
     </div>
     <div id="reporte-padron" style="margin-top:12px"></div>
   </section>
 
-  <details class="plegable">
-    <summary>Inscripción por código de barras del DNI</summary>
-    <div class="plegable-cuerpo" id="estado-escaneo"></div>
-  </details>
-
   <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras escribes.</p>
 
   <details class="plegable">
-    <summary>Respaldos y privacidad</summary>
+    <summary>Copia de tus datos y privacidad</summary>
     <div class="plegable-cuerpo">
       <div id="privacidad"></div>
       <div id="barra-datos"></div>
     </div>
   </details>
-
-  <p class="pie-nota">
-    Los datos del padrón viven solo en este dispositivo. Los grupos de edad siguen
-    las etapas de vida del MINSA (RM 030-2020): niño/a hasta 11, adolescente 12-17,
-    adulto/a 18-59, adulto/a mayor 60 a más.
-  </p>
 
 </main>
 <script type="module" src="./js/pagina-padron.js"></script>

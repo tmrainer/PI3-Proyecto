@@ -1,8 +1,10 @@
 // ui-importar.js — cargar un padrón pegado desde Excel o desde un CSV.
 // Nada se guarda hasta que la usuaria ve qué filas entran y confirma (§6.9).
 
+import { cuantos } from './modelo.js';
 import { etiquetaGrupoEtario } from './calculos.js';
 import { prepararImportacion, filasImportables } from './importar.js';
+import { leerXlsx, pareceXlsx } from './xlsx.js';
 import { estado, guardarYa } from './estado.js';
 import { buscar, crearElemento, chip } from './ui.js';
 
@@ -26,12 +28,24 @@ export function montarImportacion(ctx) {
   archivo.addEventListener('change', async () => {
     const f = archivo.files && archivo.files[0];
     if (!f) return;
+    const avisar = (texto) => {
+      vista.textContent = '';
+      vista.append(crearElemento('p', { clase: 'aviso-sistema', texto }));
+    };
     try {
-      area.value = await f.text();
+      const datos = await f.arrayBuffer();
+      if (pareceXlsx(datos)) {
+        area.value = await leerXlsx(datos);
+      } else if (/\.xls$/i.test(f.name)) {
+        avisar('Ese es un Excel antiguo (.xls). Ábrelo en Excel y guárdalo como .xlsx.');
+        archivo.value = '';
+        return;
+      } else {
+        area.value = new TextDecoder().decode(datos);
+      }
       revisar();
     } catch (e) {
-      vista.textContent = '';
-      vista.append(crearElemento('p', { clase: 'aviso-sistema', texto: 'No se pudo leer el archivo.' }));
+      avisar('No se pudo leer el archivo. Prueba abriéndolo y copiando las filas aquí.');
     }
     archivo.value = '';
   });
@@ -62,7 +76,7 @@ export function montarImportacion(ctx) {
     const entran = filasImportables(r.filas);
 
     const chips = crearElemento('div', { clase: 'imp-resumen' }, [
-      chip(`Se importarán`, `${entran.length}`),
+      chip(`Se agregarán`, `${entran.length}`),
       r.resumen.incompleta ? chip(`Con datos que faltan`, `${r.resumen.incompleta}`) : null,
       r.resumen.duplicada ? chip(`Ya están en el padrón`, `${r.resumen.duplicada}`) : null,
       r.resumen.vacia ? chip(`Filas vacías`, `${r.resumen.vacia}`) : null
@@ -99,11 +113,11 @@ export function montarImportacion(ctx) {
       ])
     ]));
     if (r.filas.length > 50) {
-      vista.append(crearElemento('p', { clase: 'pista', texto: `… y ${r.filas.length - 50} fila(s) más.` }));
+      vista.append(crearElemento('p', { clase: 'pista', texto: `… y ${cuantos(r.filas.length - 50, 'fila')} más.` }));
     }
 
     btnConfirmar.hidden = entran.length === 0;
-    btnConfirmar.textContent = `Importar ${entran.length} persona(s)`;
+    btnConfirmar.textContent = `Agregar ${cuantos(entran.length, 'persona')}`;
     btnCancelar.hidden = false;
   }
 
@@ -114,7 +128,7 @@ export function montarImportacion(ctx) {
     if (!importacionPendiente) return;
     const entran = filasImportables(importacionPendiente.filas);
     if (entran.length === 0) return;
-    if (!confirm(`Se añadirán ${entran.length} persona(s) al padrón.\n\n` +
+    if (!confirm(`Se agregarán ${cuantos(entran.length, 'persona')} al padrón.\n\n` +
       'No se borra ni se modifica a nadie de los que ya están. ¿Continuar?')) return;
 
     for (const f of entran) estado.padron.afiliados.push(f.afiliado);
@@ -122,6 +136,6 @@ export function montarImportacion(ctx) {
     limpiar();
     guardarYa();
     ctx.onRepintar();
-    if (ctx.estadoTexto) ctx.estadoTexto.textContent = `${entran.length} persona(s) importada(s).`;
+    if (ctx.estadoTexto) ctx.estadoTexto.textContent = entran.length === 1 ? '1 persona agregada.' : `${entran.length} personas agregadas.`;
   });
 }

@@ -2,7 +2,7 @@
 // Ver AGENTS.md §5. Ninguna severidad impide seguir escribiendo ni guardar.
 
 import {
-  esIso, nombreCompleto, normalizarNombre, formatearSoles, hoyIso, aFecha, aIso
+  esIso, nombreCompleto, normalizarNombre, formatearSoles, hoyIso, aFecha, aIso, cuantos
 } from './modelo.js';
 import {
   totales, totalRendicionGastos, gastoPorOrigen, descuadreFila,
@@ -13,8 +13,12 @@ import {
 const ERROR = 'error';
 const AVISO = 'advertencia';
 
+// `falta`: el dato todavía no se escribió (no es que esté mal). La interfaz lo
+// cuenta aparte, en tono neutro: «Faltan 3 datos», no «3 errores».
+const FALTA = /^(Compra \d+: )?(Falta|falta|No hay ningún)/;
+
 function h(severidad, campo, mensaje) {
-  return { severidad, campo, mensaje };
+  return { severidad, campo, mensaje, falta: FALTA.test(mensaje) };
 }
 
 const soloDigitos = (v) => /^\d+$/.test(String(v || ''));
@@ -25,7 +29,7 @@ const vacio = (v) => String(v === null || v === undefined ? '' : v).trim() === '
 function validarEncabezado(r) {
   const hs = [];
   if (r.tipoCentro !== 'comedor' && r.tipoCentro !== 'olla_comun') {
-    hs.push(h(ERROR, 'tipoCentro', 'Marca si es COMEDOR u OLLA COMÚN. Debe ser exactamente uno.'));
+    hs.push(h(ERROR, 'tipoCentro', 'Falta marcar si es comedor u olla común.'));
   }
   const obligatorios = [
     ['nombreCentro', 'el nombre del centro de atención'],
@@ -51,7 +55,7 @@ function validarEncabezado(r) {
     const rango = rangos[r.periodo.tipo];
     if (rango && (dias < rango[0] || dias > rango[1])) {
       hs.push(h(AVISO, 'periodo.inicio',
-        `El periodo dura ${dias} día(s), que no es lo habitual para una entrega ` +
+        `El periodo dura ${cuantos(dias, 'día')}, que no es lo habitual para una entrega ` +
         `${r.periodo.tipo} (${rango[0]}–${rango[1]} días). Revísalo si no fue a propósito.`));
     }
   }
@@ -321,8 +325,7 @@ export function validarAfiliado(afiliado, padron, indice = indicePadron(padron))
   // Tipo de afiliada OBLIGATORIO: define el menú que le toca por defecto.
   if (a.tipoAfiliado !== 'habitual' && a.tipoAfiliado !== 'caso_social') {
     hs.push(h(ERROR, campo,
-      'Falta indicar si es habitual o de ayuda social. De ahí sale el menú que le ' +
-      'toca cuando la marcas en la asistencia.'));
+      'Falta indicar si es habitual o de ayuda social: de ahí sale su menú.'));
   }
 
   if (esIso(a.altaEn) && a.altaEn > hoyIso()) {
@@ -375,7 +378,7 @@ export function validarAtencion(atencion, padron, indice = indicePadron(padron))
 
   if (d.origen === 'legado') {
     hs.push(h(AVISO, campo,
-      `Este día viene de la versión anterior: ${d.total} ración(es) anotadas a mano, ` +
+      `Este día viene de la versión anterior: ${cuantos(d.total, 'ración', 'raciones')} anotadas a mano, ` +
       'sin asistencia marcada. Siguen contando. Si quieres, marca la asistencia y pasarán ' +
       'a contarse de ahí.'));
   }
@@ -404,8 +407,8 @@ export function validarAtencion(atencion, padron, indice = indicePadron(padron))
     : 0;
   if (d.origen === 'legado' && d.total > activosEseDia) {
     hs.push(h(AVISO, campo,
-      `Ese día cuenta ${d.total} raciones y el padrón tenía ${activosEseDia} ` +
-      'persona(s) activa(s).'));
+      `Ese día cuenta ${cuantos(d.total, 'ración', 'raciones')} y el padrón tenía ` +
+      `${cuantos(activosEseDia, 'persona activa', 'personas activas')}.`));
   }
 
   const repetida = (indice.porFecha.get(at.fecha) || []).find((o) => o.id !== at.id);
@@ -444,7 +447,7 @@ export function validarCalendario(calendario) {
   if (!calendario) return hs;
   if (vacio(calendario.fechaLimiteBase)) {
     hs.push(h(AVISO, 'calendario.base',
-      'Sin una fecha de entrega conocida, la app no puede avisarte de la siguiente.'));
+      'Falta una fecha de entrega: sin ella no hay avisos.'));
   } else if (!esIso(calendario.fechaLimiteBase)) {
     hs.push(h(ERROR, 'calendario.base', 'La fecha de entrega no tiene un formato válido.'));
   }

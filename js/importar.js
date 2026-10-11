@@ -22,7 +22,11 @@ export function detectarSeparador(texto) {
   return mejor[1] > 0 ? mejor[0] : '\t';
 }
 
-/** CSV/TSV a matriz de celdas. Admite comillas, separadores y saltos dentro. */
+/**
+ * CSV/TSV a matriz de celdas. Admite comillas, separadores y saltos dentro.
+ * Las filas vacías se saltan, pero cada fila recuerda en `linea` su número en
+ * el archivo: así «fila 7» en la revisión es la fila 7 que se ve en Excel.
+ */
 export function parsearTabla(texto, separador) {
   const sep = separador || detectarSeparador(texto);
   const filas = [];
@@ -48,7 +52,7 @@ export function parsearTabla(texto, separador) {
   filas.push(fila);
 
   return filas
-    .map((f) => f.map((c) => desarmarCelda(c.trim())))
+    .map((f, i) => Object.assign(f.map((c) => desarmarCelda(c.trim())), { linea: i + 1 }))
     .filter((f) => f.some((c) => c !== ''));
 }
 
@@ -197,17 +201,20 @@ export function prepararImportacion(texto, padron) {
     return { columnas: {}, sinReconocer: [], filas: [], error: 'No se encontró ninguna fila.' };
   }
 
-  const hayCabecera = pareceCabecera(tabla[0]);
-  if (!hayCabecera) {
+  // Muchos padrones traen arriba un título («PADRÓN DE BENEFICIARIOS…») o el
+  // nombre del comedor: los títulos de las columnas se buscan en las primeras
+  // filas, no solo en la primera.
+  const fila0 = tabla.slice(0, 10).findIndex(pareceCabecera);
+  if (fila0 < 0) {
     return {
       columnas: {}, sinReconocer: [], filas: [],
-      error: 'No se reconoció la primera fila como encabezado. Debe traer títulos ' +
+      error: 'No se encontró la fila de títulos. Debe traer títulos ' +
         'como «Apellido paterno», «Nombres», «DNI», «Grupo de edad», «Tipo».'
     };
   }
 
-  const { mapa, sinReconocer } = detectarColumnas(tabla[0]);
-  const cuerpo = tabla.slice(1);
+  const { mapa, sinReconocer } = detectarColumnas(tabla[fila0]);
+  const cuerpo = tabla.slice(fila0 + 1);
   const docsExistentes = new Set(
     ((padron && padron.afiliados) || []).filter((a) => a.activo && a.numeroDocumento)
       .map((a) => a.numeroDocumento));
@@ -283,7 +290,7 @@ export function prepararImportacion(texto, padron) {
       }
     }
 
-    return { linea: i + 2, afiliado: a, nombreCompleto, estado, avisos };
+    return { linea: celdas.linea || fila0 + i + 2, afiliado: a, nombreCompleto, estado, avisos };
   });
 
   const resumen = { lista: 0, incompleta: 0, duplicada: 0, vacia: 0 };

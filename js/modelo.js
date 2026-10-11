@@ -32,6 +32,17 @@ export function debounce(fn, ms) {
   };
 }
 
+/**
+ * «1 persona», «3 personas»: el plural de verdad, no «persona(s)», que se lee
+ * mal en voz alta y cuesta a quien lee despacio.
+ * @param {number} n
+ * @param {string} uno  la palabra en singular
+ * @param {string} [varios]  el plural, si no es singular + «s»
+ */
+export function cuantos(n, uno, varios = uno + 's') {
+  return `${n} ${n === 1 ? uno : varios}`;
+}
+
 function pad2(n) {
   return String(n).padStart(2, '0');
 }
@@ -566,14 +577,14 @@ export function revisarRespaldo(datos) {
       partes.push('padron');
       const n = datos.padron.afiliados.length;
       const dias = Array.isArray(datos.padron.atenciones) ? datos.padron.atenciones.length : 0;
-      textos.push(`${n} persona(s) en el padrón y ${dias} día(s) de asistencia`);
+      textos.push(`${cuantos(n, 'persona')} en el padrón y ${cuantos(dias, 'día')} de asistencia`);
     }
   }
   if (datos.rendiciones !== undefined && datos.rendiciones !== null) {
     if (!Array.isArray(datos.rendiciones)) errores.push('las rendiciones no son una lista');
     else if (datos.rendiciones.length) {
       partes.push('rendiciones');
-      textos.push(`${datos.rendiciones.length} Formato(s) B-1`);
+      textos.push(cuantos(datos.rendiciones.length, 'Formato B-1', 'Formatos B-1'));
     }
   }
   if (datos.calendario !== undefined && datos.calendario !== null) {

@@ -80,7 +80,6 @@
           <option value="quincenal">Quincenal</option>
           <option value="mensual">Mensual</option>
         </select>
-        <span class="pista">Al cambiarlo, la app propone fechas y etiqueta. Tú decides si las usas.</span>
       </div>
       <div class="campo" data-campo="fechaRendicion">
         <label for="fechaRendicion">Fecha de rendición</label>
@@ -102,7 +101,6 @@
       <div class="campo" data-campo="periodo.etiqueta">
         <label for="periodoEtiqueta">Texto para «Mes de rendición»</label>
         <input id="periodoEtiqueta" required aria-required="true" name="periodoEtiqueta" type="text" autocomplete="off">
-        <span class="pista">Es lo que irá escrito en ese renglón del formato.</span>
       </div>
     </div>
   </section>
@@ -146,11 +144,7 @@
         <span class="total-rotulo"><strong>Total de rendición de gastos</strong></span>
         <span class="total-valor" id="total-rendicion"></span>
       </div>
-      <p class="nota-calculo">
-        Estos tres montos los calcula la aplicación sumando tus compras. No se
-        pueden escribir a mano: si alguno no cuadra, lo que hay que corregir es el
-        detalle de arriba.
-      </p>
+      <p class="nota-calculo">Se suman solos de tus compras.</p>
       <div id="resumen-origen" class="resumen-chips"></div>
     </div>
   </section>
@@ -187,7 +181,7 @@
   <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras escribes.</p>
 
   <details class="plegable">
-    <summary>Respaldos y privacidad</summary>
+    <summary>Copia de tus datos y privacidad</summary>
     <div class="plegable-cuerpo">
       <div id="privacidad"></div>
       <div id="barra-datos"></div>
@@ -195,9 +189,8 @@
   </details>
 
   <p class="pie-nota">
-    El Formato B-1 es una Declaración Jurada (Art. 06, Ley 25035). La aplicación
-    calcula y revisa, pero no completa ni estima nada: todo lo escribiste tú.
-    La impresión sobre la plantilla oficial todavía no está disponible.
+    El Formato B-1 es una declaración jurada: revisa que todo sea correcto.
+    Todavía no se puede imprimir sobre la plantilla oficial.
   </p>
 
 </main>

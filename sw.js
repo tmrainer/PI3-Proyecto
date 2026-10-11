@@ -26,9 +26,9 @@ const ARCHIVOS = [
   './js/alertas.js', './js/calculos.js', './js/errores.js', './js/escaneo-dni.js', './js/estado.js',
   './js/importar.js', './js/modelo.js', './js/pagina-asistencia.js',
   './js/pagina-b1.js', './js/pagina-calendario.js', './js/pagina-padron.js',
-  './js/sugerencias.js', './js/ui-asistencia.js', './js/ui-escaneo.js',
+  './js/sugerencias.js', './js/ui-asistencia.js',
   './js/ui-importar.js', './js/ui.js', './js/ui-personas.js', './js/ui-reportes.js',
-  './js/validaciones.js'
+  './js/validaciones.js', './js/xlsx.js'
 ];
 
 let ultimaRevision = 0;

@@ -6,7 +6,7 @@
 // ella conoce. A partir de ahí se cuentan las siguientes. Si la Municipalidad
 // cambia una fecha, la usuaria la corrige a mano.
 
-import { aFecha, aIso, esIso, hoyIso, diasEntre, aDdMmAa } from './modelo.js';
+import { aFecha, aIso, esIso, hoyIso, diasEntre, aDdMmAa, cuantos } from './modelo.js';
 
 export const PERIODICIDADES = [
   ['semanal', 'Semanal', 'cada 7 días'],
@@ -117,7 +117,7 @@ export function alertaProximaEntrega(calendario, hoyRef) {
       diasRestantes: -atraso,
       nivel: 'vencida',
       estado: 'pendiente',
-      mensaje: `La entrega del ${aDdMmAa(anterior)} venció hace ${atraso} día(s) y sigue sin marcarse como entregada.`
+      mensaje: `La entrega del ${aDdMmAa(anterior)} venció hace ${cuantos(atraso, 'día')} y sigue sin marcarse como entregada.`
     };
   }
 

@@ -265,7 +265,7 @@ export function pintarOtrosDias(lista, ctx) {
   if (ordenadas.length === 0) {
     lista.append(crearElemento('p', {
       clase: 'vacio-mensaje',
-      texto: 'Aquí aparecerán los días pasados, para corregirlos si hace falta.'
+      texto: 'Todavía no hay días anteriores.'
     }));
     return;
   }
@@ -319,7 +319,7 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
     if (d.total === 0) {
       detalle.textContent = activos.length === 0
         ? 'No hay nadie en el padrón todavía.'
-        : 'Nadie marcado todavía. Toca a quien vino.';
+        : 'Nadie marcado todavía.';
       return;
     }
     const rec = recaudacionDelDiaCent(at);

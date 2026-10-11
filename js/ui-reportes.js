@@ -1,7 +1,7 @@
 // ui-reportes.js — el padrón listo para copiar a un formato municipal.
 // Solo ordena y numera lo ya ingresado: no completa ni deduce ningún dato.
 
-import { nombreCompleto, hoyIso, descargarTexto } from './modelo.js';
+import { nombreCompleto, hoyIso, descargarTexto, cuantos } from './modelo.js';
 import {
   filasPadron, asistenciaPorAfiliado, afiliadosSinAsistencia, TRAMOS_ETARIOS
 } from './calculos.js';
@@ -72,7 +72,7 @@ export function pintarReportePadron(caja, ctx) {
   if (ausentes.length) {
     caja.append(crearElemento('p', {
       clase: 'asistencia-resumen',
-      texto: `${ausentes.length} persona(s) sin ninguna asistencia en el periodo: ` +
+      texto: `${ausentes.length === 1 ? '1 persona no vino' : `${ausentes.length} personas no vinieron`} ningún día en estas fechas: ` +
         ausentes.slice(0, 8).map(nombreCompleto).join(', ') + (ausentes.length > 8 ? '…' : '')
     }));
   }

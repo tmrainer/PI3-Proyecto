@@ -33,12 +33,9 @@
 
   <section class="bloque">
     <h2>Cada cuánto entregas</h2>
-    <p class="pista">
-      Con la periodicidad y una fecha que ya conozcas, se cuentan las siguientes.
-    </p>
     <div class="rejilla tres">
       <div class="campo" data-campo="calendario.periodicidad">
-        <label for="periodicidad">Periodicidad</label>
+        <label for="periodicidad">Cada cuánto</label>
         <select id="periodicidad">
           <option value="semanal">Semanal (cada 7 días)</option>
           <option value="quincenal">Quincenal (cada 15 días)</option>
@@ -48,29 +45,26 @@
       <div class="campo" data-campo="calendario.base">
         <label for="fechaBase">Una fecha de entrega que conoces</label>
         <input id="fechaBase" type="date">
-        <span class="pista">Puede ser la próxima o una pasada. Da igual cuál.</span>
-      </div>
-      <div class="campo">
-        <label for="diasAviso">Avisar con (días de anticipación)</label>
-        <input id="diasAviso" type="text" inputmode="numeric" placeholder="7, 3, 1">
-        <span class="pista">Separa los números con comas.</span>
+        <span class="pista">La próxima o una pasada, da igual.</span>
       </div>
     </div>
+    <fieldset style="margin-top:12px">
+      <legend>Avisarme</legend>
+      <div class="opciones" id="dias-aviso"></div>
+      <p class="campo-error" id="dias-aviso-msg" role="status"></p>
+    </fieldset>
   </section>
 
   <section class="bloque">
     <h2>Próximas entregas</h2>
     <div id="agenda"></div>
-    <p class="nota-calculo">
-      El aviso aparece solo con la aplicación abierta: no hay servidor desde donde
-      mandar notificaciones.
-    </p>
+    <p class="nota-calculo">El aviso se ve al abrir la aplicación.</p>
   </section>
 
   <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras escribes.</p>
 
   <details class="plegable">
-    <summary>Respaldos y privacidad</summary>
+    <summary>Copia de tus datos y privacidad</summary>
     <div class="plegable-cuerpo">
       <div id="privacidad"></div>
       <div id="barra-datos"></div>

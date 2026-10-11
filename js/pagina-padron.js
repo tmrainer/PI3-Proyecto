@@ -1,6 +1,7 @@
 // pagina-padron.js — controlador de padron.html.
-// Solo cablea: la interfaz vive en ui-personas.js, ui-importar.js, ui-reportes.js
-// y ui-escaneo.js.
+// Solo cablea: la interfaz vive en ui-personas.js, ui-importar.js y ui-reportes.js.
+// La inscripción por código de barras del DNI no se muestra hasta que funcione
+// (escaneo-dni.js es todavía un esqueleto).
 
 import { hoyIso } from './modelo.js';
 import { validarAfiliados } from './validaciones.js';
@@ -14,7 +15,6 @@ import {
 } from './ui-personas.js';
 import { montarImportacion } from './ui-importar.js';
 import { pintarReportePadron, montarControlesReporte } from './ui-reportes.js';
-import { pintarEstadoEscaneo } from './ui-escaneo.js';
 import {
   buscar, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
   pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo,
@@ -88,7 +88,6 @@ montarAltaPersona(ctx);
 buscar('#bloque-alta').open = estado.padron.afiliados.length === 0;
 montarImportacion(ctx);
 repintar();
-pintarEstadoEscaneo(buscar('#estado-escaneo'));
 guardarYa();   // consolida la migración del padrón si la hubo
 vigilarPestanas(() => repintarConservandoVista(repintar));
 

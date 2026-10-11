@@ -1,7 +1,7 @@
 // pagina-calendario.js — entregas del formato y cuenta regresiva.
 
 import {
-  CLAVES, leer, guardar, calendarioVacio, nuevaEntrega, aDdMmAa, hoyIso, debounce, esIso
+  CLAVES, leer, guardar, calendarioVacio, nuevaEntrega, aDdMmAa, hoyIso, debounce, esIso, cuantos
 } from './modelo.js';
 import { alertaProximaEntrega, agendaEntregas, PERIODICIDADES } from './alertas.js';
 import { validarCalendario } from './validaciones.js';
@@ -43,7 +43,10 @@ function cambio() {
 function pintarBanner() {
   const caja = buscar('#banner');
   caja.textContent = '';
-  const b = bannerAlerta(alertaProximaEntrega(calendario, hoyIso()), { mostrarEnlace: false });
+  const alerta = alertaProximaEntrega(calendario, hoyIso());
+  // «Todavía no has indicado cuándo entregas» sobra en la página donde se indica.
+  if (!alerta || !alerta.configurado) return;
+  const b = bannerAlerta(alerta, { mostrarEnlace: false });
   if (b) caja.append(b);
 }
 
@@ -70,7 +73,7 @@ function pintarAgenda() {
   if (!esIso(calendario.fechaLimiteBase)) {
     caja.append(crearElemento('p', {
       clase: 'vacio-mensaje',
-      texto: 'Indica arriba una fecha de entrega que conozcas y aquí aparecerán las siguientes.'
+      texto: 'Aquí aparecerán las próximas entregas.'
     }));
     return;
   }
@@ -81,9 +84,9 @@ function pintarAgenda() {
     const estado = reg ? reg.estado : 'pendiente';
 
     const texto = item.diasRestantes < 0
-      ? `hace ${Math.abs(item.diasRestantes)} día(s)`
+      ? `hace ${cuantos(Math.abs(item.diasRestantes), 'día')}`
       : item.diasRestantes === 0 ? 'es hoy'
-        : `faltan ${item.diasRestantes} día(s)`;
+        : item.diasRestantes === 1 ? 'falta 1 día' : `faltan ${item.diasRestantes} días`;
 
     const selEstado = crearElemento('select', {}, Object.entries(ETIQUETA_ESTADO)
       .map(([v, t]) => crearElemento('option', { value: v, texto: t })));
@@ -133,15 +136,27 @@ const fBase = buscar('#fechaBase');
 fBase.value = calendario.fechaLimiteBase || '';
 fBase.addEventListener('input', () => { calendario.fechaLimiteBase = fBase.value; cambio(); });
 
-const fAviso = buscar('#diasAviso');
-fAviso.value = calendario.diasDeAviso.join(', ');
-fAviso.addEventListener('input', () => {
-  const nums = fAviso.value.split(',')
-    .map((x) => Number(String(x).trim()))
-    .filter((n) => Number.isFinite(n) && n > 0 && n < 400);
-  calendario.diasDeAviso = nums.length ? nums : [7, 3, 1];
-  cambio();
-});
+// Casillas, no números separados por comas: escribir «7, 3, 1» era fácil de
+// equivocar. Un valor guardado que no está entre estos (de antes) se conserva.
+const OPCIONES_AVISO = [[1, '1 día antes'], [3, '3 días antes'], [7, '7 días antes'], [15, '15 días antes']];
+const cajaAviso = buscar('#dias-aviso');
+const msgAviso = buscar('#dias-aviso-msg');
+for (const [dias, texto] of OPCIONES_AVISO) {
+  const c = crearElemento('input', { type: 'checkbox', id: `aviso-${dias}`, value: String(dias) });
+  c.checked = calendario.diasDeAviso.includes(dias);
+  c.addEventListener('change', () => {
+    const otros = calendario.diasDeAviso.filter((n) => n !== dias);
+    if (!c.checked && otros.length === 0) {
+      c.checked = true;                    // sin ninguno no habría aviso previo
+      msgAviso.textContent = 'Deja marcado al menos uno.';
+      return;
+    }
+    msgAviso.textContent = '';
+    calendario.diasDeAviso = (c.checked ? [...otros, dias] : otros).sort((a, b) => b - a);
+    cambio();
+  });
+  cajaAviso.append(crearElemento('label', { clase: 'opcion', for: c.id }, [c, texto]));
+}
 
 // PERIODICIDADES se usa para que el texto de la UI y el cálculo no se separen.
 for (const [clave, , detalle] of PERIODICIDADES) {

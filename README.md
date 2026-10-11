@@ -27,7 +27,7 @@ cualquier app, y desde entonces:
 - **No se borran los datos.** Safari borra lo guardado por un sitio que no se
   abre en 7 días si no está instalado en la pantalla de inicio.
 
-Igual conviene exportar un respaldo cada cierto tiempo: la app lo recuerda a los
+Igual conviene guardar una copia («Guardar una copia») cada cierto tiempo: la app lo recuerda a los
 14 días.
 
 ---

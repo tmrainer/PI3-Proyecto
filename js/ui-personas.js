@@ -1,7 +1,7 @@
 // ui-personas.js — inscribir, listar y editar personas del padrón.
 // Dibuja; no calcula ni valida: eso vive en calculos.js y validaciones.js.
 
-import { nombreCompleto, normalizarNombre, nuevoAfiliado, esIso, hoyIso, debounce } from './modelo.js';
+import { nombreCompleto, normalizarNombre, nuevoAfiliado, esIso, hoyIso, debounce, cuantos } from './modelo.js';
 import {
   grupoEtario, etiquetaGrupoEtario, edadEnFecha, resumenEtario, afiliadosActivos,
   TRAMOS_ETARIOS, TIPOS_AFILIADO
@@ -329,11 +329,12 @@ export function pintarListaPersonas(lista, ctx) {
 
   const incompletas = estado.padron.afiliados
     .filter((a) => a.activo && validarAfiliado(a, estado.padron, indice).some((x) => x.severidad === 'error')).length;
-  const activas = estado.padron.afiliados.filter((a) => a.activo).length;
-  if (ctx.conteo) ctx.conteo.textContent =
-    `Mostrando ${visibles.length} de ${estado.padron.afiliados.length}. ` +
-    `${activas} activa(s)` +
-    (incompletas ? `, ${incompletas} con datos incompletos.` : '.');
+  // Las activas ya se cuentan arriba; aquí, solo lo que no se ve de otro modo.
+  const total = estado.padron.afiliados.length;
+  if (ctx.conteo) ctx.conteo.textContent = [
+    visibles.length < total ? `Se ven ${visibles.length} de ${total}.` : '',
+    incompletas ? `${cuantos(incompletas, 'persona')} con datos incompletos.` : ''
+  ].filter(Boolean).join(' ');
 
   if (visibles.length === 0) {
     lista.append(crearElemento('p', {

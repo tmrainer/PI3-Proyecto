@@ -56,18 +56,18 @@ function refrescar() {
     );
   }
 
+  // Solo se explica lo que no se ve en las cifras: cuando falta algo.
   const partes = [];
   if (r.racionesTotales === 0) {
-    partes.push('No hay raciones en este periodo: nadie está marcado en la asistencia.');
+    partes.push('Nadie marcado en estas fechas.');
   } else if (r.recaudacionCent === null) {
-    partes.push('Todavía no se puede calcular el promedio: falta el precio del menú ' +
-      'en los días registrados. La aplicación no lo estima.');
-  } else {
-    partes.push(`Promedio ponderado sobre ${r.racionesConPrecio} de ${r.racionesTotales} raciones.`);
-    if (r.diasSinPrecio) partes.push(`${r.diasSinPrecio} día(s) fuera por falta de precio.`);
+    partes.push('Falta el precio del menú: sin él no se calcula lo recaudado.');
+  } else if (r.racionesConPrecio < r.racionesTotales) {
+    const sin = r.racionesTotales - r.racionesConPrecio;
+    partes.push(`${sin === 1 ? '1 ración no tiene' : `${sin} raciones no tienen`} precio y no cuenta${sin === 1 ? '' : 'n'} en el promedio.`);
   }
   if (r.diasDeLegado) {
-    partes.push(`${r.diasDeLegado} día(s) traen raciones anotadas a mano en la versión anterior.`);
+    partes.push(`${r.diasDeLegado === 1 ? '1 día trae' : `${r.diasDeLegado} días traen`} raciones anotadas a mano en la versión anterior.`);
   }
   buscar('#nota-precio').textContent = partes.join(' ');
 

@@ -3,7 +3,7 @@
 
 import {
   aCentimos, formatearSoles, aNumero, aDdMmAa, esIso, normalizarNombre,
-  nuevaRendicion, nuevoEgreso, nuevoAfiliado, nuevaAtencion, padronVacio,
+  nuevaRendicion, nuevoEgreso, cuantos, nuevoAfiliado, nuevaAtencion, padronVacio,
   nombreCompleto, migrarPadron, calendarioVacio, VERSION_PADRON, revisarRespaldo,
   empacarPadron, desempacarPadron
 } from './modelo.js';
@@ -1130,6 +1130,24 @@ export const casos = [
   },
   {
     grupo: 'Importar',
+    nombre: 'Encuentra los títulos aunque arriba haya un encabezado del padrón',
+    fn: () => {
+      const texto = [
+        'PADRÓN DE BENEFICIARIOS',
+        'Comedor de prueba',
+        'Apellido paterno\tNombres\tDNI\tGrupo de edad\tTipo',
+        'Quispe\tRosa\t00000002\tAdulto\tHabitual'
+      ].join('\n');
+      const r = prepararImportacion(texto, padronVacio());
+      igual(r.error, null);
+      igual(r.filas.length, 1);
+      igual(r.filas[0].afiliado.apellidoPaterno, 'Quispe');
+      igual(r.filas[0].linea, 4, 'la línea es la del archivo');
+      ok(prepararImportacion('hola\nmundo', padronVacio()).error, 'sin títulos, lo dice');
+    }
+  },
+  {
+    grupo: 'Importar',
     nombre: 'La edad en números también sirve para el grupo',
     fn: () => {
       const texto = 'Nombres\tApellido paterno\tEdad\tDNI\tTipo\n' +
@@ -1148,7 +1166,7 @@ export const casos = [
     fn: () => {
       const r = prepararImportacion('Ana\tPerez\t12345678\nRosa\tQuispe\t87654321', padronVacio());
       igual(r.filas.length, 0);
-      ok(r.error && /encabezado/.test(r.error), 'explica qué falta: ' + r.error);
+      ok(r.error && /fila de títulos/.test(r.error), 'explica qué falta: ' + r.error);
       igual(prepararImportacion('', padronVacio()).filas.length, 0);
     }
   },
@@ -1209,7 +1227,7 @@ export const casos = [
       });
       igual(r.error, null);
       igual(r.partes.join(','), 'padron,rendiciones,calendario,config');
-      ok(r.resumen.startsWith('2 persona(s) en el padrón y 1 día(s)'), r.resumen);
+      ok(r.resumen.startsWith('2 personas en el padrón y 1 día de asistencia'), r.resumen);
       // Lo que no trae (null o ausente) no se toca.
       igual(revisarRespaldo({ padron: null, calendario: calendarioVacio() }).partes.join(','), 'calendario');
       // Un B-1 vacío no se cuenta como algo que restaurar.
@@ -1266,6 +1284,28 @@ export const casos = [
       const dia = { version: 3, afiliados: muchos, atenciones: [{ id: 'd', fecha: '2026-10-10',
         asistencias: muchos.map((x) => ({ afiliadoId: x.id, tipoMenu: 'normal' })) }] };
       igual(empacarPadron(dia).atenciones[0].marcas.vino.length, 50);
+    }
+  },
+
+  {
+    grupo: 'Validación',
+    nombre: 'Un formato recién empezado no tiene errores: le faltan datos',
+    fn: () => {
+      const r = nuevaRendicion();
+      const errores = validarRendicion(r).filter((x) => x.severidad === 'error');
+      ok(errores.length > 5, 'hay datos por llenar');
+      ok(errores.every((x) => x.falta), errores.filter((x) => !x.falta).map((x) => x.mensaje).join(' | '));
+      r.dniPresidenta = '123';
+      ok(validarRendicion(r).some((x) => x.campo === 'dniPresidenta' && !x.falta), 'un DNI mal escrito sí es por corregir');
+    }
+  },
+  {
+    grupo: 'Fechas y texto',
+    nombre: 'Los plurales se escriben enteros, no «persona(s)»',
+    fn: () => {
+      igual(cuantos(1, 'persona'), '1 persona');
+      igual(cuantos(3, 'persona'), '3 personas');
+      igual(cuantos(0, 'ración', 'raciones'), '0 raciones');
     }
   },
 

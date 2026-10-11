@@ -70,7 +70,8 @@ const TRAZOS = {
   error: 'M18 6 6 18M6 6l12 12',
   aviso: 'M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
   reloj: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2',
-  flecha: 'm9 18 6-6-6-6'
+  flecha: 'm9 18 6-6-6-6',
+  lapiz: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z'
 };
 
 export function icono(nombre, { tam = 16, clase = 'icono' } = {}) {
@@ -160,6 +161,7 @@ const PAGINAS = [
 ];
 
 export function montarCabecera(claveActiva, subtitulo) {
+  document.documentElement.classList.add('listo');   // ver «reservar el sitio» en estilos.css
   if (claveActiva === 'pruebas') {
     PAGINAS.push({ href: './pruebas.html', texto: 'Pruebas', clave: 'pruebas' });
   }
@@ -268,6 +270,8 @@ async function pedirAlmacenPersistente() {
     if (!navigator.storage || !navigator.storage.persist) return;
     almacenPersistente = await navigator.storage.persisted() || await navigator.storage.persist();
   } catch (e) { almacenPersistente = false; }
+  // La respuesta llega después del primer pintado.
+  for (const el of document.querySelectorAll('.estado-proteccion')) el.textContent = textoProteccion();
 }
 
 /** ¿Abierta como app instalada (desde el ícono), y no en una pestaña? */
@@ -334,21 +338,22 @@ export function bannerAlerta(alerta, { mostrarEnlace = true } = {}) {
     caja.append(
       icono('reloj', { tam: 17, clase: 'icono banner-icono' }),
       crearElemento('span', { clase: 'banner-texto', texto: alerta.mensaje }),
-      mostrarEnlace ? crearElemento('a', { clase: 'banner-enlace', href: './calendario.html', texto: 'Configurar entregas' }) : null
+      ...(mostrarEnlace ? [crearElemento('a', { clase: 'banner-enlace', href: './calendario.html', texto: 'Configurar entregas' })] : [])
     );
     return caja;
   }
 
+  const dias = Math.abs(alerta.diasRestantes);
   const cuenta = alerta.diasRestantes < 0
-    ? `${Math.abs(alerta.diasRestantes)} día(s) de atraso`
-    : alerta.diasRestantes === 0 ? 'hoy' : `faltan ${alerta.diasRestantes} día(s)`;
+    ? `${dias} ${dias === 1 ? 'día' : 'días'} de atraso`
+    : alerta.diasRestantes === 0 ? 'hoy' : `${dias === 1 ? 'falta 1 día' : `faltan ${dias} días`}`;
 
   caja.append(
     icono(nivel === 'vencida' ? 'aviso' : 'reloj', { tam: 17, clase: 'icono banner-icono' }),
     crearElemento('span', { clase: 'banner-titulo', texto: TEXTO_NIVEL[nivel] + ':' }),
     crearElemento('span', { clase: 'banner-cuenta', texto: cuenta }),
     crearElemento('span', { clase: 'banner-texto', texto: alerta.mensaje }),
-    mostrarEnlace ? crearElemento('a', { clase: 'banner-enlace', href: './calendario.html', texto: 'Ver entregas' }) : null
+    ...(mostrarEnlace ? [crearElemento('a', { clase: 'banner-enlace', href: './calendario.html', texto: 'Ver entregas' })] : [])
   );
   return caja;
 }
@@ -356,50 +361,28 @@ export function bannerAlerta(alerta, { mostrarEnlace = true } = {}) {
 // --------------------------------------------------- aviso de privacidad (§9)
 
 export function bloquePrivacidad() {
-  const estadoProteccion = crearElemento('p', { clase: 'dato-fuerte', texto: textoProteccion() });
-  // El permiso del navegador llega después del primer pintado: se relee al abrir.
-  return crearElemento('details', {
-    clase: 'privacidad',
-    ontoggle: () => { estadoProteccion.textContent = textoProteccion(); }
-  }, [
-    crearElemento('summary', { texto: 'Dónde se guardan estos datos' }),
-    crearElemento('div', { clase: 'privacidad-cuerpo' }, [
-      crearElemento('p', {
-        texto: 'Todo lo que escribes se guarda únicamente en este navegador y en ' +
-          'este dispositivo. No se envía a ningún servidor: la aplicación funciona ' +
-          'sin internet y no tiene a dónde mandar nada.'
-      }),
-      crearElemento('p', {
-        texto: 'Eso también significa que se pierde si borras los datos de ' +
-          'navegación, si usas una ventana de incógnito o si abres la página en ' +
-          'otro equipo. Exporta un respaldo cada cierto tiempo.'
-      }),
-      estadoProteccion,
-      crearElemento('p', {
-        texto: `Ocupa el ${Math.max(1, Math.round(usoAlmacenamiento().fraccion * 100))} % ` +
-          'del espacio que el navegador le da.'
-      }),
-      crearElemento('p', {
-        texto: 'El archivo de respaldo contiene nombres, números de documento y el ' +
-          'registro de asistencia de personas reales. Guárdalo en tu teléfono o en ' +
-          'tu Drive. Si tiene que viajar por WhatsApp o por correo, usa «Exportar ' +
-          'con contraseña» y pasa la contraseña por otro lado.'
-      })
-    ])
+  // Va dentro del plegable «Copia de tus datos y privacidad»: plegarlo otra
+  // vez aquí obligaba a abrir dos cosas para leer tres líneas.
+  const estadoProteccion = crearElemento('p', { clase: 'dato-fuerte estado-proteccion', texto: textoProteccion() });
+  return crearElemento('div', { clase: 'privacidad privacidad-cuerpo' }, [
+    crearElemento('p', {
+      texto: 'Tus datos se guardan solo en este equipo, no en internet. Funciona sin señal.'
+    }),
+    crearElemento('p', {
+      texto: 'Si borras los datos del navegador o cambias de teléfono, se pierden. ' +
+        'Guarda una copia cada dos semanas.'
+    }),
+    estadoProteccion,
+    crearElemento('p', {
+      texto: 'La copia tiene nombres y DNI. Si la mandas por WhatsApp o correo, ponle contraseña.'
+    })
   ]);
 }
 
 /** Qué tan protegidos están los datos contra el borrado automático del navegador. */
 function textoProteccion() {
-  if (almacenPersistente === true) {
-    return 'Este navegador marcó tus datos como protegidos: no los borrará solo para hacer espacio.';
-  }
-  if (esAppInstalada()) {
-    return 'Usas la aplicación instalada. Igual conviene exportar un respaldo cada cierto tiempo.';
-  }
-  return 'Instala la aplicación en tu pantalla de inicio (menú del navegador → «Instalar» o ' +
-    '«Agregar a pantalla de inicio»). Así el teléfono no borra tus datos cuando pasa un ' +
-    'tiempo sin abrirla.';
+  if (almacenPersistente === true || esAppInstalada()) return '';
+  return 'Para que el teléfono no borre tus datos: menú del navegador → «Agregar a pantalla de inicio».';
 }
 
 // -------------------------------------------------- barra de datos (respaldos)
@@ -420,13 +403,12 @@ export function barraDatos({ antesDeRecargar } = {}) {
   function alImportar(datos) {
     const r = revisarRespaldo(datos);
     if (r.error) { alert(r.error); return; }
-    if (!confirm(`El respaldo trae: ${r.resumen}.\n\n` +
-      'Eso reemplazará lo que tienes en este dispositivo. Lo que el respaldo no ' +
-      'trae se queda como está.\n\n¿Continuar?')) return;
+    if (!confirm(`La copia trae: ${r.resumen}.\n\n` +
+      'Reemplazará eso mismo en este equipo. Lo demás se queda como está.\n\n¿Continuar?')) return;
     if (antesDeRecargar) antesDeRecargar();
     if (!restaurarRespaldo(datos)) {
-      alert('No se pudo guardar todo el respaldo en este dispositivo: puede que el ' +
-        'almacenamiento esté lleno. Revisa qué quedó y vuelve a intentar.');
+      alert('No se pudo recuperar toda la copia: puede que el espacio esté lleno. ' +
+        'Revisa qué quedó y vuelve a intentar.');
     }
     location.reload();
   }
@@ -445,7 +427,7 @@ export function barraDatos({ antesDeRecargar } = {}) {
     try {
       datos = JSON.parse(await archivo.text());
     } catch (e) {
-      alert('No se pudo leer el archivo. ¿Es un respaldo exportado por esta misma aplicación?');
+      alert('No se pudo leer el archivo. Elige una copia guardada con esta aplicación.');
       return;
     }
     if (esRespaldoCifrado(datos)) pedirContrasena(datos);
@@ -464,7 +446,7 @@ export function barraDatos({ antesDeRecargar } = {}) {
         abrirCifrado.hidden = true;
         alImportar(datos);
       } catch (e) {
-        msg.textContent = 'Esa contraseña no abre este respaldo. Revisa mayúsculas y vuelve a intentar.';
+        msg.textContent = 'Esa contraseña no abre la copia. Revisa mayúsculas y vuelve a intentar.';
         msg.classList.add('es-error');
         clave.focus();
       }
@@ -473,11 +455,11 @@ export function barraDatos({ antesDeRecargar } = {}) {
     abrirCifrado.textContent = '';
     abrirCifrado.append(
       crearElemento('div', { clase: 'campo' }, [
-        crearElemento('label', { for: clave.id, texto: 'Este respaldo tiene contraseña. Escríbela para abrirlo' }),
+        crearElemento('label', { for: clave.id, texto: 'Esta copia tiene contraseña. Escríbela' }),
         clave
       ]),
       crearElemento('div', { clase: 'acciones' }, [
-        crearElemento('button', { type: 'button', clase: 'boton', texto: 'Abrir respaldo', onclick: abrir }),
+        crearElemento('button', { type: 'button', clase: 'boton', texto: 'Abrir copia', onclick: abrir }),
         crearElemento('button', {
           type: 'button', clase: 'boton secundario', texto: 'Cancelar',
           onclick: () => { abrirCifrado.hidden = true; }
@@ -493,19 +475,18 @@ export function barraDatos({ antesDeRecargar } = {}) {
     crearElemento('div', { clase: 'barra-datos' }, [
       crearElemento('button', {
         type: 'button', clase: 'boton secundario',
-        onclick: () => exportarTodo(), texto: 'Exportar respaldo'
+        onclick: () => exportarTodo(), texto: 'Guardar una copia'
       }),
-      crearElemento('label', { clase: 'boton secundario', for: 'importar-archivo', texto: 'Importar respaldo' }),
+      crearElemento('label', { clase: 'boton secundario', for: 'importar-archivo', texto: 'Recuperar una copia' }),
       entrada,
       crearElemento('button', {
         type: 'button', clase: 'boton peligro',
         texto: 'Borrar todo',
         onclick: () => {
           const confirmado = confirm(
-            'Se borrarán de este navegador: la rendición en curso, el padrón de ' +
-            'personas afiliadas, el registro de raciones y asistencia, y el ' +
-            'calendario de entregas.\n\n' +
-            'Esto no se puede deshacer. ¿Exportaste un respaldo?\n\n' +
+            'Se borrará de este equipo: el padrón, la asistencia, el formato B-1 ' +
+            'y las entregas.\n\n' +
+            'No se puede deshacer. ¿Guardaste una copia?\n\n' +
             'Aceptar para borrar todo.');
           if (!confirmado) return;
           borrarTodo();
@@ -528,23 +509,23 @@ function exportarConContrasena() {
     if (c1.value.length < 8) { msg.textContent = 'Usa una contraseña de 8 caracteres o más.'; c1.focus(); return; }
     if (c1.value !== c2.value) { msg.textContent = 'Las dos contraseñas no coinciden. Escríbelas otra vez.'; c2.focus(); return; }
     msg.classList.remove('es-error');
-    msg.textContent = 'Cifrando…';
+    msg.textContent = 'Preparando…';
     await exportarTodo(c1.value);
     c1.value = ''; c2.value = '';
-    msg.textContent = 'Respaldo protegido listo. Guarda la contraseña en un lugar aparte.';
+    msg.textContent = 'Copia lista. Anota la contraseña en un lugar aparte.';
   };
   return crearElemento('details', { clase: 'respaldo-clave' }, [
-    crearElemento('summary', { texto: 'Exportar con contraseña' }),
+    crearElemento('summary', { texto: 'Guardar una copia con contraseña' }),
     crearElemento('p', {
       clase: 'pista',
-      texto: 'Nadie podrá abrir el archivo sin la contraseña, tampoco tú si la olvidas: no hay forma de recuperarla.'
+      texto: 'Sin la contraseña nadie puede abrirla, tampoco tú si la olvidas.'
     }),
     crearElemento('div', { clase: 'rejilla dos' }, [
       crearElemento('div', { clase: 'campo' }, [crearElemento('label', { for: c1.id, texto: 'Contraseña (8 o más caracteres)' }), c1]),
       crearElemento('div', { clase: 'campo' }, [crearElemento('label', { for: c2.id, texto: 'Repite la contraseña' }), c2])
     ]),
     crearElemento('div', { clase: 'acciones', style: 'margin-top:10px' }, [
-      crearElemento('button', { type: 'button', clase: 'boton secundario', texto: 'Exportar respaldo protegido', onclick: exportar })
+      crearElemento('button', { type: 'button', clase: 'boton secundario', texto: 'Guardar copia con contraseña', onclick: exportar })
     ]),
     msg
   ]);
@@ -581,7 +562,7 @@ export async function exportarTodo(contrasena) {
     const archivo = new File([JSON.stringify(datos, null, 2)], nombre, { type: 'application/json' });
     if (navigator.canShare({ files: [archivo] })) {
       try {
-        await navigator.share({ files: [archivo], title: 'Respaldo del Sistema de Asistencia' });
+        await navigator.share({ files: [archivo], title: 'Copia del Sistema de Asistencia' });
         entregado = true;
       } catch (e) {
         if (e && e.name === 'AbortError') return;   // cerró el menú: no hubo respaldo
@@ -604,31 +585,33 @@ const ICONO_HALLAZGO = { error: 'error', advertencia: 'aviso' };
  */
 export function pintarPanel(contenedor, hallazgos, { alIrA } = {}) {
   contenedor.textContent = '';
-  const errores = hallazgos.filter((x) => x.severidad === 'error');
+  // Un dato que todavía no se escribió no es un «error»: en un formulario
+  // recién empezado, decir «12 errores» en rojo asusta y parece un regaño.
+  const faltan = hallazgos.filter((x) => x.severidad === 'error' && x.falta);
+  const errores = hallazgos.filter((x) => x.severidad === 'error' && !x.falta);
   const avisos = hallazgos.filter((x) => x.severidad === 'advertencia');
 
+  // Sin nada que decir, no se dice nada: un «todo bien» permanente es ruido.
+  if (hallazgos.length === 0) return;
+
   const resumen = crearElemento('p', { clase: 'panel-resumen' });
-  if (hallazgos.length === 0) {
-    resumen.append(crearElemento('span', { clase: 'pastilla ok' }, [
-      icono('ok', { tam: 14 }), ' Sin observaciones'
+  if (faltan.length) {
+    resumen.append(crearElemento('span', { clase: 'pastilla neutra' }, [
+      icono('lapiz', { tam: 14 }),
+      faltan.length === 1 ? ' Falta 1 dato' : ` Faltan ${faltan.length} datos`
     ]));
-  } else {
-    if (errores.length) {
-      resumen.append(crearElemento('span', { clase: 'pastilla error' }, [
-        icono('error', { tam: 14 }),
-        ` ${errores.length} error${errores.length === 1 ? '' : 'es'}`
-      ]));
-    }
-    if (avisos.length) {
-      resumen.append(crearElemento('span', { clase: 'pastilla advertencia' }, [
-        icono('aviso', { tam: 14 }),
-        ` ${avisos.length} advertencia${avisos.length === 1 ? '' : 's'}`
-      ]));
-    }
+  }
+  if (errores.length) {
+    resumen.append(crearElemento('span', { clase: 'pastilla error' }, [
+      icono('error', { tam: 14 }), ` ${errores.length} por corregir`
+    ]));
+  }
+  if (avisos.length) {
+    resumen.append(crearElemento('span', { clase: 'pastilla advertencia' }, [
+      icono('aviso', { tam: 14 }), ` ${avisos.length} por revisar`
+    ]));
   }
   contenedor.append(resumen);
-
-  if (hallazgos.length === 0) return;
 
   // Con pocos hallazgos se ven directos; con muchos, el panel no puede comerse
   // media pantalla, así que el detalle se pliega y se abre a voluntad.
@@ -636,10 +619,11 @@ export function pintarPanel(contenedor, hallazgos, { alIrA } = {}) {
   // detalle es una persona menos a la vista en la lista.
   const muchos = hallazgos.length > (esAnchoCelular() ? 0 : 3);
   const lista = crearElemento('ul', { clase: 'panel-lista' });
-  for (const hall of [...errores, ...avisos]) {
-    const item = crearElemento('li', { clase: `panel-item ${hall.severidad}` }, [
-      icono(ICONO_HALLAZGO[hall.severidad], { tam: 15, clase: 'icono panel-icono' }),
-      crearElemento('span', { clase: 'panel-tipo', texto: hall.severidad === 'error' ? 'Error:' : 'Advertencia:' }),
+  for (const hall of [...errores, ...faltan, ...avisos]) {
+    const tipo = hall.severidad !== 'error' ? 'Revisar:' : hall.falta ? 'Completar:' : 'Corregir:';
+    const item = crearElemento('li', { clase: `panel-item ${hall.falta ? 'falta' : hall.severidad}` }, [
+      icono(hall.falta ? 'lapiz' : ICONO_HALLAZGO[hall.severidad], { tam: 15, clase: 'icono panel-icono' }),
+      crearElemento('span', { clase: 'panel-tipo', texto: tipo }),
       crearElemento('span', { clase: 'panel-mensaje', texto: ' ' + hall.mensaje })
     ]);
     if (alIrA) {
@@ -756,8 +740,8 @@ export function mostrarGuardado(ok) {
   const estado = document.getElementById('estado-guardado');
   if (estado) {
     estado.textContent = ok
-      ? 'Guardado en este dispositivo.'
-      : 'NO SE GUARDÓ lo último. Exporta un respaldo ahora.';
+      ? 'Guardado en este equipo.'
+      : 'NO SE GUARDÓ lo último. Guarda una copia ahora.';
     estado.classList.toggle('es-error', !ok);
   }
   const previo = document.getElementById('aviso-no-guarda');
@@ -767,11 +751,10 @@ export function mostrarGuardado(ok) {
   if (!contenedor) return;
   contenedor.prepend(crearElemento('div', { clase: 'aviso-sistema', id: 'aviso-no-guarda', role: 'alert' }, [
     crearElemento('p', {}, [icono('aviso', { tam: 15 }),
-      ' No se pudo guardar en este dispositivo: puede que el almacenamiento esté ' +
-      'lleno o bloqueado. Lo que escribas ahora se perderá al cerrar. Exporta un ' +
-      'respaldo ya, y no cierres la página hasta tenerlo.']),
+      ' No se pudo guardar: el espacio está lleno o bloqueado. Lo que escribas ahora ' +
+      'se perderá al cerrar. Guarda una copia antes de cerrar la página.']),
     crearElemento('button', {
-      type: 'button', clase: 'boton diminuto secundario', texto: 'Exportar respaldo',
+      type: 'button', clase: 'boton diminuto secundario', texto: 'Guardar una copia',
       onclick: () => exportarTodo()
     })
   ]));
@@ -785,9 +768,8 @@ function avisoEspacio() {
   if (fraccion < UMBRAL_ESPACIO) return null;
   return crearElemento('div', { clase: 'aviso-sistema', role: 'alert' }, [
     crearElemento('p', {}, [icono('aviso', { tam: 15 }),
-      ` El espacio de la aplicación en este navegador va al ${Math.round(fraccion * 100)} %. ` +
-      'Cuando se llene, ya no podrá guardar. Exporta un respaldo y avisa a quien ' +
-      'mantiene la aplicación.'])
+      ` El espacio de la aplicación va al ${Math.round(fraccion * 100)} %. Cuando se ` +
+      'llene, no podrá guardar. Guarda una copia y avisa a quien mantiene la aplicación.'])
   ]);
 }
 
@@ -820,11 +802,11 @@ function recordatorioRespaldo() {
   return crearElemento('div', { clase: 'recordatorio-respaldo', id: 'recordatorio-respaldo' }, [
     crearElemento('span', {
       texto: dias === null
-        ? 'Todavía no exportaste ningún respaldo de estos datos.'
-        : `Tu último respaldo es de hace ${dias} días.`
+        ? 'Todavía no guardaste una copia de tus datos.'
+        : `Tu última copia es de hace ${dias} días.`
     }),
     crearElemento('button', {
-      type: 'button', clase: 'boton diminuto secundario', texto: 'Exportar respaldo',
+      type: 'button', clase: 'boton diminuto secundario', texto: 'Guardar una copia',
       onclick: () => exportarTodo()
     })
   ]);

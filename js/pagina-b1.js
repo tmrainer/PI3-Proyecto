@@ -3,7 +3,7 @@
 
 import {
   CLAVES, leer, guardar, nuevaRendicion, nuevoEgreso,
-  aCentimos, formatearSoles, aNumero, debounce, hoyIso, configVacia, calendarioVacio, aDdMmAa
+  aCentimos, formatearSoles, aNumero, debounce, hoyIso, configVacia, calendarioVacio, aDdMmAa, cuantos
 } from './modelo.js';
 import { totales, gastoPorOrigen, proponerPeriodo } from './calculos.js';
 import { validarRendicion } from './validaciones.js';
@@ -216,8 +216,7 @@ function mostrarPropuestaPeriodo() {
 
   const fila = crearElemento('div', { clase: 'sugerencia' }, [
     crearElemento('span', { clase: 'sugerencia-etiqueta', texto: 'Sugerencia' }),
-    crearElemento('span', { clase: 'sugerencia-valor', texto: `${p.inicio} a ${p.fin}` }),
-    crearElemento('span', { clase: 'sugerencia-proc', texto: `según la fecha ${ref}` }),
+    crearElemento('span', { clase: 'sugerencia-valor', texto: `${aDdMmAa(p.inicio)} a ${aDdMmAa(p.fin)}` }),
     crearElemento('button', {
       type: 'button', clase: 'boton diminuto', texto: 'Usar estas fechas',
       onclick: () => {
@@ -246,7 +245,6 @@ function mostrarPropuestaPeriodo() {
       }
     }));
   }
-  etiquetas.append(crearElemento('span', { clase: 'sugerencia-proc', texto: 'elige uno o escribe el tuyo' }));
   caja.append(etiquetas);
 }
 
@@ -387,11 +385,11 @@ function fichaEgreso(fila, indice) {
         crearElemento('label', { clase: 'opcion' }, [chkCant, 'La boleta dice «varios»'])
       ]),
       campo('Unidad de medida', fUnidad),
-      campo('Origen del dinero', fOrigen, 'No va al formato; sirve para tus cuentas.')
+      campo('Origen del dinero', fOrigen, 'No va al formato.')
     ]),
     crearElemento('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
       campo('RUC del proveedor', fRuc),
-      campo('Nombre del proveedor', fProv, 'No va al formato. Sirve para recordar su RUC.'),
+      campo('Nombre del proveedor', fProv, 'No va al formato.'),
       crearElemento('div', { clase: 'rejilla dos' }, [
         campo('Serie', fSerie),
         campo('Correlativo', fCorr)
@@ -431,7 +429,7 @@ function pintarEgresos() {
   lista.textContent = '';
   rendicion.egresos.forEach((fila, i) => lista.append(fichaEgreso(fila, i)));
   buscar('#conteo-egresos').textContent =
-    `${rendicion.egresos.length} ficha(s). La hoja del formato tiene 17 filas.`;
+    `${cuantos(rendicion.egresos.length, 'compra')}. La hoja del formato tiene 17 filas.`;
 }
 
 // ------------------------------------------------------------------- totales

@@ -184,6 +184,8 @@ legend { font-size: .84rem; font-weight: 600; color: var(--tinta); padding: 0 6p
 .pastilla.ok { color: var(--ok); background: var(--ok-fondo); border-color: var(--ok); }
 .pastilla.error { color: var(--error); background: var(--error-fondo); border-color: var(--error); }
 .pastilla.advertencia { color: var(--aviso); background: var(--aviso-fondo); border-color: var(--aviso); }
+.pastilla.neutra { color: var(--verde-700); background: var(--verde-050); border-color: var(--verde-500); }
+.privacidad-cuerpo p:empty { display: none; }
 
 .panel-detalle { margin-top: 8px; }
 .panel-detalle > summary {
@@ -197,6 +199,8 @@ legend { font-size: .84rem; font-weight: 600; color: var(--tinta); padding: 0 6p
 }
 .panel-item.error { border-color: var(--error); background: var(--error-fondo); }
 .panel-item.advertencia { border-color: var(--aviso); background: var(--aviso-fondo); }
+.panel-item.falta { border-color: var(--verde-500); background: var(--verde-050); }
+.panel-item.falta .panel-icono { color: var(--verde-700); }
 .panel-tipo { font-weight: 600; }
 .panel-item.error .panel-icono { color: var(--error); }
 .panel-item.advertencia .panel-icono { color: var(--aviso); }
@@ -264,8 +268,8 @@ legend { font-size: .84rem; font-weight: 600; color: var(--tinta); padding: 0 6p
   background: var(--verde-050); border: 1px solid var(--verde-200);
   border-radius: var(--radio); padding: 12px 14px; margin-bottom: 14px; font-size: .88rem;
 }
-.privacidad summary { cursor: pointer; font-weight: 700; color: var(--verde-700); }
-.privacidad-cuerpo { margin-top: 10px; }
+.privacidad-cuerpo p { margin: 0 0 .5em; }
+.privacidad-cuerpo p:last-child { margin-bottom: 0; }
 
 .aviso-sistema {
   background: var(--aviso-fondo); border: 1px solid var(--aviso); border-left-width: 5px;
@@ -505,7 +509,7 @@ section.bloque.apoyo h2 { font-size: .98rem; color: var(--verde-700); }
   .dia > summary, .plegable > summary { padding: 14px 4px; }
   .toque-nombre { padding: 10px 12px; }
   .toque-menu { width: 5em; }
-  .panel-detalle > summary, .privacidad summary { padding-block: 10px; }
+  .panel-detalle > summary { padding-block: 10px; }
   .enlace-ir { padding: 6px 0; }
 }
 
@@ -589,11 +593,14 @@ legend.obligatoria::after { content: " *"; color: var(--error); font-weight: 700
    El banner de aviso y el panel de revisión los rellena el JS, que al ser un
    módulo corre después del primer pintado. Sin reservar su alto, el contenido
    ya dibujado se desplazaba 143 px de golpe: quien tocara algo en ese momento
-   acababa pulsando otra cosa. Los dos aparecen siempre, así que el hueco nunca
-   se queda vacío. Medido: 54 y 56 px en escritorio, el banner 108 en móvil. */
+   acababa pulsando otra cosa. Medido: 54 y 56 px en escritorio, el banner 108 en móvil. */
 .nav { min-height: 41px; }
 #banner { min-height: 54px; }
 #panel { min-height: 56px; }
+/* Ya con el JS corrido (montarCabecera pone .listo, en la misma tarea que
+   rellena el banner y el panel), lo que quedó vacío no ocupa lugar: un hueco
+   o un «todo bien» permanente es ruido. */
+.listo #banner:empty, .listo .panel:empty { display: none; }
 
 /* ------------------------------------------------- compras y alta plegables
 

@@ -286,7 +286,7 @@ async function correr(base, cdp) {
         const filas = await p.eval(`document.querySelectorAll('#reporte-padron tbody tr').length`);
         const aus = await p.eval(TEXTO('#reporte-padron .asistencia-resumen'));
         comprobar('reporte del padrón: 3 filas', filas === 3, String(filas));
-        comprobar('reporte: los ausentes son las 2 filas con 0 días', aus.startsWith('2 persona(s)'), aus);
+        comprobar('reporte: los ausentes son las 2 filas con 0 días', aus.startsWith('2 personas no vinieron'), aus);
         // Sin permiso de portapapeles (como aquí) aparece el texto para copiar a mano.
         await p.actuar(`document.querySelector('#copiar-padron').click()`);
         await pausa(200);
@@ -355,7 +355,7 @@ async function correr(base, cdp) {
     await p.ir(`${base}/padron.html`);       // ya con el padrón vacío
     const ABRIR_CON = (clave) => `(async () => {
       document.getElementById('clave-importar').value = ${JSON.stringify(clave)};
-      [...document.querySelectorAll('.respaldo-clave button')].find((b) => b.textContent === 'Abrir respaldo').click();
+      [...document.querySelectorAll('.respaldo-clave button')].find((b) => b.textContent === 'Abrir copia').click();
       await new Promise((ok) => setTimeout(ok, 1500));
       return (document.querySelector('.respaldo-clave .campo-error') || {}).textContent || '';
     })()`;
@@ -442,6 +442,79 @@ async function correr(base, cdp) {
     const r = await p.eval(`({ estado: ${TEXTO('#estado-guardado')}, aviso: !!document.getElementById('aviso-no-guarda') })`);
     comprobar(`${pagina}.html: si no se puede guardar, lo avisa`,
       r.aviso && /NO SE GUARDÓ/.test(r.estado), JSON.stringify(r));
+    await p.cerrar();
+  }
+
+  // 1h. Un padrón en Excel (.xlsx) se lee directo, sin convertirlo a CSV:
+  // con títulos arriba, textos compartidos, una celda en línea y una fecha
+  // guardada como número de serie, comprimido como lo guarda Excel.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar`);
+    await p.ir(`${base}/padron.html`);
+    const r = await p.actuar(`(async () => {
+      const cod = new TextEncoder();
+      const desinflar = async (texto) => new Uint8Array(await new Response(
+        new Blob([cod.encode(texto)]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());
+      const archivos = {
+        'xl/workbook.xml': '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Padrón" sheetId="1" r:id="rId1"/></sheets></workbook>',
+        'xl/_rels/workbook.xml.rels': '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Target="worksheets/hoja.xml" Type="x"/></Relationships>',
+        'xl/sharedStrings.xml': '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><si><t>PADRÓN 2026</t></si><si><t>Apellido paterno</t></si><si><t>Nombres</t></si><si><t>DNI</t></si><si><t>Fecha de nacimiento</t></si><si><t>Tipo</t></si><si><r><t>Qui</t></r><r><t>spe</t></r></si><si><t>Habitual</t></si></sst>',
+        'xl/styles.xml': '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cellXfs count="2"><xf numFmtId="0"/><xf numFmtId="14"/></cellXfs></styleSheet>',
+        'xl/worksheets/hoja.xml': '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' +
+          '<row r="1"><c r="A1" t="s"><v>0</v></c></row>' +
+          '<row r="3"><c r="A3" t="s"><v>1</v></c><c r="B3" t="s"><v>2</v></c><c r="C3" t="s"><v>3</v></c><c r="D3" t="s"><v>4</v></c><c r="E3" t="s"><v>5</v></c></row>' +
+          '<row r="4"><c r="A4" t="s"><v>6</v></c><c r="B4" t="inlineStr"><is><t>Rosa "Chabuca"</t></is></c><c r="C4"><v>40123456</v></c><c r="D4" s="1" t="n"><v>32874</v></c><c r="E4" t="s"><v>7</v></c></row>' +
+          '</sheetData></worksheet>'
+      };
+      // ZIP mínimo: el libro guardado sin comprimir y lo demás con deflate.
+      const partes = []; const centro = []; let pos = 0;
+      for (const [nombre, texto] of Object.entries(archivos)) {
+        const n = cod.encode(nombre);
+        const comprimir = nombre !== 'xl/workbook.xml';
+        const datos = comprimir ? await desinflar(texto) : cod.encode(texto);
+        const local = new DataView(new ArrayBuffer(30));
+        local.setUint32(0, 0x04034b50, true); local.setUint16(8, comprimir ? 8 : 0, true);
+        local.setUint32(18, datos.length, true); local.setUint16(26, n.length, true);
+        const c = new DataView(new ArrayBuffer(46));
+        c.setUint32(0, 0x02014b50, true); c.setUint16(10, comprimir ? 8 : 0, true);
+        c.setUint32(20, datos.length, true); c.setUint16(28, n.length, true); c.setUint32(42, pos, true);
+        partes.push(new Uint8Array(local.buffer), n, datos);
+        centro.push(new Uint8Array(c.buffer), n);
+        pos += 30 + n.length + datos.length;
+      }
+      const largoCentro = centro.reduce((t, x) => t + x.length, 0);
+      const fin = new DataView(new ArrayBuffer(22));
+      fin.setUint32(0, 0x06054b50, true); fin.setUint16(10, Object.keys(archivos).length, true);
+      fin.setUint32(12, largoCentro, true); fin.setUint32(16, pos, true);
+      const archivo = new File([...partes, ...centro, new Uint8Array(fin.buffer)], 'padron.xlsx');
+      const dt = new DataTransfer(); dt.items.add(archivo);
+      const entrada = document.getElementById('archivoPadron');
+      entrada.files = dt.files; entrada.dispatchEvent(new Event('change'));
+      for (let i = 0; i < 40 && !document.querySelector('#vista-importacion table'); i++) await new Promise((o) => setTimeout(o, 50));
+      return { texto: document.getElementById('pegarPadron').value,
+        vista: document.getElementById('vista-importacion').innerText.replace(/\\s+/g, ' ') };
+    })()`);
+    comprobar('Excel (.xlsx): se lee directo, con título arriba, textos y fecha',
+      r.texto.startsWith('PADRÓN 2026\n\n') && r.texto.includes('40123456\t1990-01-01\tHabitual') &&
+      /Se agregarán: 1/.test(r.vista) && /\b4 Quispe Rosa "Chabuca" 40123456/.test(r.vista),
+      JSON.stringify(r).slice(0, 300));
+    comprobar('Excel (.xlsx): sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
+    await p.cerrar();
+  }
+
+  // 1i. Lo que no aporta no se muestra: sin «null» en Entregas, sin panel vacío.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar?padron=1`);
+    await p.ir(`${base}/calendario.html`);
+    const entregas = await p.eval(`document.body.innerText`);
+    comprobar('Entregas: no aparece «null» ni el aviso de configurar entregas',
+      !/\bnull\b/.test(entregas) && !/Todavía no has indicado/.test(entregas), entregas.slice(0, 160));
+    await p.ir(`${base}/__sembrar`);
+    await p.ir(`${base}/padron.html`);
+    const panel = await p.eval(`getComputedStyle(document.getElementById('panel')).display`);
+    comprobar('Padrón vacío: sin nada que revisar, el panel no ocupa lugar', panel === 'none', panel);
     await p.cerrar();
   }
 
