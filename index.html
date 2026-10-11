@@ -6,9 +6,9 @@
      solo se cargan archivos de este mismo sitio y no hay scripts en línea. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Pasa lista del día en tu olla común o comedor: toca a quien vino y las raciones se cuentan solas.">
+<meta name="description" content="Tu olla común o comedor de un vistazo: pasar lista, inscribir, anotar compras y la próxima entrega.">
 <meta name="robots" content="noindex, nofollow">
-<title>Asistencia del día · Sistema de Asistencia</title>
+<title>Inicio · Sistema de Asistencia</title>
 <meta name="theme-color" content="#1b2e1e">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icono.svg" type="image/svg+xml">
@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="./estilos.css">
 <script src="./js/errores.js"></script>
 </head>
-<body data-pagina="asistencia">
+<body data-pagina="inicio">
 <a class="saltar-al-contenido" href="#principal">Saltar al contenido</a>
 <header class="cabecera">
   <div class="cabecera-titulo">
@@ -28,60 +28,25 @@
 <main id="principal" tabindex="-1">
 
   <div id="avisos-sistema"></div>
-  <div id="banner"></div>
 
-  <section class="bloque foco" id="bloque-hoy">
-    <h2 id="titulo-hoy">Asistencia de hoy</h2>
-    <p class="pista">Toca a quien vino. Las raciones se cuentan solas.</p>
-    <div id="hoy"></div>
-  </section>
-
-  <!-- Aquí, y no arriba: lo que revisa (el precio del menú, días pasados) está
-       debajo, y arriba la lista de hoy se ve sin desplazarse. -->
-  <div id="panel" class="panel" role="status" aria-live="polite" aria-label="Resumen de revisión"></div>
-
-  <section class="bloque apoyo">
-    <h2>Resumen por fechas</h2>
-    <div class="rejilla dos">
-      <div class="campo">
-        <label for="periodoInicio">Desde</label>
-        <input id="periodoInicio" type="date">
-      </div>
-      <div class="campo">
-        <label for="periodoFin">Hasta</label>
-        <input id="periodoFin" type="date">
-      </div>
+  <section class="hoy-tarjeta" id="hoy-tarjeta" aria-labelledby="hoy-titulo">
+    <p class="hoy-etiqueta" id="hoy-titulo">Hoy</p>
+    <div class="hoy-cifras">
+      <div><span class="hoy-grande" id="hoy-raciones">0</span><span class="hoy-etiqueta">raciones</span></div>
+      <div><span class="hoy-grande" id="hoy-recaudado">S/ 0</span><span class="hoy-etiqueta" id="hoy-recaudado-etiqueta">recaudado</span></div>
     </div>
-    <div id="resumen-raciones" class="resumen-chips" style="margin-top:12px"></div>
-    <p class="nota-calculo" id="nota-precio"></p>
+    <a class="hoy-entrega" id="hoy-entrega" href="./calendario.html"></a>
   </section>
 
-  <section class="bloque apoyo">
-    <h2>Precio del menú</h2>
-    <p class="pista">Se copia a cada día nuevo. Si un día fue distinto, se cambia en ese día.</p>
-    <div class="rejilla dos">
-      <div class="campo" data-campo="precio.normal">
-        <label for="precioNormal">Menú normal (S/)</label>
-        <input id="precioNormal" type="text" inputmode="decimal" placeholder="0.00">
-      </div>
-      <div class="campo" data-campo="precio.ayuda">
-        <label for="precioAyuda">Menú de ayuda social (S/)</label>
-        <input id="precioAyuda" type="text" inputmode="decimal" placeholder="0.00">
-        <span class="pista">Si es gratuito, escribe 0.00.</span>
-      </div>
-    </div>
-  </section>
+  <nav class="tareas" aria-label="Qué quieres hacer">
+    <a class="tarea principal" href="./asistencia.html" data-icono="lista">Pasar lista hoy</a>
+    <a class="tarea" href="./padron.html#inscribir" data-icono="personaMas" data-tono="verde">Inscribir a una persona</a>
+    <a class="tarea" href="./formato-b1.html#compras" data-icono="boleta" data-tono="ocre">Anotar una compra</a>
+    <a class="tarea" href="./calendario.html" data-icono="calendario" data-tono="azul">Ver entregas</a>
+    <button type="button" class="tarea" id="como-se-usa" data-icono="ayuda" data-tono="verde">¿Cómo se usa?</button>
+  </nav>
 
-  <section class="bloque apoyo">
-    <h2>Otros días</h2>
-    <p class="pista">Para corregir o completar días pasados.</p>
-    <div class="acciones">
-      <button type="button" class="boton secundario" id="agregar-atencion">+ Registrar otro día</button>
-    </div>
-    <div id="lista-atenciones" style="margin-top:12px"></div>
-  </section>
-
-  <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras tocas.</p>
+  <p class="nota-copia" id="nota-copia" data-leer></p>
 
   <details class="plegable">
     <summary>Copia de tus datos y privacidad</summary>
@@ -91,8 +56,7 @@
     </div>
   </details>
 
-
 </main>
-<script type="module" src="./js/pagina-asistencia.js"></script>
+<script type="module" src="./js/pagina-inicio.js"></script>
 </body>
 </html>

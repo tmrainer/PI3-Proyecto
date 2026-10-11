@@ -77,39 +77,51 @@ a { color: var(--verde-600); }
   border-bottom: 3px solid var(--verde-500);
 }
 .cabecera-titulo {
-  max-width: 980px; margin-inline: auto; padding: 12px 16px 10px;
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  max-width: 980px; margin-inline: auto; padding: 10px 6px 10px 16px; min-height: 60px;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 4px;
+  position: relative;
 }
-.cabecera-titulo h1 { flex: 0 1 auto; min-width: 0; }
-.cabecera-titulo h1 { margin: 0; color: #fff; font-size: 1.2rem; }
-.cabecera-sub { margin: 0; font-size: .82rem; color: var(--cabecera-sub); }
+.cabecera-titulo h1 { grid-column: 2; margin: 0; color: #fff; font-size: 1.2rem; line-height: 1.2; overflow-wrap: anywhere; }
+.cabecera-sub { grid-column: 2; margin: 0; font-size: .82rem; color: var(--cabecera-sub); line-height: 1.3; }
+.cabecera-volver, .cabecera-menu {
+  grid-row: 1 / span 2; width: 48px; height: 48px; border-radius: 50%;
+  display: grid; place-items: center; color: #fff; background: transparent; border: 0; cursor: pointer;
+}
+.cabecera-volver { grid-column: 1; margin-left: -12px; }
+.cabecera-menu { grid-column: 3; }
+.cabecera-volver:active, .cabecera-menu:active, .cabecera-menu[aria-expanded="true"] { background: rgba(255, 255, 255, .14); }
+.cabecera-volver:focus-visible, .cabecera-menu:focus-visible { outline: 2px solid #fff; outline-offset: 0; }
+.menu-opciones {
+  position: absolute; right: 8px; top: calc(100% - 6px); z-index: 40; min-width: 250px;
+  background: var(--papel); color: var(--tinta); border-radius: 12px; padding: 6px;
+  box-shadow: 0 8px 28px rgba(27, 46, 30, .28);
+}
+.menu-opciones button {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 8px 12px;
+  border: 0; background: none; border-radius: 8px; font: inherit; text-align: left; color: inherit; cursor: pointer;
+}
+.menu-opciones button:hover, .menu-opciones button:focus-visible { background: var(--verde-050); }
+.menu-opciones button[aria-checked="true"] { font-weight: 700; }
+.menu-opciones .icono { color: var(--verde-700); }
 /* Letra grande: todo va en rem, así que crece entero (y lo que no cabe,
    baja de renglón). 112,5 % = 18 px de letra normal. */
 html.letra-grande { font-size: 112.5%; }
-/* Lo que es de navegar no crece: con 18 px, el título y el botón no cabían en
-   un renglón y «Formato B-1» se partía en el menú de abajo. */
-.letra-grande .cabecera-titulo h1 { font-size: 1.05rem; }
-.letra-grande .boton-letra { font-size: 13px; }
-.letra-grande .nav-enlace { font-size: 14px; white-space: nowrap; }
-.boton-letra {
-  margin-inline-start: auto; align-self: center;
-  font: inherit; font-size: .82rem; font-weight: 600; line-height: 1.2; white-space: nowrap;
-  color: var(--cabecera-texto); background: transparent;
-  border: 1px solid var(--cabecera-enlace); border-radius: var(--radio);
-  padding: 6px 10px; min-height: 36px; cursor: pointer;
-}
-.boton-letra[aria-pressed="true"] { background: var(--cabecera-texto); color: var(--verde-900); }
-.boton-letra:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+/* Lo que es de navegar no crece: con 18 px, «Asistencia» se partía en el
+   menú de abajo. */
+.letra-grande .cabecera-titulo h1 { font-size: 1.1rem; }
+.letra-grande .nav-texto { font-size: 12.5px; }
 
 .nav {
   max-width: 980px; margin-inline: auto; padding: 0 10px;
   display: flex; flex-wrap: wrap; gap: 0;
 }
 .nav-enlace {
-  display: inline-block; padding: 8px 14px 10px;
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px 10px;
   border: 0; border-bottom: 3px solid transparent; margin-bottom: -3px;
   text-decoration: none; color: var(--cabecera-enlace); font-size: .89rem; background: none;
 }
+.nav-icono { display: grid; place-items: center; }
+.nav-icono .icono { width: 20px; height: 20px; }
 .nav-enlace.activo { color: #fff; font-weight: 600; border-bottom-color: #fff; }
 .nav-enlace:focus-visible, .boton:focus-visible, input:focus-visible,
 select:focus-visible, textarea:focus-visible, summary:focus-visible,
@@ -727,28 +739,94 @@ details.bloque.desplegable[open] > summary + * { margin-top: 14px; }
 .hoy-buscar { flex: 1 1 14em; }
 .hoy-acciones { margin-top: 12px; }
 
+/* ------------------------------------------------------------- inicio */
+
+.hoy-tarjeta {
+  background: var(--verde-900); color: #fff; border-radius: 16px; padding: 16px 18px;
+  box-shadow: var(--sombra-m); margin-bottom: 16px;
+}
+.hoy-etiqueta { display: block; margin: 0; color: var(--verde-200); font-size: .9rem; }
+.hoy-cifras { display: flex; flex-wrap: wrap; gap: 6px 28px; margin: 4px 0 14px; }
+.hoy-grande { display: block; font-size: 2.4rem; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.hoy-entrega {
+  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 12px;
+  border-radius: 10px; background: rgba(255, 255, 255, .1); color: #fff; text-decoration: none; font-size: .95rem;
+}
+.hoy-entrega.vencida, .hoy-entrega.hoy, .hoy-entrega.urgente { background: #8f2a1c; }
+.hoy-entrega.proxima { background: #7d5300; }
+
+.tareas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tarea {
+  display: flex; flex-direction: column; justify-content: space-between; gap: 14px;
+  min-height: 128px; padding: 16px 14px; border: 0; border-radius: 16px; text-align: left;
+  background: var(--papel); box-shadow: var(--sombra-m); color: var(--verde-900);
+  font: inherit; font-weight: 700; font-size: 1.05rem; line-height: 1.25; text-decoration: none; cursor: pointer;
+}
+.tarea:active { transform: scale(.97); }
+.tarea.principal {
+  grid-column: 1 / -1; min-height: 96px; flex-direction: row; align-items: center; justify-content: flex-start;
+  gap: 16px; background: var(--verde-700); color: #fff; font-size: 1.25rem;
+}
+.tarea-icono { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; flex: none; }
+.tarea.principal .tarea-icono { background: rgba(255, 255, 255, .18); color: #fff; }
+.tarea-icono.verde { background: var(--verde-050); color: var(--verde-700); }
+.tarea-icono.ocre { background: var(--aviso-fondo); color: var(--aviso); }
+.tarea-icono.azul { background: #e6f0f2; color: #2f6672; }
+.nota-copia { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 0 0 16px; color: var(--tinta-suave); font-size: .92rem; }
+.nota-copia .icono { color: var(--ok); }
+.nota-copia.pendiente .icono { color: var(--aviso); }
+.nota-copia.pendiente span { flex: 1 1 12em; color: var(--tinta); }
+
+/* ---------------------------------------------- primer uso: ¿cómo se usa? */
+
+dialog.bienvenida {
+  border: 0; border-radius: 20px; padding: 24px 20px 20px; width: min(92vw, 420px);
+  text-align: center; color: var(--tinta); background: var(--papel); box-shadow: 0 12px 40px rgba(0, 0, 0, .3);
+}
+dialog.bienvenida::backdrop { background: rgba(27, 46, 30, .55); }
+.bienvenida-dibujo {
+  width: 120px; height: 120px; margin: 0 auto; border-radius: 30px; display: grid; place-items: center;
+  background: var(--verde-050); color: var(--verde-700);
+}
+.bienvenida h2 { margin: 16px 0 8px; font-size: 1.4rem; color: var(--verde-900); }
+.bienvenida p { margin: 0 auto 16px; color: var(--tinta-suave); max-width: 24em; }
+.bienvenida-puntos { display: flex; justify-content: center; gap: 8px; margin-top: 16px; }
+.bienvenida-puntos i { width: 10px; height: 10px; border-radius: 5px; background: var(--verde-200); }
+.bienvenida-puntos i.on { width: 26px; background: var(--verde-600); }
+.bienvenida .escuchar { display: inline-flex; align-items: center; gap: 6px; }
+.bienvenida-botones { display: flex; gap: 10px; margin-top: 20px; }
+.bienvenida-botones .boton { flex: 1; }
+
 /* ------------------------------------------------------------- celular
 
    Pensado para pasar lista con una mano: el menú abajo, al alcance del
    pulgar; arriba solo lo indispensable, para que la lista se vea al abrir. */
 
 @media (max-width: 619px) {
-  .cabecera-sub { display: none; }
-  .cabecera-titulo { padding: 10px 16px; }
+  .cabecera-titulo { padding: 8px 4px 8px 16px; }
   .cabecera { border-bottom-width: 0; }
 
+  /* El menú de abajo, como en Android: ícono y palabra, y la sección en la
+     que estás resaltada con una píldora. */
   .nav {
     position: fixed; inset-inline: 0; bottom: 0; z-index: 20;
     max-width: none; min-height: 0; margin: 0;
     padding: 0 0 env(safe-area-inset-bottom);
     display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
-    background: var(--verde-900); border-top: 1px solid var(--verde-700);
+    background: var(--papel); border-top: 1px solid var(--borde);
+    box-shadow: 0 -2px 10px rgba(27, 46, 30, .06);
   }
   .nav-enlace {
-    margin: 0; padding: 15px 4px; text-align: center; font-size: .84rem;
-    border-bottom: 0; border-top: 3px solid transparent; overflow-wrap: anywhere;
+    margin: 0; padding: 8px 2px 10px; min-height: 68px;
+    flex-direction: column; justify-content: center; gap: 3px;
+    text-align: center; font-size: .76rem; font-weight: 600; color: var(--tinta-suave);
+    border-bottom: 0; white-space: nowrap;
   }
-  .nav-enlace.activo { border-top-color: #fff; }
+  .nav-icono { width: 56px; height: 30px; border-radius: 15px; }
+  .nav-icono .icono { width: 24px; height: 24px; }
+  .nav-enlace.activo { color: var(--verde-900); font-weight: 700; }
+  .nav-enlace.activo .nav-icono { background: var(--verde-200); }
+  .nav-enlace:hover { color: var(--verde-900); }
   main { padding-bottom: calc(40px + var(--alto-nav-abajo, 56px)); }
   html { scroll-padding-bottom: calc(var(--alto-nav-abajo, 56px) + 8px); }
 

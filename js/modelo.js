@@ -120,6 +120,17 @@ export function esIso(valor) {
 }
 
 /** 'AAAA-MM-DD' a 'DD-MM-AA', como se escribe en el papel. */
+const MESES_LARGOS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto',
+  'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+/** «Sábado 11 de octubre»: la fecha como se dice. Solo para mostrar. */
+export function fechaLarga(iso) {
+  if (!esIso(iso)) return '';
+  const [a, m, d] = iso.split('-').map(Number);
+  return `${DIAS_SEMANA[new Date(a, m - 1, d).getDay()]} ${d} de ${MESES_LARGOS[m - 1]}`;
+}
+
 export function aDdMmAa(iso) {
   if (!esIso(iso)) return '';
   const [a, m, d] = iso.split('-');

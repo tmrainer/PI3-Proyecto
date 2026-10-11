@@ -72,6 +72,20 @@ const TRAZOS = {
   aviso: 'M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
   reloj: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2',
   flecha: 'm9 18 6-6-6-6',
+  casa: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6',
+  lista: 'M4 6l2 2 3-3M4 13l2 2 3-3M12 7h8M12 14h8M5 20h1M12 20h8',
+  personas: 'M12.5 8a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5M19.5 9a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0M17 14c2.5 0 4 1.5 4.5 4',
+  personaMas: 'M13.5 8a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0M3.5 20c.5-3.5 3-5.5 6.5-5.5 1.5 0 2.8.4 3.8 1M19 13v6M16 16h6',
+  boleta: 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3',
+  calendario: 'M5.5 5h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3.5 10h17M8 3v4M16 3v4M8 14h2M12 14h2',
+  atras: 'M15 5l-7 7 7 7',
+  puntos: 'M12 5h.01M12 12h.01M12 19h.01',
+  mas: 'M12 5v14M5 12h14',
+  voz: 'M4 9v6h4l5 4V5L8 9zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12',
+  escudo: 'M12 3l8 3v6c0 4.5-3.5 7.5-8 9-4.5-1.5-8-4.5-8-9V6zM8.5 12l2.5 2.5 4.5-5',
+  ayuda: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17.5h.01',
+  letra: 'M4 19l5-14 5 14M6 14h6M15 19l3-8 3 8M16.2 16h3.6',
+  buscar: 'M17.5 11a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0M16 16l4.5 4.5',
   lapiz: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z'
 };
 
@@ -154,16 +168,19 @@ export function aplicarHallazgos(panel, hallazgos, alIrA) {
 
 // La asistencia es la raíz: es la tarea diaria, y quien abre la dirección sin
 // más debe caer en ella, no en un formulario que se llena una vez al mes.
+// Ícono y palabra siempre juntos: un ícono solo es un acertijo para quien
+// recién empieza (y la palabra sola obliga a leer el menú entero).
 const PAGINAS = [
-  { href: './', texto: 'Asistencia', clave: 'asistencia' },
-  { href: './padron.html', texto: 'Padrón', clave: 'padron' },
-  { href: './formato-b1.html', texto: 'Formato B-1', clave: 'b1' },
-  { href: './calendario.html', texto: 'Entregas', clave: 'calendario' }
+  { href: './', texto: 'Inicio', clave: 'inicio', icono: 'casa' },
+  { href: './asistencia.html', texto: 'Asistencia', clave: 'asistencia', icono: 'lista' },
+  { href: './padron.html', texto: 'Padrón', clave: 'padron', icono: 'personas' },
+  { href: './formato-b1.html', texto: 'B-1', clave: 'b1', icono: 'boleta' },
+  { href: './calendario.html', texto: 'Entregas', clave: 'calendario', icono: 'calendario' }
 ];
 
 export function montarCabecera(claveActiva, subtitulo) {
   document.documentElement.classList.add('listo');   // ver «reservar el sitio» en estilos.css
-  montarLetraGrande();
+  aplicarLetraGrande();
   if (claveActiva === 'pruebas') {
     PAGINAS.push({ href: './pruebas.html', texto: 'Pruebas', clave: 'pruebas' });
   }
@@ -178,14 +195,17 @@ export function montarCabecera(claveActiva, subtitulo) {
     nav.append(crearElemento('a', {
       href: p.href,
       clase: p.clave === claveActiva ? 'nav-enlace activo' : 'nav-enlace',
-      'aria-current': p.clave === claveActiva ? 'page' : null,
-      texto: p.texto
-    }));
+      'aria-current': p.clave === claveActiva ? 'page' : null
+    }, [
+      crearElemento('span', { clase: 'nav-icono' }, [icono(p.icono || 'flecha', { tam: 24 })]),
+      crearElemento('span', { clase: 'nav-texto', texto: p.texto })
+    ]));
   }
   if (subtitulo) {
     const sub = buscar('.cabecera-sub');
     if (sub) sub.textContent = subtitulo;
   }
+  montarBarraTitulo(claveActiva);
   vigilarAltoFijo(document.getElementById('panel'));
   vigilarAltoFijo(nav, '--alto-nav-abajo', 'fixed');
   if (esAppNativa()) {
@@ -201,31 +221,169 @@ export function montarCabecera(claveActiva, subtitulo) {
   pedirAlmacenPersistente();
 }
 
-// ------------------------------------------------------------ letra grande
+// ------------------------------------------------- barra del título y menú ⋮
 //
-// Muchas dirigentes leen con dificultad la letra chica del celular. Todo el
-// CSS va en rem, así que basta con agrandar la letra base. Se recuerda en este
-// equipo (no es un dato de la olla: no va en los respaldos).
+// Como en cualquier app: arriba, dónde estás (el título de la pantalla) y una
+// flecha para volver al Inicio; lo que se usa poco va en el menú ⋮.
 
-const CLAVE_LETRA = 'pi3.letraGrande';
+const CLAVE_LETRA = 'pi3.letraGrande';   // de este equipo, no es un dato de la olla
 
-function montarLetraGrande() {
-  let grande = false;
-  try { grande = localStorage.getItem(CLAVE_LETRA) === '1'; } catch (e) { /* sin almacenamiento: chica */ }
-  const raiz = document.documentElement;
-  raiz.classList.toggle('letra-grande', grande);
-  const titulo = buscar('.cabecera-titulo');
-  if (!titulo || titulo.querySelector('.boton-letra')) return;
-  const boton = crearElemento('button', {
-    type: 'button', clase: 'boton-letra', 'aria-pressed': grande ? 'true' : 'false', texto: 'Letra grande'
+function letraGrandeActiva() {
+  try { return localStorage.getItem(CLAVE_LETRA) === '1'; } catch (e) { return false; }
+}
+
+// Muchas dirigentes leen con dificultad la letra chica del celular. Todo el CSS
+// va en rem: basta con agrandar la letra base.
+function aplicarLetraGrande() {
+  document.documentElement.classList.toggle('letra-grande', letraGrandeActiva());
+}
+
+function montarBarraTitulo(claveActiva) {
+  const barra = buscar('.cabecera-titulo');
+  if (!barra || barra.querySelector('.cabecera-menu')) return;
+
+  if (claveActiva !== 'inicio' && claveActiva !== 'pruebas') {
+    barra.prepend(crearElemento('a', {
+      clase: 'cabecera-volver', href: './', 'aria-label': 'Volver al inicio', title: 'Volver al inicio'
+    }, [icono('atras', { tam: 26 })]));
+  }
+
+  const opciones = crearElemento('div', { clase: 'menu-opciones', role: 'menu', hidden: true });
+  const botonMenu = crearElemento('button', {
+    type: 'button', clase: 'cabecera-menu', 'aria-label': 'Más opciones',
+    'aria-haspopup': 'menu', 'aria-expanded': 'false'
+  }, [icono('puntos', { tam: 26 })]);
+  const cerrar = () => { opciones.hidden = true; botonMenu.setAttribute('aria-expanded', 'false'); };
+  const abrir = () => {
+    pintarOpciones();
+    opciones.hidden = false;
+    botonMenu.setAttribute('aria-expanded', 'true');
+    const primero = opciones.querySelector('button');
+    if (primero) primero.focus();
+  };
+  botonMenu.addEventListener('click', () => (opciones.hidden ? abrir() : cerrar()));
+  document.addEventListener('click', (e) => {
+    if (!opciones.hidden && !opciones.contains(e.target) && !botonMenu.contains(e.target)) cerrar();
   });
-  boton.addEventListener('click', () => {
-    grande = !grande;
-    raiz.classList.toggle('letra-grande', grande);
-    boton.setAttribute('aria-pressed', grande ? 'true' : 'false');
-    try { localStorage.setItem(CLAVE_LETRA, grande ? '1' : '0'); } catch (e) { /* solo esta vez */ }
+  opciones.addEventListener('keydown', (e) => { if (e.key === 'Escape') { cerrar(); botonMenu.focus(); } });
+
+  function opcion(nombreIcono, texto, accion, extra = {}) {
+    return crearElemento('button', { type: 'button', role: 'menuitem', ...extra, onclick: () => { cerrar(); accion(); } }, [
+      icono(nombreIcono, { tam: 22 }), crearElemento('span', { texto })
+    ]);
+  }
+  function pintarOpciones() {
+    opciones.textContent = '';
+    const grande = letraGrandeActiva();
+    opciones.append(
+      opcion('letra', grande ? 'Letra normal' : 'Letra grande', () => {
+        try { localStorage.setItem(CLAVE_LETRA, grande ? '0' : '1'); } catch (e) { /* solo esta vez */ }
+        document.documentElement.classList.toggle('letra-grande', !grande);
+      }, { role: 'menuitemcheckbox', 'aria-checked': grande ? 'true' : 'false' }),
+      opcion('voz', 'Leer esta pantalla en voz alta', leerPantalla),
+      opcion('ayuda', '¿Cómo se usa?', () => mostrarBienvenida()),
+      opcion('escudo', 'Copia de tus datos', irACopia)
+    );
+  }
+  barra.append(botonMenu, opciones);
+}
+
+/** Abre «Copia de tus datos y privacidad» y la trae a la vista. */
+function irACopia() {
+  const plegable = [...document.querySelectorAll('details.plegable')]
+    .find((d) => d.querySelector('#barra-datos'));
+  if (!plegable) return;
+  plegable.open = true;
+  plegable.scrollIntoView({ block: 'start' });
+}
+
+// ------------------------------------------------------------ leer en voz alta
+//
+// Para quien lee con dificultad: la voz del propio teléfono (sin internet en
+// Android). Lee el título y lo que la página marcó con data-leer.
+
+export function decir(texto) {
+  if (!('speechSynthesis' in window) || !texto) return false;
+  const voz = new SpeechSynthesisUtterance(texto);
+  voz.lang = 'es-PE';
+  voz.rate = 0.95;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(voz);
+  return true;
+}
+
+function leerPantalla() {
+  const partes = [buscar('.cabecera-titulo h1')?.textContent || ''];
+  for (const el of document.querySelectorAll('[data-leer]')) {
+    if (el.offsetParent !== null) partes.push(el.textContent);
+  }
+  if (!decir(partes.join('. ').replace(/\s+/g, ' '))) {
+    alert('Este equipo no puede leer en voz alta.');
+  }
+}
+
+// ------------------------------------------------------- primer uso (¿cómo se usa?)
+
+const CLAVE_BIENVENIDA = 'pi3.bienvenidaVista';
+
+const PASOS_BIENVENIDA = [
+  { titulo: 'Inscribe a las personas', texto: 'En Padrón anotas a cada persona una sola vez: nombre, DNI y su grupo de edad.', dibujo: 'personas' },
+  { titulo: 'Toca a quien vino', texto: 'Cada día, en Asistencia, tocas el nombre de quien llegó. La app cuenta las raciones sola.', dibujo: 'lista' },
+  { titulo: 'Anota tus compras', texto: 'En el Formato B-1 anotas cada boleta. La app suma y te dice qué falta antes de entregar.', dibujo: 'boleta' },
+  { titulo: 'Guarda una copia', texto: 'Tus datos están solo en este teléfono. Guarda una copia cada dos semanas, en el menú de los tres puntos.', dibujo: 'escudo' }
+];
+
+/** ¿Ya vio la bienvenida en este equipo? */
+export function bienvenidaVista() {
+  try { return localStorage.getItem(CLAVE_BIENVENIDA) === '1'; } catch (e) { return true; }
+}
+
+export function mostrarBienvenida() {
+  if (document.getElementById('bienvenida')) return;
+  let paso = 0;
+  const dibujo = crearElemento('div', { clase: 'bienvenida-dibujo', 'aria-hidden': 'true' });
+  const titulo = crearElemento('h2', { id: 'bienvenida-titulo' });
+  const texto = crearElemento('p', {});
+  const puntos = crearElemento('div', { clase: 'bienvenida-puntos', 'aria-hidden': 'true' });
+  const contador = crearElemento('p', { clase: 'oculto-visual', role: 'status' });
+  const siguiente = crearElemento('button', { type: 'button', clase: 'boton' });
+  const dialogo = crearElemento('dialog', { id: 'bienvenida', clase: 'bienvenida', 'aria-labelledby': 'bienvenida-titulo' }, [
+    dibujo, puntos, titulo, texto, contador,
+    crearElemento('button', {
+      type: 'button', clase: 'boton secundario escuchar',
+      onclick: () => decir(`${titulo.textContent}. ${texto.textContent}`)
+    }, [icono('voz', { tam: 20 }), ' Escuchar']),
+    crearElemento('div', { clase: 'bienvenida-botones' }, [
+      crearElemento('button', { type: 'button', clase: 'boton secundario', texto: 'Saltar', onclick: () => terminar() }),
+      siguiente
+    ])
+  ]);
+  function pintar() {
+    const p = PASOS_BIENVENIDA[paso];
+    dibujo.textContent = '';
+    dibujo.append(icono(p.dibujo, { tam: 64 }));
+    titulo.textContent = p.titulo;
+    texto.textContent = p.texto;
+    contador.textContent = `Paso ${paso + 1} de ${PASOS_BIENVENIDA.length}`;
+    puntos.textContent = '';
+    PASOS_BIENVENIDA.forEach((_, i) => puntos.append(crearElemento('i', { clase: i === paso ? 'on' : '' })));
+    siguiente.textContent = paso === PASOS_BIENVENIDA.length - 1 ? 'Empezar' : 'Siguiente';
+  }
+  function terminar() {
+    try { localStorage.setItem(CLAVE_BIENVENIDA, '1'); } catch (e) { /* se volverá a ver */ }
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    dialogo.close();
+    dialogo.remove();
+  }
+  siguiente.addEventListener('click', () => {
+    if (paso === PASOS_BIENVENIDA.length - 1) { terminar(); return; }
+    paso += 1;
+    pintar();
   });
-  titulo.append(boton);
+  dialogo.addEventListener('cancel', () => terminar());
+  pintar();
+  document.body.append(dialogo);
+  dialogo.showModal();
 }
 
 const fijos = new Map();
@@ -823,7 +981,12 @@ export function cajaSugerencia(propuesta, alAceptar) {
 
 // ------------------------------------------------------- avisos del navegador
 
-export function pintarAvisosAlmacenamiento(contenedor) {
+/**
+ * Avisos del almacenamiento arriba de la página: si no se puede leer o
+ * guardar, el espacio, y el recordatorio de guardar una copia (Inicio lo
+ * muestra a su manera, con `{ recordatorio: false }`).
+ */
+export function pintarAvisosAlmacenamiento(contenedor, { recordatorio: conRecordatorio = true } = {}) {
   const avisos = avisosAlmacenamiento();
   contenedor.textContent = '';
   if (avisos.length > 0) {
@@ -832,7 +995,7 @@ export function pintarAvisosAlmacenamiento(contenedor) {
   }
   const espacio = avisoEspacio();
   if (espacio) contenedor.append(espacio);
-  const recordatorio = recordatorioRespaldo();
+  const recordatorio = conRecordatorio ? recordatorioRespaldo() : null;
   if (recordatorio) contenedor.append(recordatorio);
 }
 

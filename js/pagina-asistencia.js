@@ -1,7 +1,7 @@
-// pagina-asistencia.js — controlador de index.html (la raíz del sitio).
+// pagina-asistencia.js — controlador de asistencia.html (pasar lista).
 // Solo cablea: la interfaz vive en ui-asistencia.js, los cálculos en calculos.js.
 
-import { hoyIso, aCentimos, formatearSoles, nuevaAtencion } from './modelo.js';
+import { hoyIso, aCentimos, formatearSoles, nuevaAtencion, fechaLarga } from './modelo.js';
 import { resumenEconomicoRaciones } from './calculos.js';
 import { validarAtenciones, validarPreciosMenu } from './validaciones.js';
 import { alertaProximaEntrega } from './alertas.js';
@@ -88,7 +88,7 @@ function repintar() {
 
 // ------------------------------------------------------------------- arranque
 
-montarCabecera('asistencia', 'Ollas comunes y comedores de Villa María del Triunfo');
+montarCabecera('asistencia', fechaLarga(hoyIso()));
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
 pantallaEncendidaMientrasSeUsa();
 buscar('#privacidad').append(bloquePrivacidad());

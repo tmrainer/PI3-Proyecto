@@ -24,7 +24,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = path.resolve(process.argv[2] || path.join(path.dirname(fileURLToPath(import.meta.url)), '..'));
-const PAGINAS = ['index', 'padron', 'formato-b1', 'calendario', 'pruebas'];
+const PAGINAS = ['index', 'asistencia', 'padron', 'formato-b1', 'calendario', 'pruebas'];
 
 // ------------------------------------------------------------ padrón de prueba
 
@@ -278,7 +278,7 @@ async function correr(base, cdp) {
         const r = await p.eval(TEXTO('#resumen'));
         comprobar('pruebas.html: todas las aserciones pasan', /✓ (\d+) de \1 pasan/.test(r), r);
       }
-      if (sembrado && nombre === 'index') {
+      if (sembrado && nombre === 'asistencia') {
         const r = await p.eval(TEXTO('.hoy-cuenta'));
         comprobar('asistencia de hoy: «1 de 3»', r === '1 de 3', r);
       }
@@ -301,7 +301,7 @@ async function correr(base, cdp) {
   // 1b. La política de contenido está puesta: un script en línea no corre.
   {
     const p = await pestana(cdp);
-    await p.ir(`${base}/index.html`);
+    await p.ir(`${base}/asistencia.html`);
     const r = await p.eval(`new Promise((ok) => {
       document.addEventListener('securitypolicyviolation', (e) => ok(e.effectiveDirective), { once: true });
       const s = document.createElement('script');
@@ -320,7 +320,7 @@ async function correr(base, cdp) {
   // 1c. Un error en la página no la deja en blanco: aparece el aviso.
   {
     const p = await pestana(cdp);
-    await p.ir(`${base}/index.html`);
+    await p.ir(`${base}/asistencia.html`);
     const antes = await p.eval(`!!document.querySelector('#avisos-sistema [role="alert"]')`);
     await p.eval(`setTimeout(() => { throw new Error('error de prueba'); }); 1`);
     await pausa(200);
@@ -382,7 +382,7 @@ async function correr(base, cdp) {
   {
     const p = await pestana(cdp);
     await p.ir(`${base}/__sembrar?padron=1`);
-    await p.ir(`${base}/index.html`);
+    await p.ir(`${base}/asistencia.html`);
     await p.eval(`(async () => {
       const ui = await import('./js/ui.js');
       const r = ui.armarRespaldo();
@@ -392,7 +392,7 @@ async function correr(base, cdp) {
       localStorage.clear();
       return 1;
     })()`);
-    await p.ir(`${base}/index.html`);
+    await p.ir(`${base}/asistencia.html`);
     await p.actuar(`(async () => {
       window.confirm = () => true;
       const dt = new DataTransfer();
@@ -418,7 +418,7 @@ async function correr(base, cdp) {
     const p = await pestana(cdp);
     await p.ir(`${base}/__sembrar?padron=1`);
     await p.eval(`localStorage.setItem('b1.relleno', 'x'.repeat(1800000)); 1`);
-    await p.ir(`${base}/index.html`);
+    await p.ir(`${base}/asistencia.html`);
     const r = await p.eval(TEXTO('#avisos-sistema'));
     comprobar('espacio casi lleno: se avisa', /va al 7\d %/.test(r), r.slice(0, 120));
     await p.eval(`localStorage.removeItem('b1.relleno'); 1`);
@@ -427,7 +427,7 @@ async function correr(base, cdp) {
 
   // 1g. Si el navegador no deja guardar, la app no dice «Guardado»: lo avisa.
   for (const [pagina, accion] of [
-    ['index', TOCAR('Beta')],
+    ['asistencia', TOCAR('Beta')],
     ['formato-b1', ESCRIBIR('#nombreCentro', 'Comedor sin espacio')],
     ['calendario', `(() => { const s = document.querySelector('#periodicidad'); s.value = 'semanal';
       s.dispatchEvent(new Event('change', { bubbles: true })); return 1; })()`]
@@ -535,17 +535,19 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
-  // 1k. Letra grande: se activa en la cabecera y se recuerda al volver.
+  // 1k. Letra grande: se activa en el menú ⋮ y se recuerda al volver.
   // Instalar: cuando el navegador lo permite, la app ofrece su propio botón.
   {
     const p = await pestana(cdp);
     await p.ir(`${base}/__sembrar?padron=1`);
-    await p.ir(`${base}/index.html`);
-    await p.actuar(`document.querySelector('.boton-letra').click()`);
+    await p.ir(`${base}/asistencia.html`);
+    await p.actuar(`(() => { document.querySelector('.cabecera-menu').click(); [...document.querySelectorAll('.menu-opciones button')].find((b) => /Letra/.test(b.textContent)).click(); })()`);
     await p.ir(`${base}/padron.html`);
     const letra = await p.eval(`({ clase: document.documentElement.classList.contains('letra-grande'),
       base: getComputedStyle(document.documentElement).fontSize,
-      pulsado: document.querySelector('.boton-letra').getAttribute('aria-pressed') })`);
+      pulsado: (document.querySelector('.cabecera-menu').click(),
+        document.querySelector('.menu-opciones [role=menuitemcheckbox]').getAttribute('aria-checked')) })`);
+    await p.actuar(`document.querySelector('.cabecera-menu').click()`);
     comprobar('letra grande: se activa y se recuerda en otra página',
       letra.clase && letra.base === '18px' && letra.pulsado === 'true', JSON.stringify(letra));
     const oferta = await p.actuar(`(async () => {
@@ -561,7 +563,7 @@ async function correr(base, cdp) {
     })()`);
     comprobar('instalar: aparece «Instalar» y abre el pedido del navegador',
       oferta.franja && oferta.pedido === 1 && !oferta.sigue, JSON.stringify(oferta));
-    await p.actuar(`document.querySelector('.boton-letra').click()`);
+    await p.actuar(`(() => { document.querySelector('.cabecera-menu').click(); [...document.querySelectorAll('.menu-opciones button')].find((b) => /Letra/.test(b.textContent)).click(); })()`);
     comprobar('letra grande / instalar: sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
     await p.cerrar();
   }
@@ -570,7 +572,7 @@ async function correr(base, cdp) {
   {
     const p = await pestana(cdp);
     await p.ir(`${base}/__sembrar?padron=1`);
-    await p.ir(`${base}/index.html`);
+    await p.ir(`${base}/asistencia.html`);
     await p.actuar(`(() => { const b = [...document.querySelectorAll('#hoy .sin-inscribir button')];
       b[1].click(); b[1].click(); b[3].click(); })()`);
     await pausa(600);
@@ -617,10 +619,10 @@ async function correr(base, cdp) {
   {
     const p = await pestana(cdp);
     await p.ir(`${base}/__sembrar?padron=1`);
-    await p.ir(`${base}/index.html`);
+    await p.ir(`${base}/asistencia.html`);
     await p.actuar(TOCAR('Beta'));
     await p.ir('about:blank');                 // dispara pagehide de inmediato
-    await p.ir(`${base}/index.html`);
+    await p.ir(`${base}/asistencia.html`);
     const r = await p.eval(TEXTO('.hoy-cuenta'));
     comprobar('salir justo después de marcar: el toque queda guardado', r === '2 de 3', r);
     const crudo = await p.eval(`localStorage.getItem('b1.padron.v1')`);
@@ -634,7 +636,7 @@ async function correr(base, cdp) {
   {
     const p = await pestana(cdp);
     await p.ir(`${base}/__sembrar?padron=1`);
-    await p.ir(`${base}/index.html`);
+    await p.ir(`${base}/asistencia.html`);
     const FALTAN = `[...document.querySelectorAll('#hoy button')].find((b) => /falta|vinieron todos/.test(b.textContent)).click()`;
     await p.actuar(FALTAN);
     await p.actuar(TOCAR('Gama'));
@@ -655,7 +657,7 @@ async function correr(base, cdp) {
     await a.ir(`${base}/__sembrar?padron=1`);
     const b = await pestana(cdp);
     await b.ir(`${base}/padron.html`);        // abierta ANTES de marcar en a
-    await a.ir(`${base}/index.html`);
+    await a.ir(`${base}/asistencia.html`);
     await a.actuar(TOCAR('Gama'));
     await pausa(700);
     await b.actuar(`document.querySelector('#ficha-alfa0001 .persona-fila').click()`);
@@ -681,7 +683,7 @@ async function correr(base, cdp) {
     await b.actuar(`document.querySelector('#ficha-alfa0001 .persona-fila').click()`);
     await b.actuar(`(() => { const el = document.querySelector('[id^="a-nombres-alfa0001"]');
       el.focus(); el.setSelectionRange(2, 2); })()`);
-    await a.ir(`${base}/index.html`);
+    await a.ir(`${base}/asistencia.html`);
     await a.actuar(TOCAR('Beta'));
     await pausa(700);                          // b recibe el storage y repinta
     const vista = await b.eval(`({
@@ -702,7 +704,7 @@ async function correr(base, cdp) {
     await a.ir(`${base}/__sembrar?padron=1`);
     const b = await pestana(cdp);
     await b.ir(`${base}/formato-b1.html`);    // abierta ANTES de cambiar el precio
-    await a.ir(`${base}/index.html`);
+    await a.ir(`${base}/asistencia.html`);
     await a.actuar(ESCRIBIR('#precioNormal', '4.50'));
     await pausa(700);
     await b.actuar(ESCRIBIR('#nombreCentro', 'Comedor de prueba'));
@@ -789,7 +791,7 @@ async function correr(base, cdp) {
     })()`);
     const uso = await p.eval(`import('./js/modelo.js').then((m) => m.usoAlmacenamiento().fraccion)`);
     comprobar('un año de 300 personas ocupa menos del 20 % del espacio', uso < 0.2, `${Math.round(uso * 100)} %`);
-    await p.ir(`${base}/index.html`);
+    await p.ir(`${base}/asistencia.html`);
     const abrir = await p.eval(`Math.round(performance.getEntriesByType('navigation')[0].domContentLoadedEventEnd)`);
     comprobar('con un año de datos, Asistencia abre en menos de 0,8 s', abrir < 800, `${abrir} ms`);
     const toque = await p.actuar(`(async () => {
@@ -817,12 +819,12 @@ async function correr(base, cdp) {
     await p.cdp('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
     await p.ir(`${base}/__sembrar?padron=1`);
     const desbordan = [];
-    for (const nombre of ['index', 'padron', 'formato-b1', 'calendario']) {
+    for (const nombre of ['index', 'asistencia', 'padron', 'formato-b1', 'calendario']) {
       await p.ir(`${base}/${nombre}.html`);
       if (await p.eval(`document.documentElement.scrollWidth > document.documentElement.clientWidth`)) desbordan.push(nombre);
     }
     comprobar('celular: ninguna página se desborda a lo ancho', desbordan.length === 0, desbordan.join(' '));
-    await p.ir(`${base}/index.html`);
+    await p.ir(`${base}/asistencia.html`);
     const r = await p.eval(`(() => {
       const nav = document.querySelector('.nav').getBoundingClientRect();
       const fila = document.querySelector('#hoy .toque').getBoundingClientRect();
@@ -840,9 +842,9 @@ async function correr(base, cdp) {
 async function sinServidor(base, cdp, servidor) {
   const p = await pestana(cdp);
   await p.ir(`${base}/__sembrar?padron=1`);
-  await p.ir(`${base}/index.html`);
+  await p.ir(`${base}/asistencia.html`);
   const listo = await p.eval(`navigator.serviceWorker.ready.then((r) => !!r.active)`);
-  await p.ir(`${base}/index.html`);           // ahora la controla el service worker
+  await p.ir(`${base}/asistencia.html`);           // ahora la controla el service worker
   const controla = await p.eval(`!!navigator.serviceWorker.controller`);
   comprobar('service worker: instalado y a cargo de la página', listo && controla, JSON.stringify({ listo, controla }));
 
@@ -856,7 +858,7 @@ async function sinServidor(base, cdp, servidor) {
   })`);
   await pausa(300);
   const visible = await p.eval(`!!document.getElementById('aviso-version')`);
-  await p.ir(`${base}/index.html`);
+  await p.ir(`${base}/asistencia.html`);
   const css = await p.eval(`fetch('./estilos.css').then((r) => r.text())`);
   comprobar('versión nueva: avisa y se usa al recargar',
     aviso === 'version-nueva' && visible && css.includes('versión nueva de humo'),
@@ -865,14 +867,14 @@ async function sinServidor(base, cdp, servidor) {
   servidor.closeAllConnections();
   await new Promise((ok) => servidor.close(ok));
   const fallan = [];
-  for (const nombre of ['index', 'padron', 'formato-b1', 'calendario']) {
+  for (const nombre of ['index', 'asistencia', 'padron', 'formato-b1', 'calendario']) {
     await p.ir(`${base}/${nombre}.html`);
-    const ok = await p.eval(`document.querySelectorAll('.nav-enlace').length === 4`);
+    const ok = await p.eval(`document.querySelectorAll('.nav-enlace').length === 5`);
     if (!ok) fallan.push(nombre);
   }
-  await p.ir(`${base}/index.html`);
+  await p.ir(`${base}/asistencia.html`);
   const personas = await p.eval(`document.querySelectorAll('#hoy .toque').length`);
-  comprobar('sin servidor: las cuatro páginas abren', fallan.length === 0, fallan.join(' '));
+  comprobar('sin servidor: las cinco páginas abren', fallan.length === 0, fallan.join(' '));
   comprobar('sin servidor: la asistencia muestra el padrón', personas === 3, String(personas));
   comprobar('sin servidor: sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
   await p.cerrar();
