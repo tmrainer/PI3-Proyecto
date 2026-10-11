@@ -38,4 +38,6 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Un toque corto al marcar a alguien o deshacer (navigator.vibrate). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 </manifest>

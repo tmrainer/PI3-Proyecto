@@ -12,7 +12,7 @@ import { alertaProximaEntrega } from './alertas.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
   marcarCampo, cajaSugerencia, bannerAlerta, pintarAvisosAlmacenamiento,
-  avisarAlSalirDelCampo, chip, mostrarGuardado, icono, avisoAbajo
+  avisarAlSalirDelCampo, chip, mostrarGuardado, icono, avisoAbajo, vibrar
 } from './ui.js';
 
 // ------------------------------------------------------------------- estado
@@ -514,6 +514,7 @@ function pasoDe(hallazgo) {
 }
 
 function irAPaso(n, { enfocar = true } = {}) {
+  if (enfocar) vibrar(10);
   pasoActual = Math.min(PASOS.length, Math.max(1, n));
   for (const s of document.querySelectorAll('[data-paso]')) {
     s.classList.toggle('paso-actual', Number(s.dataset.paso) === pasoActual);
@@ -544,9 +545,9 @@ function pintarPasos(hallazgos) {
       onclick: () => irAPaso(n)
     }));
   });
+  // El nombre del paso lo dice el título de la sección, justo debajo.
   nav.append(barra, crearElemento('p', { clase: 'pasos-texto', 'data-leer': '' }, [
-    `Paso ${pasoActual} de ${PASOS.length} · `,
-    crearElemento('b', { texto: PASOS[pasoActual - 1] })
+    `Paso ${pasoActual} de ${PASOS.length}`
   ]));
 }
 

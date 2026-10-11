@@ -179,7 +179,6 @@ const PAGINAS = [
 ];
 
 export function montarCabecera(claveActiva, subtitulo) {
-  document.documentElement.classList.add('listo');   // ver «reservar el sitio» en estilos.css
   aplicarLetraGrande();
   if (claveActiva === 'pruebas') {
     PAGINAS.push({ href: './pruebas.html', texto: 'Pruebas', clave: 'pruebas' });
@@ -212,6 +211,11 @@ export function montarCabecera(claveActiva, subtitulo) {
     // Dentro del APK los archivos vienen en la app: no hace falta el service
     // worker ni ofrecer instalarla. Sí, los avisos con la app cerrada.
     document.documentElement.classList.add('app-nativa');
+    // Íconos claros en la barra de estado: la cabecera es verde oscuro en los
+    // dos modos. (Por defecto siguen al tema del teléfono y en modo claro se
+    // veían oscuros sobre oscuro.)
+    const barras = window.Capacitor.Plugins && window.Capacitor.Plugins.SystemBars;
+    if (barras && barras.setStyle) barras.setStyle({ style: 'DARK', bar: 'StatusBar' }).catch(() => {});
     reprogramarAvisos(leer(CLAVES.calendario, null));
     abrirEntregasAlTocarAviso();
   } else {
@@ -1004,7 +1008,7 @@ export function avisoAbajo(texto, deshacer) {
   if (deshacer) {
     caja.append(crearElemento('button', {
       type: 'button', texto: 'Deshacer',
-      onclick: () => { cerrarAvisoAbajo(); deshacer(); }
+      onclick: () => { cerrarAvisoAbajo(); vibrar(15); deshacer(); }
     }));
   }
   caja.classList.add('ver');

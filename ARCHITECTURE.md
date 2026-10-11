@@ -128,6 +128,19 @@ también: `avisoAbajo()` (aviso con «Deshacer», en vez de `confirm()`),
 regresiva. Preferencias del equipo, fuera de los respaldos: `pi3.letraGrande`,
 `pi3.bienvenidaVista`, `pi3.instalar.postergadoHasta`.
 
+**Sistema visual** (`estilos.css`). Colores con nombre de uso (`--fondo`,
+`--superficie`, `--superficie-2`, `--seleccion`, `--titulo`, `--acento`,
+`--acento-texto`, `--marca`, `--contorno` y los de estado); el modo oscuro solo
+redefine esos valores bajo `prefers-color-scheme: dark`. Espacios `--e1`…`--e6`
+(4–32 px), esquinas `--r-s/m/l` (8/12/16) y redondeadas, sombras `--sombra-1/2`.
+Una sola capa: secciones sobre el fondo y una superficie por lista (filas
+separadas por una línea), sin rayas de color al costado. Entre páginas,
+transición de vista (`@view-transition`) con la cabecera y el menú quietos; los
+módulos de cada página cargan con `blocking="render"`, para que se pinte de una
+vez y la transición capture la página completa. En el APK: barra de estado con
+íconos claros (`SystemBars`), pantalla de inicio de Android 12+
+(`res/values-v31/styles.xml`) y permiso de vibración.
+
 **App Android y avisos con la app cerrada.** `app-android/` empaqueta la app
 web con Capacitor (ver su `LEEME.md`); `copiar-web.mjs` copia los archivos de
 `ARCHIVOS` de `sw.js`. Dentro del APK, `js/avisos-nativos.js` le pasa a Android
