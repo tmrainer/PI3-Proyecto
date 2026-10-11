@@ -4,14 +4,20 @@
 // el Cache Storage del navegador. Los DATOS no pasan por aquí: siguen en
 // localStorage (AGENTS.md §3). No habla con ningún otro dominio.
 //
-// Estrategia: primero la red, con un tope de espera; si no hay red o tarda,
-// lo guardado. Con conexión siempre se usa la versión publicada (no hay que
-// acordarse de subir un número de versión para que llegue una corrección), y
-// sin conexión la app abre igual con la última copia que vio.
+// Estrategia: la app se sirve SIEMPRE de una copia completa y coherente de
+// todos sus archivos, al instante y con o sin señal. Pedir a la red archivo
+// por archivo, con mala señal, podía mezclar un HTML nuevo con un JS viejo, y
+// un import que no existe deja la página en blanco.
+//
+// Las novedades llegan en segundo plano: cuando una página lo pide, se
+// revalidan todos los archivos (con ETag, lo que no cambió no se descarga) y,
+// solo si llegaron TODOS y alguno cambió, se arma una copia nueva entera y se
+// reemplaza la vieja de una vez. La página avisa que hay versión nueva.
 
-const CACHE = 'pi3-app-v1';
-const ESPERA_RED_MS = 3000;
+const PREFIJO = 'pi3-app-';
+const MINUTOS_ENTRE_REVISIONES = 30;
 
+// Al agregar un archivo a la app, va aquí también (humo.mjs lo comprueba).
 const ARCHIVOS = [
   './', './index.html', './padron.html', './formato-b1.html', './calendario.html',
   './estilos.css', './manifest.webmanifest',
@@ -25,40 +31,73 @@ const ARCHIVOS = [
   './js/validaciones.js'
 ];
 
+let ultimaRevision = 0;
+
+/** Baja todos los archivos. Si falta uno, falla entero: nunca una copia a medias. */
+async function bajarTodo(modo) {
+  return Promise.all(ARCHIVOS.map(async (url) => {
+    const resp = await fetch(url, { cache: modo });
+    if (!resp.ok) throw new Error(`${url}: ${resp.status}`);
+    return [url, resp];
+  }));
+}
+
+async function guardarCopia(pares) {
+  const nombre = PREFIJO + Date.now();
+  const cache = await caches.open(nombre);
+  await Promise.all(pares.map(([url, resp]) => cache.put(url, resp)));
+  // Recién con la copia nueva completa se borran las viejas.
+  const claves = await caches.keys();
+  await Promise.all(claves.filter((k) => k.startsWith(PREFIJO) && k !== nombre).map((k) => caches.delete(k)));
+}
+
+async function copiaActual() {
+  const claves = (await caches.keys()).filter((k) => k.startsWith(PREFIJO)).sort();
+  return claves.length ? caches.open(claves[claves.length - 1]) : null;
+}
+
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
+  e.waitUntil(bajarTodo('reload').then(guardarCopia).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys()
-    .then((claves) => Promise.all(claves.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-    .then(() => self.clients.claim()));
+  e.waitUntil(self.clients.claim());
 });
-
-function conTope(promesa, ms) {
-  return new Promise((ok, mal) => {
-    const t = setTimeout(() => mal(new Error('la red tarda')), ms);
-    promesa.then((r) => { clearTimeout(t); ok(r); }, (e) => { clearTimeout(t); mal(e); });
-  });
-}
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  e.respondWith((async () => {
+    const cache = await copiaActual();
+    const guardada = cache && await cache.match(req, { ignoreSearch: true });
+    return guardada || fetch(req);    // lo que no es de la app (p. ej. pruebas.html) va a la red
+  })());
+});
 
-  const red = fetch(req).then((resp) => {
-    if (resp.ok) {
-      const copia = resp.clone();
-      caches.open(CACHE).then((c) => c.put(req, copia));
+/** ¿Hay versión nueva? Si la hay y llegó completa, reemplaza la copia y avisa. */
+async function revisar(forzar) {
+  if (!forzar && Date.now() - ultimaRevision < MINUTOS_ENTRE_REVISIONES * 60000) return;
+  ultimaRevision = Date.now();
+  const cache = await copiaActual();
+  let nuevos;
+  try {
+    nuevos = await bajarTodo('no-cache');
+  } catch (e) {
+    return;                               // sin señal o a medias: se queda la copia actual
+  }
+  let cambio = !cache;
+  if (cache) {
+    for (const [url, resp] of nuevos) {
+      const vieja = await cache.match(url);
+      if (!vieja || await vieja.text() !== await resp.clone().text()) { cambio = true; break; }
     }
-    return resp;
-  });
-  // Si gana la copia guardada, la respuesta de la red igual se guarda al llegar.
-  e.waitUntil(red.catch(() => {}));
+  }
+  if (!cambio) return;
+  await guardarCopia(nuevos);
+  for (const c of await self.clients.matchAll({ type: 'window' })) c.postMessage('version-nueva');
+}
 
-  e.respondWith(conTope(red, ESPERA_RED_MS).catch(async () => {
-    const guardada = await caches.match(req, { ignoreSearch: true });
-    if (guardada) return guardada;
-    return red;   // sin copia: que el navegador muestre su propio error
-  }));
+self.addEventListener('message', (e) => {
+  if (e.data === 'buscar-actualizacion') e.waitUntil(revisar(false));
+  if (e.data === 'buscar-actualizacion-ya') e.waitUntil(revisar(true));   // humo.mjs
 });

@@ -22,8 +22,8 @@ Desde el navegador del celular: menú → **Instalar aplicación** (Android) o
 cualquier app, y desde entonces:
 
 - **Abre sin internet.** La primera vez hace falta conexión; después, la app
-  guarda sus archivos (`sw.js`) y abre aunque no haya señal. Con señal, se pone
-  al día sola.
+  guarda sus archivos (`sw.js`) y abre al instante aunque no haya señal. Con
+  señal, baja las novedades aparte y avisa «Hay una versión nueva».
 - **No se borran los datos.** Safari borra lo guardado por un sitio que no se
   abre en 7 días si no está instalado en la pantalla de inicio.
 
@@ -62,6 +62,15 @@ usa módulos ES, que el navegador bloquea por política de mismo origen cuando l
 página viene de `file://`. La pantalla saldrá en blanco o a medias.
 
 Siempre a través de `http://localhost`, aunque el servidor sea tu propia máquina.
+
+### Ver tus cambios
+
+La app se sirve desde la copia que guarda su *service worker* (`sw.js`), para
+abrir sin internet. Al editar un archivo, la primera recarga todavía muestra la
+copia anterior y aparece «Hay una versión nueva»: recarga otra vez, o pulsa
+«Usar la versión nueva». En `localhost` se revisa en cada carga. Para saltarte
+la copia mientras programas: DevTools → Application → Service workers →
+*Update on reload*.
 
 ---
 

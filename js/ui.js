@@ -227,6 +227,30 @@ export function vigilarAltoFijo(el, variable = '--alto-panel', posicion = 'stick
 function registrarTrabajador() {
   if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
   navigator.serviceWorker.register('./sw.js').catch(() => { /* sin él, la app funciona igual con red */ });
+  // La app se sirve de su copia guardada; las novedades se bajan aparte, ya
+  // cargada la página, y se avisa para que se use la versión nueva al recargar.
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e.data === 'version-nueva') avisarVersionNueva();
+  });
+  addEventListener('load', () => {
+    navigator.serviceWorker.ready
+      // En la propia máquina se revisa en cada carga: quien programa no espera 30 min.
+      .then((r) => r.active && r.active.postMessage(
+        /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'buscar-actualizacion-ya' : 'buscar-actualizacion'))
+      .catch(() => {});
+  });
+}
+
+function avisarVersionNueva() {
+  const contenedor = document.getElementById('avisos-sistema');
+  if (!contenedor || document.getElementById('aviso-version')) return;
+  contenedor.append(crearElemento('div', { clase: 'recordatorio-respaldo', id: 'aviso-version', role: 'status' }, [
+    crearElemento('span', { texto: 'Hay una versión nueva de la aplicación. Tus datos no cambian.' }),
+    crearElemento('button', {
+      type: 'button', clase: 'boton diminuto secundario', texto: 'Usar la versión nueva',
+      onclick: () => location.reload()
+    })
+  ]));
 }
 
 /** null mientras no se sabe; true/false según lo que conceda el navegador. */

@@ -117,11 +117,13 @@ guarda la rendición, se recarga entera (`pagina-b1.js:61-65`). Límite: si dos
 pestañas cambian algo dentro de los mismos 400 ms, gana la que guardó la otra.
 Lo comprueba `herramientas/humo.mjs`.
 
-**Sin internet.** `sw.js` es un service worker propio: guarda los archivos de
-la aplicación (HTML, CSS, JS, íconos) en el Cache Storage y, si la red falla o
-tarda más de 3 s, los sirve desde ahí. Primero intenta la red, así que con
-conexión siempre llega lo publicado. Los datos no pasan por él: siguen en
-`localStorage`. Lo registra `montarCabecera()` (`ui.js:219`), que también pide
+**Sin internet.** `sw.js` es un service worker propio: guarda una copia
+completa de los archivos de la aplicación (HTML, CSS, JS, íconos) en el Cache
+Storage y la sirve siempre desde ahí, con o sin señal. Las novedades se
+revalidan aparte (ETag, cada 30 min como mucho) y solo si llegaron todas se
+arma una copia nueva y se reemplaza la vieja de una vez: nunca se mezcla un
+HTML nuevo con un JS viejo. La página avisa «Hay una versión nueva». Los datos
+no pasan por él: siguen en `localStorage`. Lo registra `montarCabecera()` (`ui.js:219`), que también pide
 `navigator.storage.persist()` (`ui.js:232`) para que el navegador no borre los
 datos por su cuenta (Safari los borra tras 7 días sin abrir el sitio, salvo que
 la app esté instalada). Al agregar un archivo a la app hay que sumarlo a

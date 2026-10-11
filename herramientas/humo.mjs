@@ -77,6 +77,9 @@ if (new URLSearchParams(location.search).get('padron')) {
 document.title = 'sembrado';
 </script>`;
 
+// Lo que se agrega al final de estilos.css: simula publicar una versión nueva.
+let versionCss = '';
+
 function servir() {
   const servidor = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
@@ -90,6 +93,7 @@ function servir() {
       return res.end();
     }
     res.writeHead(200, { 'content-type': TIPOS[path.extname(archivo)] || 'application/octet-stream' });
+    if (url.pathname === '/estilos.css' && versionCss) return res.end(fs.readFileSync(archivo, 'utf8') + versionCss);
     fs.createReadStream(archivo).pipe(res);
   });
   return new Promise((ok) => servidor.listen(0, '127.0.0.1', () => ok(servidor)));
@@ -451,6 +455,22 @@ async function sinServidor(base, cdp, servidor) {
   await p.ir(`${base}/index.html`);           // ahora la controla el service worker
   const controla = await p.eval(`!!navigator.serviceWorker.controller`);
   comprobar('service worker: instalado y a cargo de la página', listo && controla, JSON.stringify({ listo, controla }));
+
+  // Se publica una versión nueva: la app sigue con su copia hasta tenerla
+  // entera, avisa, y al recargar usa la nueva.
+  versionCss = '\n/* versión nueva de humo */\n';
+  const aviso = await p.eval(`new Promise((ok) => {
+    navigator.serviceWorker.addEventListener('message', (e) => ok(e.data));
+    navigator.serviceWorker.controller.postMessage('buscar-actualizacion-ya');
+    setTimeout(() => ok('sin aviso'), 8000);
+  })`);
+  await pausa(300);
+  const visible = await p.eval(`!!document.getElementById('aviso-version')`);
+  await p.ir(`${base}/index.html`);
+  const css = await p.eval(`fetch('./estilos.css').then((r) => r.text())`);
+  comprobar('versión nueva: avisa y se usa al recargar',
+    aviso === 'version-nueva' && visible && css.includes('versión nueva de humo'),
+    JSON.stringify({ aviso, visible, nueva: css.includes('versión nueva de humo') }));
 
   servidor.closeAllConnections();
   await new Promise((ok) => servidor.close(ok));
