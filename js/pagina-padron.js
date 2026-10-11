@@ -97,6 +97,9 @@ montarFiltrosPersonas(buscar('#lista-afiliados'), ctx);
 montarControlesReporte(ctx, refrescar);
 
 montarAltaPersona(ctx);
+// Inscribir es de vez en cuando; consultar la lista, de todos los días. El alta
+// va plegada en una línea arriba, salvo cuando todavía no hay nadie.
+buscar('#bloque-alta').open = estado.padron.afiliados.length === 0;
 montarImportacion(ctx);
 repintar();
 pintarEstadoEscaneo(buscar('#estado-escaneo'));

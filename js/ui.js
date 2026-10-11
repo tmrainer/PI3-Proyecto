@@ -172,21 +172,83 @@ export function montarCabecera(claveActiva, subtitulo) {
     const sub = buscar('.cabecera-sub');
     if (sub) sub.textContent = subtitulo;
   }
-  reservarAltoDelPanel();
+  vigilarAltoFijo(document.getElementById('panel'));
+  vigilarAltoFijo(nav, '--alto-nav-abajo', 'fixed');
+  registrarTrabajador();
+  pedirAlmacenPersistente();
+}
+
+const fijos = new Map();
+let observadorFijos = null;
+
+/**
+ * Lo que se queda pegado arriba (o abajo) al desplazarse tapa el contenido que
+ * pasa por debajo. Sin un margen igual a su alto, al volver con Shift+Tab el
+ * campo enfocado quedaba entero debajo del panel (WCAG 2.4.11). El alto cambia
+ * al abrir un detalle o al girar el celular, así que se mide en vivo; y solo
+ * cuenta mientras el elemento esté de verdad pegado (en el celular, la
+ * asistencia deja de pegar el panel y pega el conteo).
+ * @param {?Element} el  elemento con position sticky o fixed
+ * @param {string} [variable='--alto-panel']  propiedad CSS de :root a escribir
+ * @param {string} [posicion='sticky']  la posición que cuenta como «pegado»
+ */
+export function vigilarAltoFijo(el, variable = '--alto-panel', posicion = 'sticky') {
+  if (!el || typeof ResizeObserver === 'undefined') return;
+  fijos.set(el, { variable, posicion });
+  if (!observadorFijos) {
+    observadorFijos = new ResizeObserver(() => {
+      const altos = {};
+      for (const [e, { variable: v, posicion: p }] of fijos) {
+        if (!e.isConnected) { fijos.delete(e); continue; }
+        const pegado = getComputedStyle(e).position === p;
+        const alto = pegado ? Math.ceil(e.getBoundingClientRect().height) : 0;
+        altos[v] = Math.max(altos[v] || 0, alto);
+      }
+      for (const [v, alto] of Object.entries(altos)) {
+        document.documentElement.style.setProperty(v, `${alto}px`);
+      }
+    });
+  }
+  observadorFijos.observe(el);
 }
 
 /**
- * El panel de revisión se queda pegado arriba al bajar. Sin este margen, al
- * volver con Shift+Tab el campo enfocado quedaba entero debajo del panel
- * (WCAG 2.4.11). Su alto cambia al abrir el detalle, así que se mide en vivo.
+ * Registra sw.js, que guarda los archivos de la app para abrirla sin internet.
+ * Los datos no pasan por él: siguen en localStorage.
  */
-function reservarAltoDelPanel() {
-  const panel = document.getElementById('panel');
-  if (!panel || typeof ResizeObserver === 'undefined') return;
-  const raiz = document.documentElement;
-  new ResizeObserver(() => {
-    raiz.style.setProperty('--alto-panel', `${Math.ceil(panel.getBoundingClientRect().height)}px`);
-  }).observe(panel);
+function registrarTrabajador() {
+  if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
+  navigator.serviceWorker.register('./sw.js').catch(() => { /* sin él, la app funciona igual con red */ });
+}
+
+/** null mientras no se sabe; true/false según lo que conceda el navegador. */
+export let almacenPersistente = null;
+
+/**
+ * Pide al navegador que no borre los datos por su cuenta. Sin esto, Safari en
+ * iPhone borra lo guardado por un sitio que no se abre en 7 días, y Android
+ * puede borrarlo cuando el teléfono se queda sin espacio.
+ */
+async function pedirAlmacenPersistente() {
+  try {
+    if (!navigator.storage || !navigator.storage.persist) return;
+    almacenPersistente = await navigator.storage.persisted() || await navigator.storage.persist();
+  } catch (e) { almacenPersistente = false; }
+}
+
+/** ¿Abierta como app instalada (desde el ícono), y no en una pestaña? */
+export function esAppInstalada() {
+  return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}
+
+/** Celular o tablet: se decide por el dedo, no por el ancho. */
+export function esPantallaTactil() {
+  return matchMedia('(pointer: coarse)').matches;
+}
+
+/** Ancho de celular: el mismo corte que usa estilos.css. */
+export function esAnchoCelular() {
+  return matchMedia('(max-width: 619px)').matches;
 }
 
 // ------------------------------------------- aviso de la próxima entrega (§6.6)
@@ -234,7 +296,12 @@ export function bannerAlerta(alerta, { mostrarEnlace = true } = {}) {
 // --------------------------------------------------- aviso de privacidad (§9)
 
 export function bloquePrivacidad() {
-  return crearElemento('details', { clase: 'privacidad' }, [
+  const estadoProteccion = crearElemento('p', { clase: 'dato-fuerte', texto: textoProteccion() });
+  // El permiso del navegador llega después del primer pintado: se relee al abrir.
+  return crearElemento('details', {
+    clase: 'privacidad',
+    ontoggle: () => { estadoProteccion.textContent = textoProteccion(); }
+  }, [
     crearElemento('summary', { texto: 'Dónde se guardan estos datos' }),
     crearElemento('div', { clase: 'privacidad-cuerpo' }, [
       crearElemento('p', {
@@ -247,13 +314,27 @@ export function bloquePrivacidad() {
           'navegación, si usas una ventana de incógnito o si abres la página en ' +
           'otro equipo. Exporta un respaldo cada cierto tiempo.'
       }),
+      estadoProteccion,
       crearElemento('p', {
         texto: 'El archivo de respaldo contiene nombres, números de documento y el ' +
-          'registro de asistencia de personas reales. No lo compartas por WhatsApp ' +
-          'ni por correo sin cifrar.'
+          'registro de asistencia de personas reales. Guárdalo en tu teléfono o en ' +
+          'tu Drive; no lo mandes por WhatsApp ni por correo sin cifrar.'
       })
     ])
   ]);
+}
+
+/** Qué tan protegidos están los datos contra el borrado automático del navegador. */
+function textoProteccion() {
+  if (almacenPersistente === true) {
+    return 'Este navegador marcó tus datos como protegidos: no los borrará solo para hacer espacio.';
+  }
+  if (esAppInstalada()) {
+    return 'Usas la aplicación instalada. Igual conviene exportar un respaldo cada cierto tiempo.';
+  }
+  return 'Instala la aplicación en tu pantalla de inicio (menú del navegador → «Instalar» o ' +
+    '«Agregar a pantalla de inicio»). Así el teléfono no borra tus datos cuando pasa un ' +
+    'tiempo sin abrirla.';
 }
 
 // -------------------------------------------------- barra de datos (respaldos)
@@ -300,7 +381,12 @@ export function barraDatos({ alImportar, alBorrar }) {
   ]);
 }
 
-export function exportarTodo() {
+/**
+ * Arma el respaldo y lo entrega. En el celular abre el menú del sistema para
+ * guardarlo (Archivos, Drive) en vez de dejarlo perdido en Descargas; donde no
+ * se puede, lo descarga. Anota la fecha para el recordatorio de respaldo.
+ */
+export async function exportarTodo() {
   const datos = {
     exportadoEn: new Date().toISOString(),
     aplicacion: 'rendicion-b1',
@@ -309,7 +395,23 @@ export function exportarTodo() {
     calendario: leer(CLAVES.calendario, null),
     config: leer(CLAVES.config, null)
   };
-  descargarJson(`respaldo-b1-${hoyIso()}.json`, datos);
+  const nombre = `respaldo-b1-${hoyIso()}.json`;
+  let entregado = false;
+  if (esPantallaTactil() && typeof File !== 'undefined' && navigator.canShare) {
+    const archivo = new File([JSON.stringify(datos, null, 2)], nombre, { type: 'application/json' });
+    if (navigator.canShare({ files: [archivo] })) {
+      try {
+        await navigator.share({ files: [archivo], title: 'Respaldo del Sistema de Asistencia' });
+        entregado = true;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;   // cerró el menú: no hubo respaldo
+      }
+    }
+  }
+  if (!entregado) descargarJson(nombre, datos);
+  guardar(CLAVES.respaldo, { ultimoEn: hoyIso() });
+  const recordatorio = document.getElementById('recordatorio-respaldo');
+  if (recordatorio) recordatorio.remove();
 }
 
 // ------------------------------------------- panel de validación compartido
@@ -350,7 +452,9 @@ export function pintarPanel(contenedor, hallazgos, { alIrA } = {}) {
 
   // Con pocos hallazgos se ven directos; con muchos, el panel no puede comerse
   // media pantalla, así que el detalle se pliega y se abre a voluntad.
-  const muchos = hallazgos.length > 3;
+  // En el celular, siempre plegado: el panel se queda arriba y cada línea de
+  // detalle es una persona menos a la vista en la lista.
+  const muchos = hallazgos.length > (esAnchoCelular() ? 0 : 3);
   const lista = crearElemento('ul', { clase: 'panel-lista' });
   for (const hall of [...errores, ...avisos]) {
     const item = crearElemento('li', { clase: `panel-item ${hall.severidad}` }, [
@@ -452,9 +556,40 @@ export function cajaSugerencia(propuesta, alAceptar) {
 export function pintarAvisosAlmacenamiento(contenedor) {
   const avisos = avisosAlmacenamiento();
   contenedor.textContent = '';
-  if (avisos.length === 0) return;
-  contenedor.append(crearElemento('div', { clase: 'aviso-sistema', role: 'alert' },
-    avisos.map((a) => crearElemento('p', {}, [icono('aviso', { tam: 15 }), ' ' + a]))));
+  if (avisos.length > 0) {
+    contenedor.append(crearElemento('div', { clase: 'aviso-sistema', role: 'alert' },
+      avisos.map((a) => crearElemento('p', {}, [icono('aviso', { tam: 15 }), ' ' + a]))));
+  }
+  const recordatorio = recordatorioRespaldo();
+  if (recordatorio) contenedor.append(recordatorio);
+}
+
+const DIAS_ENTRE_RESPALDOS = 14;
+
+/**
+ * Una línea con botón cuando hay datos y el último respaldo es viejo (o no hay
+ * ninguno). En un celular los datos viven en un solo aparato: si se pierde o
+ * se borra, sin respaldo no hay de dónde recuperarlos.
+ */
+function recordatorioRespaldo() {
+  const padron = leer(CLAVES.padron, null);
+  const hayDatos = (padron && Array.isArray(padron.afiliados) && padron.afiliados.length > 0) ||
+    leer(CLAVES.rendiciones, []).length > 0;
+  if (!hayDatos) return null;
+  const ultimo = leer(CLAVES.respaldo, {}).ultimoEn;
+  const dias = ultimo ? Math.round((Date.parse(hoyIso()) - Date.parse(ultimo)) / 86400000) : null;
+  if (dias !== null && dias < DIAS_ENTRE_RESPALDOS) return null;
+  return crearElemento('div', { clase: 'recordatorio-respaldo', id: 'recordatorio-respaldo' }, [
+    crearElemento('span', {
+      texto: dias === null
+        ? 'Todavía no exportaste ningún respaldo de estos datos.'
+        : `Tu último respaldo es de hace ${dias} días.`
+    }),
+    crearElemento('button', {
+      type: 'button', clase: 'boton diminuto secundario', texto: 'Exportar respaldo',
+      onclick: () => exportarTodo()
+    })
+  ]);
 }
 
 export { leer, guardar, CLAVES };

@@ -11,42 +11,43 @@ de escribir este documento.
 
 ## a) Modelo de datos
 
-Claves de almacenamiento (`js/modelo.js:4-10`):
+Claves de almacenamiento (`js/modelo.js:4-11`):
 
 | Clave               | Contenido                                       | Constructor                    |
 |---------------------|-------------------------------------------------|--------------------------------|
-| `b1.padron.v1`      | `{ version: 3, afiliados[], atenciones[] }`     | `padronVacio()` `modelo.js:226` |
-| `b1.config.v1`      | precios vigentes del menú, calibración          | `configVacia()` `modelo.js:244` |
-| `b1.calendario.v1`  | periodicidad y fechas de entrega                | `calendarioVacio()` `modelo.js:230` |
-| `b1.rendiciones.v1` | lista de Formatos B-1                           | `nuevaRendicion()` `modelo.js:151` |
+| `b1.padron.v1`      | `{ version: 3, afiliados[], atenciones[] }`     | `padronVacio()` `modelo.js:227` |
+| `b1.config.v1`      | precios vigentes del menú, calibración          | `configVacia()` `modelo.js:245` |
+| `b1.calendario.v1`  | periodicidad y fechas de entrega                | `calendarioVacio()` `modelo.js:231` |
+| `b1.rendiciones.v1` | lista de Formatos B-1                           | `nuevaRendicion()` `modelo.js:152` |
 | `b1.insumos.v1`     | reservada para el catálogo de insumos (fase 6); hoy **sin uso** | —                |
+| `b1.respaldo.v1`    | `{ ultimoEn }`: fecha del último respaldo exportado, para el recordatorio | `exportarTodo()` `ui.js:389` |
 
 Si una clave no se puede leer, `leer()` copia lo ilegible a `<clave>.respaldo` y
-arranca vacío (`modelo.js:339-362`).
+arranca vacío (`modelo.js:340-363`).
 
-**Afiliado** (`nuevoAfiliado()`, `modelo.js:174-194`): `id`, `apellidoPaterno`,
+**Afiliado** (`nuevoAfiliado()`, `modelo.js:175-195`): `id`, `apellidoPaterno`,
 `apellidoMaterno`, `nombres`, `tipoDocumento` (`dni`|`ce`), `numeroDocumento`,
 `fechaNacimiento` (opcional), `grupoEtarioManual` (solo si no hay fecha de
 nacimiento), `sexo`, `tipoAfiliado` (`habitual`|`caso_social`), `activo`,
 `altaEn`, `bajaEn`, `origenDato`.
 
-**Atención** = un día de comedor (`nuevaAtencion()`, `modelo.js:213-224`):
+**Atención** = un día de comedor (`nuevaAtencion()`, `modelo.js:214-225`):
 `id`, `fecha`, `asistencias`, `precioMenuNormalCent`,
 `precioMenuAyudaSocialCent` (copiados de la config al crear el día),
 `precioTomadoDeConfig`, `legado`, `nota`.
 
 **Asistencia** = un elemento de `atencion.asistencias`:
-`{ afiliadoId, tipoMenu: 'normal' | 'ayuda_social' }` (`modelo.js:217`).
+`{ afiliadoId, tipoMenu: 'normal' | 'ayuda_social' }` (`modelo.js:218`).
 
 Las **raciones no se guardan**: se cuentan de `asistencias`
 (`desgloseDelDia()`, `calculos.js:229-239`). La excepción son los días migrados
 desde la v2, que conservan sus cifras escritas a mano en `legado`
-(`migrarPadron()`, `modelo.js:265-309`).
+(`migrarPadron()`, `modelo.js:266-310`).
 
 La **edad y el grupo etario no se guardan** cuando hay fecha de nacimiento: se
 calculan cada vez con `grupoEtario(afiliado, fechaRef)` (`calculos.js:130-136`).
 
-Todo monto es un entero de céntimos (`modelo.js:39`).
+Todo monto es un entero de céntimos (`modelo.js:40`).
 
 ---
 
@@ -83,7 +84,7 @@ En el **reporte del padrón**, la lectura es:
 - **Escriben**: `asegurarHoyGuardado()` agrega el día de hoy recién cuando se
   marca a la primera persona (`ui-asistencia.js:290-295`, llamada en L373 y
   L436); el botón «agregar día» (`pagina-asistencia.js:118-120`); la migración
-  (`modelo.js:278-307`).
+  (`modelo.js:279-308`).
 - **Leen**: `atencionesDelPeriodo()` (`calculos.js:171-175`), `pintarOtrosDias()`
   (`ui-asistencia.js:267`), `pintarAsistenciaDeHoy()` (`ui-asistencia.js:306`).
 
@@ -103,18 +104,32 @@ En el **reporte del padrón**, la lectura es:
 | `vigilarPestanas()`       | lo pendiente, al ocultarse o cerrarse la página | `estado.js:99-114` |
 | `pagina-calendario.js`    | `calendario` (no usa `estado.js`)          | L18 |
 | `pagina-b1.js`            | `rendiciones`, y de `config` solo `ultimoCentro`: relee lo guardado antes de escribir. También escribe lo pendiente al ocultarse | L30-65 |
-| Restaurar un respaldo     | reemplaza claves, descarta lo pendiente (`descartarPendiente()`, `estado.js:80`) y recarga la página | `pagina-asistencia.js:88`, `pagina-padron.js:78`, `pagina-calendario.js:119`, `pagina-b1.js:466` |
+| Restaurar un respaldo     | reemplaza claves, descarta lo pendiente (`descartarPendiente()`, `estado.js:80`) y recarga la página | `pagina-asistencia.js:88`, `pagina-padron.js:78`, `pagina-calendario.js:119`, `pagina-b1.js:504` |
 
 **Varias pestañas.** Las páginas que usan `estado.js` (asistencia y padrón)
 llaman a `vigilarPestanas()` al arrancar (`pagina-asistencia.js:128`,
-`pagina-padron.js:104`). Cuando otra pestaña guarda el padrón, la config o el
+`pagina-padron.js:107`). Cuando otra pestaña guarda el padrón, la config o el
 calendario, el evento `storage` las recarga y repinta; así no guardan después
 su copia vieja encima. El repintado pasa por `repintarConservandoVista()`
-(`ui.js:457-487`), que vuelve a abrir las fichas abiertas y devuelve el foco y
+(`ui.js:607-637`), que vuelve a abrir las fichas abiertas y devuelve el foco y
 el cursor. El B-1 relee la config justo antes de guardarla, y si otra pestaña
 guarda la rendición, se recarga entera (`pagina-b1.js:61-65`). Límite: si dos
 pestañas cambian algo dentro de los mismos 400 ms, gana la que guardó la otra.
 Lo comprueba `herramientas/humo.mjs`.
+
+**Sin internet.** `sw.js` es un service worker propio: guarda los archivos de
+la aplicación (HTML, CSS, JS, íconos) en el Cache Storage y, si la red falla o
+tarda más de 3 s, los sirve desde ahí. Primero intenta la red, así que con
+conexión siempre llega lo publicado. Los datos no pasan por él: siguen en
+`localStorage`. Lo registra `montarCabecera()` (`ui.js:219`), que también pide
+`navigator.storage.persist()` (`ui.js:232`) para que el navegador no borre los
+datos por su cuenta (Safari los borra tras 7 días sin abrir el sitio, salvo que
+la app esté instalada). Al agregar un archivo a la app hay que sumarlo a
+`ARCHIVOS` en `sw.js`, o no abrirá sin conexión.
+
+**Recordatorio de respaldo.** Con datos y sin respaldo en 14 días, una franja
+arriba lo pide (`ui.js:574`). `exportarTodo()` (`ui.js:389`) abre el menú del
+sistema para guardarlo en un celular y lo descarga en la computadora.
 
 ---
 
@@ -208,6 +223,8 @@ casos-prueba.js       (pruebas.html)     ← modelo, calculos, validaciones, ale
 
 `pagina-b1.js` y `pagina-calendario.js` no usan `estado.js`: leen y guardan sus
 claves directamente.
+
+`sw.js` (raíz) no importa nada: solo conoce la lista de archivos de la app.
 
 `herramientas/humo.mjs` no es parte de la app: es la prueba de humo que abre
 las páginas en un Chromium sin ventana (ver README, «Pruebas»).

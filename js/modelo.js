@@ -6,7 +6,8 @@ export const CLAVES = {
   padron: 'b1.padron.v1',
   insumos: 'b1.insumos.v1',       // reservada: catálogo de insumos (fase 6, AGENTS.md §4.3); hoy nada la usa
   calendario: 'b1.calendario.v1',
-  config: 'b1.config.v1'
+  config: 'b1.config.v1',
+  respaldo: 'b1.respaldo.v1'     // { ultimoEn: 'AAAA-MM-DD' }: cuándo se exportó el último respaldo
 };
 
 export const VERSION_ESQUEMA = 1;

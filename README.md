@@ -15,6 +15,21 @@ Ya está desplegada en GitHub Pages:
 No hace falta instalar nada: se abre en el navegador del celular o de la
 computadora.
 
+### Instalarla en el celular
+
+Desde el navegador del celular: menú → **Instalar aplicación** (Android) o
+**Compartir → Agregar a pantalla de inicio** (iPhone). Queda un ícono como el de
+cualquier app, y desde entonces:
+
+- **Abre sin internet.** La primera vez hace falta conexión; después, la app
+  guarda sus archivos (`sw.js`) y abre aunque no haya señal. Con señal, se pone
+  al día sola.
+- **No se borran los datos.** Safari borra lo guardado por un sitio que no se
+  abre en 7 días si no está instalado en la pantalla de inicio.
+
+Igual conviene exportar un respaldo cada cierto tiempo: la app lo recuerda a los
+14 días.
+
 ---
 
 ## Levantarla en local
@@ -62,8 +77,9 @@ Siempre a través de `http://localhost`, aunque el servidor sea tu propia máqui
 
   Abre las cinco páginas en un Chromium sin ventana, vacías y con un padrón
   ficticio, y falla si hay errores de consola. También comprueba que no se
-  pierda lo último marcado al salir de la página y que dos pestañas abiertas
-  no se pisen los datos. Usa un perfil temporal: no toca tus datos. Si no
+  pierda lo último marcado al salir de la página, que dos pestañas abiertas
+  no se pisen los datos, que en un celular la lista se vea al abrir y que la
+  app abra con el servidor apagado. Usa un perfil temporal: no toca tus datos. Si no
   encuentra Chromium, indícale la ruta con `CHROME=/ruta/a/chrome`.
 
   GitHub la corre sola en cada push y en cada pull request

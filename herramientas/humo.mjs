@@ -3,8 +3,9 @@
 // Abre las cinco páginas, con el almacenamiento vacío y con un padrón de
 // prueba, y falla si hay errores de consola o si lo que se ve no cuadra con los
 // datos. También comprueba lo que las aserciones de pruebas.html no alcanzan:
-// que no se pierda el último toque al salir de la página, y que dos pestañas
-// abiertas no se pisen los datos.
+// que no se pierda el último toque al salir de la página, que dos pestañas
+// abiertas no se pisen los datos, que en un celular la lista se vea al abrir
+// y que, apagado el servidor, el service worker abra la aplicación igual.
 //
 // Sin dependencias: Node 22 o más (fetch y WebSocket propios) y un Chromium.
 //
@@ -62,7 +63,8 @@ const PADRON = {
 const TIPOS = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml',
-  '.webmanifest': 'application/manifest+json', '.json': 'application/json'
+  '.webmanifest': 'application/manifest+json', '.json': 'application/json',
+  '.png': 'image/png'
 };
 
 // /__sembrar deja el almacenamiento vacío, o con el padrón de prueba si se pide
@@ -203,6 +205,7 @@ async function pestana(cdp) {
       await cdp.enviar('Page.bringToFront', {}, sessionId);
       return p.eval(expr);
     },
+    cdp: (method, params = {}) => cdp.enviar(method, params, sessionId),
     cerrar: () => cdp.enviar('Target.closeTarget', { targetId })
   };
   return p;
@@ -367,6 +370,58 @@ async function correr(base, cdp) {
     comprobar('B-1: salir justo después de escribir no lo pierde', v === 'Comedor Dos', v);
     await p.cerrar();
   }
+
+  // 7. En un celular (360×740, táctil): el menú va abajo, nada se desborda a
+  // lo ancho y la lista de asistencia se ve sin desplazarse.
+  {
+    const p = await pestana(cdp);
+    await p.cdp('Emulation.setDeviceMetricsOverride', { width: 360, height: 740, deviceScaleFactor: 2, mobile: true });
+    await p.cdp('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+    await p.ir(`${base}/__sembrar?padron=1`);
+    const desbordan = [];
+    for (const nombre of ['index', 'padron', 'formato-b1', 'calendario']) {
+      await p.ir(`${base}/${nombre}.html`);
+      if (await p.eval(`document.documentElement.scrollWidth > document.documentElement.clientWidth`)) desbordan.push(nombre);
+    }
+    comprobar('celular: ninguna página se desborda a lo ancho', desbordan.length === 0, desbordan.join(' '));
+    await p.ir(`${base}/index.html`);
+    const r = await p.eval(`(() => {
+      const nav = document.querySelector('.nav').getBoundingClientRect();
+      const fila = document.querySelector('#hoy .toque').getBoundingClientRect();
+      return { navAbajo: Math.round(nav.bottom) === innerHeight, filaVisible: fila.bottom <= nav.top };
+    })()`);
+    comprobar('celular: el menú queda abajo', r.navAbajo, JSON.stringify(r));
+    comprobar('celular: la primera persona se ve al abrir', r.filaVisible, JSON.stringify(r));
+    comprobar('celular: sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
+    await p.cerrar();
+  }
+}
+
+// 8. Sin servidor: con el service worker ya instalado, la aplicación abre igual.
+// Va al final y aparte porque apaga el servidor.
+async function sinServidor(base, cdp, servidor) {
+  const p = await pestana(cdp);
+  await p.ir(`${base}/__sembrar?padron=1`);
+  await p.ir(`${base}/index.html`);
+  const listo = await p.eval(`navigator.serviceWorker.ready.then((r) => !!r.active)`);
+  await p.ir(`${base}/index.html`);           // ahora la controla el service worker
+  const controla = await p.eval(`!!navigator.serviceWorker.controller`);
+  comprobar('service worker: instalado y a cargo de la página', listo && controla, JSON.stringify({ listo, controla }));
+
+  servidor.closeAllConnections();
+  await new Promise((ok) => servidor.close(ok));
+  const fallan = [];
+  for (const nombre of ['index', 'padron', 'formato-b1', 'calendario']) {
+    await p.ir(`${base}/${nombre}.html`);
+    const ok = await p.eval(`document.querySelectorAll('.nav-enlace').length === 4`);
+    if (!ok) fallan.push(nombre);
+  }
+  await p.ir(`${base}/index.html`);
+  const personas = await p.eval(`document.querySelectorAll('#hoy .toque').length`);
+  comprobar('sin servidor: las cuatro páginas abren', fallan.length === 0, fallan.join(' '));
+  comprobar('sin servidor: la asistencia muestra el padrón', personas === 3, String(personas));
+  comprobar('sin servidor: sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
+  await p.cerrar();
 }
 
 // ---------------------------------------------------------------------- main
@@ -379,6 +434,7 @@ try {
   const cdp = new Cdp(chrome.ws);
   await cdp.abierto();
   await correr(base, cdp);
+  await sinServidor(base, cdp, servidor);
 } catch (e) {
   fallo = true;
   console.error('La prueba se interrumpió:', e.message);
@@ -389,7 +445,7 @@ try {
   const salio = new Promise((ok) => chrome.proc.once('exit', ok));
   chrome.proc.kill();
   await Promise.race([salio, pausa(5000)]);
-  servidor.close();
+  if (servidor.listening) servidor.close();
   try {
     fs.rmSync(chrome.perfil, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   } catch (e) {

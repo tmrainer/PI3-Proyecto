@@ -100,7 +100,7 @@ button:focus-visible, [tabindex]:focus-visible,
 
 /* --------------------------------------------------------------- bloques */
 
-section.bloque {
+section.bloque, details.bloque {
   background: var(--papel);
   border: 1px solid var(--borde);
   border-radius: var(--radio-g);
@@ -403,7 +403,7 @@ table.tabla td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .toque-marca .icono { vertical-align: 0; }
 .toque.presente { border-color: var(--verde-600); background: var(--verde-050); }
 .toque.presente .toque-marca { background: var(--verde-600); border-color: var(--verde-600); color: #fff; }
-.toque-texto { overflow-wrap: anywhere; }
+.toque-texto { overflow-wrap: anywhere; line-height: 1.3; }
 .toque-sub { display: block; font-size: .78rem; color: var(--tinta-suave); }
 .toque-menu {
   flex: 0 0 auto; padding: 0 8px; background: none; border: 0;
@@ -503,8 +503,9 @@ section.bloque.apoyo h2 { font-size: .98rem; color: var(--verde-700); }
   input, select, textarea { padding: 11px 12px; font-size: 1rem; }  /* 16px evita el zoom de iOS */
   .persona-fila { padding: 13px 12px; }
   .dia > summary, .plegable > summary { padding: 14px 4px; }
-  .toque-nombre { padding: 15px 12px; }
-  .toque-menu { width: 6em; }
+  .toque-nombre { padding: 10px 12px; }
+  .toque-menu { width: 5em; }
+  .panel-detalle > summary, .privacidad summary { padding-block: 10px; }
   .enlace-ir { padding: 6px 0; }
 }
 
@@ -541,6 +542,7 @@ section.bloque.apoyo h2 { font-size: .98rem; color: var(--verde-700); }
 }
 .saltar-al-contenido:focus { top: 0; }
 main:focus { outline: none; }
+body[data-pagina="asistencia"] .panel { position: static; }
 
 /* El panel de revisión se pega arriba: lo enfocado nunca queda debajo de él.
    ui.js mide su alto real en --alto-panel. */
@@ -592,4 +594,109 @@ legend.obligatoria::after { content: " *"; color: var(--error); font-weight: 700
 .nav { min-height: 41px; }
 #banner { min-height: 54px; }
 #panel { min-height: 56px; }
-@media (max-width: 619px) { #banner { min-height: 108px; } }
+
+/* ------------------------------------------------- compras y alta plegables
+
+   Cada compra del B-1 se pliega en una línea con lo que la identifica; el
+   alta del padrón, en un botón «+». Se abren donde hace falta trabajar. */
+
+details.ficha > summary {
+  cursor: pointer; list-style: none; justify-content: flex-start;
+  flex-wrap: wrap; gap: 2px 10px; margin: -13px; padding: 13px;
+}
+details.ficha > summary::-webkit-details-marker { display: none; }
+details.ficha > summary::before {
+  content: "▸"; color: var(--verde-600); transition: transform .12s;
+}
+details.ficha[open] > summary::before { transform: rotate(90deg); }
+.ficha-resumen {
+  flex: 1 1 12em; min-width: 0; font-size: .88rem;
+  color: var(--tinta-suave); overflow-wrap: anywhere;
+}
+.ficha-estado { font-size: .8rem; font-weight: 600; }
+.ficha.con-error .ficha-estado { color: var(--error); }
+.ficha.con-aviso .ficha-estado { color: var(--aviso); }
+.ficha-quitar { display: flex; justify-content: flex-end; margin: 14px 0 10px; }
+
+details.bloque.desplegable > summary {
+  cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px;
+  margin: -16px; padding: 16px;
+}
+details.bloque.desplegable > summary::-webkit-details-marker { display: none; }
+details.bloque.desplegable > summary::before {
+  content: "+"; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 1.7em; height: 1.7em; border: 1px solid var(--borde-control);
+  border-radius: var(--radio); font-weight: 700; color: var(--verde-700);
+}
+details.bloque.desplegable[open] > summary::before { content: "−"; }
+details.bloque.desplegable > summary h2 { margin: 0; }
+details.bloque.desplegable[open] > summary { margin-bottom: 0; }
+details.bloque.desplegable[open] > summary + * { margin-top: 14px; }
+
+/* -------------------------------------------------- recordatorio de respaldo */
+
+.recordatorio-respaldo {
+  display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center;
+  padding: 8px 12px; margin: 0 0 12px; font-size: .86rem;
+  background: var(--aviso-fondo); border: 1px solid var(--aviso);
+  border-left-width: 5px; border-radius: var(--radio);
+}
+.recordatorio-respaldo > span { flex: 1 1 14em; }
+
+/* ------------------------------------------------- asistencia: lo de arriba */
+
+.hoy-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-bottom: 10px; }
+.hoy-buscar { flex: 1 1 14em; }
+.hoy-acciones { margin-top: 12px; }
+
+/* ------------------------------------------------------------- celular
+
+   Pensado para pasar lista con una mano: el menú abajo, al alcance del
+   pulgar; arriba solo lo indispensable, para que la lista se vea al abrir. */
+
+@media (max-width: 619px) {
+  .cabecera-sub { display: none; }
+  .cabecera-titulo { padding: 10px 16px; }
+  .cabecera { border-bottom-width: 0; }
+
+  .nav {
+    position: fixed; inset-inline: 0; bottom: 0; z-index: 20;
+    max-width: none; min-height: 0; margin: 0;
+    padding: 0 0 env(safe-area-inset-bottom);
+    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+    background: var(--verde-900); border-top: 1px solid var(--verde-700);
+  }
+  .nav-enlace {
+    margin: 0; padding: 15px 4px; text-align: center; font-size: .84rem;
+    border-bottom: 0; border-top: 3px solid transparent; overflow-wrap: anywhere;
+  }
+  .nav-enlace.activo { border-top-color: #fff; }
+  main { padding-bottom: calc(40px + var(--alto-nav-abajo, 56px)); }
+  html { scroll-padding-bottom: calc(var(--alto-nav-abajo, 56px) + 8px); }
+
+  .banner-alerta { padding: 8px 12px; gap: 4px 8px; margin-bottom: 10px; font-size: .84rem; }
+  .banner-texto { flex-basis: 12em; }
+  #banner { min-height: 62px; }   /* medido: 62 px con entregas configuradas */
+  .panel { padding: 8px 12px; margin-bottom: 12px; }
+  #panel { min-height: 0; }
+  body:not([data-pagina="asistencia"]) #panel { min-height: 60px; }
+
+  /* Asistencia: lo que se queda arriba al bajar es el conteo y el buscador. */
+  #bloque-hoy > .pista { display: none; }
+  .hoy-fija {
+    position: sticky; top: 0; z-index: 4;
+    margin: 0 -16px; padding: 8px 16px;
+    background: var(--papel); border-bottom: 1px solid var(--borde);
+  }
+  .hoy-fija .hoy-barra { margin-bottom: 8px; padding: 6px 12px; }
+  .hoy-fija .hoy-cuenta { font-size: 1.3rem; }
+  .hoy-filtros { flex-wrap: nowrap; margin-bottom: 0; }
+  .hoy-buscar { min-width: 0; }
+  .hoy-buscar > label {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+  .hoy-filtros .boton { white-space: nowrap; }
+  .recordatorio-respaldo { padding: 6px 10px; font-size: .82rem; }
+  .recordatorio-respaldo > span { flex-basis: 9em; }
+}

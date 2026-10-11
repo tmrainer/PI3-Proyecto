@@ -2,14 +2,14 @@
 <html lang="es-PE">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Inscribe y consulta las personas afiliadas a tu olla común o comedor, y genera el padrón para la Municipalidad.">
 <meta name="robots" content="noindex, nofollow">
 <title>Padrón · Sistema de Asistencia</title>
 <meta name="theme-color" content="#1b2e1e">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icono.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="./icono.svg">
+<link rel="apple-touch-icon" href="./icono-180.png">
 <link rel="stylesheet" href="./estilos.css">
 </head>
 <body data-pagina="padron">
@@ -27,8 +27,8 @@
   <div id="banner"></div>
   <div id="panel" class="panel" role="status" aria-live="polite" aria-label="Resumen de revisión"></div>
 
-  <section class="bloque">
-    <h2>Inscribir a una persona</h2>
+  <details class="bloque desplegable" id="bloque-alta">
+    <summary><h2>Inscribir a una persona</h2></summary>
     <p class="pista">Los campos con * son obligatorios. El grupo de edad no hace falta si pones la fecha de nacimiento.</p>
     <div class="rejilla tres">
       <div class="campo">
@@ -74,7 +74,7 @@
       <button type="button" class="boton" id="agregar-afiliado">Inscribir</button>
       <span class="estado-guardado" id="alta-mensaje"></span>
     </div>
-  </section>
+  </details>
 
   <section class="bloque">
     <h2>Personas afiliadas</h2>
@@ -107,6 +107,8 @@
     <h2>Cargar un padrón desde Excel o CSV</h2>
     <p class="pista">
       Pega las filas con su fila de títulos. Nada se guarda hasta que revises.
+      Si tu padrón está en Excel (.xlsx), guárdalo antes como CSV («Guardar
+      como» → CSV) y elige ese archivo.
     </p>
     <div class="campo">
       <label for="pegarPadron">Pega aquí las filas (con la fila de títulos)</label>

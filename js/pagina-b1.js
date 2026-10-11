@@ -3,7 +3,7 @@
 
 import {
   CLAVES, leer, guardar, nuevaRendicion, nuevoEgreso,
-  aCentimos, formatearSoles, aNumero, debounce, hoyIso, configVacia, calendarioVacio
+  aCentimos, formatearSoles, aNumero, debounce, hoyIso, configVacia, calendarioVacio, aDdMmAa
 } from './modelo.js';
 import { totales, gastoPorOrigen, proponerPeriodo } from './calculos.js';
 import { validarRendicion } from './validaciones.js';
@@ -347,11 +347,23 @@ function fichaEgreso(fila, indice) {
   fOrigen.value = fila.origenFondo || 'subsidio';
   fOrigen.addEventListener('change', () => { fila.origenFondo = fOrigen.value; cambio(); });
 
-  return crearElemento('article', { clase: 'ficha', id: `ficha-${fila.id}`, 'data-campo': `egreso.${fila.id}` }, [
-    crearElemento('div', { clase: 'ficha-cabecera' }, [
+  // Cada compra se pliega en una línea con lo que la identifica. Con 17 boletas
+  // abiertas eran unas 27 pantallas de celular; plegadas, la lista se recorre
+  // de un vistazo y se abre solo la que hay que tocar.
+  const resumen = crearElemento('span', { clase: 'ficha-resumen', texto: resumenEgreso(fila) });
+  const ficha = crearElemento('details', {
+    clase: 'ficha', id: `ficha-${fila.id}`, 'data-campo': `egreso.${fila.id}`,
+    oninput: () => { resumen.textContent = resumenEgreso(fila); },
+    onchange: () => { resumen.textContent = resumenEgreso(fila); }
+  }, [
+    crearElemento('summary', { clase: 'ficha-cabecera' }, [
       crearElemento('span', { clase: 'ficha-numero', texto: `Compra ${indice + 1}` }),
+      resumen,
+      crearElemento('span', { clase: 'ficha-estado' })
+    ]),
+    crearElemento('div', { clase: 'ficha-quitar' }, [
       crearElemento('button', {
-        type: 'button', clase: 'boton diminuto peligro', texto: 'Quitar',
+        type: 'button', clase: 'boton diminuto peligro', texto: `Quitar la compra ${indice + 1}`,
         onclick: () => {
           if (!confirm(`¿Quitar la compra ${indice + 1}? Esto borra lo que escribiste en esa ficha.`)) return;
           rendicion.egresos = rendicion.egresos.filter((f) => f.id !== fila.id);
@@ -391,6 +403,24 @@ function fichaEgreso(fila, indice) {
       campo('Monto total de la boleta (S/)', fMonto, 'Este es el número que suma.')
     ])
   ]);
+  // Abierta mientras le falte lo básico: una ficha nueva se abre para llenarla.
+  ficha.open = !egresoCompleto(fila);
+  return ficha;
+}
+
+function egresoCompleto(fila) {
+  return !!(fila.fechaCompra && (fila.descripcion || '').trim() &&
+    fila.montoTotalCent !== null && fila.montoTotalCent !== undefined);
+}
+
+/** «12-10-26 · Arroz · S/ 45.00», o qué le falta. Solo para mostrar. */
+function resumenEgreso(fila) {
+  const partes = [];
+  if (fila.fechaCompra) partes.push(aDdMmAa(fila.fechaCompra));
+  if ((fila.descripcion || '').trim()) partes.push(fila.descripcion.trim());
+  const monto = formatearSoles(fila.montoTotalCent);
+  if (monto) partes.push('S/ ' + monto);
+  return partes.length ? partes.join(' · ') : 'sin llenar';
 }
 
 function pintarEgresos() {
@@ -438,11 +468,19 @@ function refrescarValidacion() {
     const control = caja.querySelector('input, select, textarea');
     if (control) marcarCampo(control, propios);
   }
+  // Una compra plegada con un problema lo dice en su línea, no solo con el color.
+  for (const ficha of document.querySelectorAll('#lista-egresos .ficha')) {
+    const estado = ficha.querySelector('.ficha-estado');
+    if (!estado) continue;
+    estado.textContent = ficha.classList.contains('con-error') ? 'con error'
+      : ficha.classList.contains('con-aviso') ? 'revisar' : '';
+  }
 }
 
 function irACampo(campo) {
   const caja = document.querySelector(`[data-campo="${CSS.escape(campo)}"]`);
   if (!caja) return;
+  if (caja.tagName === 'DETAILS') caja.open = true;
   caja.scrollIntoView({ block: 'center' });
   const control = caja.querySelector('input, select, textarea');
   if (control && !control.disabled) control.focus({ preventScroll: true });

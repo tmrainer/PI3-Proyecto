@@ -10,7 +10,7 @@ import {
   desgloseDelDia, recaudacionDelDiaCent, asistio, menuDe, asistenciasConTodos
 } from './calculos.js';
 import { estado, preciosActuales } from './estado.js';
-import { crearElemento, campo, icono } from './ui.js';
+import { crearElemento, campo, icono, vigilarAltoFijo } from './ui.js';
 
 // ctx: { fechaRef, titulo, onCambio(), onRepintar(), onResumen() }
 
@@ -147,7 +147,7 @@ function fichaAtencion(at, ctx) {
 
   // ---- lista de un toque ----
   const buscador = crearElemento('input', {
-    id: `at-buscar-${idp}`, type: 'search', placeholder: 'Buscar por nombre…', autocomplete: 'off'
+    id: `at-buscar-${idp}`, type: 'search', placeholder: 'Buscar nombre…', autocomplete: 'off'
   });
   const listaAsistencia = crearElemento('div', { clase: 'lista-toque' });
   let filtro = '';
@@ -337,7 +337,7 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   }
 
   const buscador = crearElemento('input', {
-    id: 'hoy-buscar', type: 'search', placeholder: 'Buscar por nombre…', autocomplete: 'off'
+    id: 'hoy-buscar', type: 'search', placeholder: 'Buscar nombre…', autocomplete: 'off'
   });
   buscador.value = filtroHoy;
   const lista = crearElemento('div', { clase: 'lista-toque' });
@@ -448,20 +448,31 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
     return;
   }
 
+  // Lo que se usa mientras se pasa lista (el conteo, el buscador y «los que
+  // faltan») va junto: en el celular se queda pegado arriba al bajar por la
+  // lista.
+  const fija = crearElemento('div', { clase: 'hoy-fija' }, [
+    crearElemento('div', { clase: 'hoy-barra' }, [cuenta, detalle]),
+    crearElemento('div', { clase: 'hoy-filtros' }, [
+      // El buscador solo hace falta cuando la lista no cabe de un vistazo.
+      activos.length > 12 ? crearElemento('div', { clase: 'campo hoy-buscar' }, [
+        crearElemento('label', { for: buscador.id, texto: 'Buscar' }), buscador
+      ]) : null,
+      botonFaltan
+    ])
+  ]);
   caja.append(
     resumenVivo,
-    crearElemento('div', { clase: 'hoy-barra' }, [
-      cuenta, detalle,
+    fija,
+    lista,
+    // Al final: se usan una vez por día, y arriba empujaban la lista fuera de
+    // la primera pantalla del celular.
+    crearElemento('div', { clase: 'acciones hoy-acciones' }, [
       crearElemento('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Marcar a todos', onclick: () => marcarTodos(true) }),
-      crearElemento('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Quitar a todos', onclick: () => marcarTodos(false) }),
-      botonFaltan
-    ]),
-    // El buscador solo hace falta cuando la lista no cabe de un vistazo.
-    activos.length > 12 ? crearElemento('div', { clase: 'campo' }, [
-      crearElemento('label', { for: buscador.id, texto: 'Buscar' }), buscador
-    ]) : null,
-    lista
+      crearElemento('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Quitar a todos', onclick: () => marcarTodos(false) })
+    ])
   );
+  vigilarAltoFijo(fija);
   pintarLista();
   refrescar();
 }

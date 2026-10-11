@@ -2,14 +2,14 @@
 <html lang="es-PE">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Pasa lista del día en tu olla común o comedor: toca a quien vino y las raciones se cuentan solas.">
 <meta name="robots" content="noindex, nofollow">
 <title>Asistencia del día · Sistema de Asistencia</title>
 <meta name="theme-color" content="#1b2e1e">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icono.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="./icono.svg">
+<link rel="apple-touch-icon" href="./icono-180.png">
 <link rel="stylesheet" href="./estilos.css">
 </head>
 <body data-pagina="asistencia">
@@ -25,13 +25,16 @@
 
   <div id="avisos-sistema"></div>
   <div id="banner"></div>
-  <div id="panel" class="panel" role="status" aria-live="polite" aria-label="Resumen de revisión"></div>
 
   <section class="bloque foco" id="bloque-hoy">
     <h2 id="titulo-hoy">Asistencia de hoy</h2>
     <p class="pista">Toca a quien vino; las raciones se cuentan solas.</p>
     <div id="hoy"></div>
   </section>
+
+  <!-- Aquí, y no arriba: lo que revisa (el precio del menú, días pasados) está
+       debajo, y arriba la lista de hoy se ve sin desplazarse. -->
+  <div id="panel" class="panel" role="status" aria-live="polite" aria-label="Resumen de revisión"></div>
 
   <section class="bloque apoyo">
     <h2>Resumen del periodo</h2>
