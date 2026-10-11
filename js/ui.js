@@ -254,6 +254,32 @@ export function esPantallaTactil() {
   return matchMedia('(pointer: coarse)').matches;
 }
 
+/**
+ * Mientras se pasa lista, que el celular no apague la pantalla entre una
+ * persona y la siguiente. Se pide al tocar y se suelta tras `minutos` sin
+ * toques, para no gastar la batería si se deja el teléfono sobre la mesa. Al
+ * ocultarse la página el navegador la suelta solo; el siguiente toque la
+ * vuelve a pedir. Donde no existe (Firefox, Safari viejo), no hace nada.
+ * @param {number} [minutos=5]
+ */
+export function pantallaEncendidaMientrasSeUsa(minutos = 5) {
+  if (!('wakeLock' in navigator) || !esPantallaTactil()) return;
+  let cerrojo = null;
+  let reloj = null;
+  const soltar = () => {
+    if (cerrojo) cerrojo.release().catch(() => {});
+    cerrojo = null;
+  };
+  addEventListener('pointerdown', async () => {
+    clearTimeout(reloj);
+    reloj = setTimeout(soltar, minutos * 60000);
+    if (cerrojo && !cerrojo.released) return;
+    try {
+      cerrojo = await navigator.wakeLock.request('screen');
+    } catch (e) { cerrojo = null; /* sin batería o sin permiso: se sigue igual */ }
+  }, { passive: true });
+}
+
 /** Ancho de celular: el mismo corte que usa estilos.css. */
 export function esAnchoCelular() {
   return matchMedia('(max-width: 619px)').matches;

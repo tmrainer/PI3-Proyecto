@@ -13,7 +13,7 @@ import { pintarAsistenciaDeHoy, pintarOtrosDias } from './ui-asistencia.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
   pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo,
-  repintarConservandoVista, chip
+  repintarConservandoVista, chip, pantallaEncendidaMientrasSeUsa
 } from './ui.js';
 
 cargar();
@@ -80,6 +80,7 @@ function repintar() {
 
 montarCabecera('asistencia', 'Ollas comunes y comedores de Villa María del Triunfo');
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
+pantallaEncendidaMientrasSeUsa();
 buscar('#privacidad').append(bloquePrivacidad());
 buscar('#barra-datos').append(barraDatos({
   alImportar: (datos) => {
