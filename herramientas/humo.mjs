@@ -228,8 +228,9 @@ function comprobar(nombre, condicion, detalle = '') {
 }
 
 const TEXTO = (sel) => `(document.querySelector(${JSON.stringify(sel)})?.textContent || '').replace(/\\s+/g, ' ').trim()`;
-const PADRON_GUARDADO = `JSON.parse(localStorage.getItem('b1.padron.v1'))`;
-const IDS_HOY = `${PADRON_GUARDADO}.atenciones.find((a) => a.fecha === '${hoyLocal()}').asistencias.map((x) => x.afiliadoId).sort()`;
+// Leído con leer() de la app: en localStorage la asistencia va compacta.
+const PADRON_GUARDADO = `(await import('./js/modelo.js')).leer('b1.padron.v1', null)`;
+const IDS_HOY = `(async () => (${PADRON_GUARDADO}).atenciones.find((a) => a.fecha === '${hoyLocal()}').asistencias.map((x) => x.afiliadoId).sort())()`;
 const TOCAR = (apellido) => `[...document.querySelectorAll('#hoy .toque-nombre')]
   .find((b) => b.textContent.includes(${JSON.stringify(apellido)})).click()`;
 const ESCRIBIR = (sel, valor) => `(() => { const el = document.querySelector(${JSON.stringify(sel)});
@@ -412,6 +413,18 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
+  // 1f. Con el espacio al 70 % o más, se avisa antes de que no se pueda guardar.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar?padron=1`);
+    await p.eval(`localStorage.setItem('b1.relleno', 'x'.repeat(1800000)); 1`);
+    await p.ir(`${base}/index.html`);
+    const r = await p.eval(TEXTO('#avisos-sistema'));
+    comprobar('espacio casi lleno: se avisa', /va al 7\d %/.test(r), r.slice(0, 120));
+    await p.eval(`localStorage.removeItem('b1.relleno'); 1`);
+    await p.cerrar();
+  }
+
   // 2. Marcar a alguien y salir enseguida, antes de los 400 ms: no se pierde.
   {
     const p = await pestana(cdp);
@@ -422,6 +435,9 @@ async function correr(base, cdp) {
     await p.ir(`${base}/index.html`);
     const r = await p.eval(TEXTO('.hoy-cuenta'));
     comprobar('salir justo después de marcar: el toque queda guardado', r === '2 de 3', r);
+    const crudo = await p.eval(`localStorage.getItem('b1.padron.v1')`);
+    comprobar('la asistencia se guarda compacta', crudo.includes('"marcas"') && !crudo.includes('afiliadoId'),
+      crudo.slice(0, 120));
     await p.cerrar();
   }
 
@@ -458,7 +474,7 @@ async function correr(base, cdp) {
     await b.actuar(ESCRIBIR('[id^="a-nombres-alfa0001"]', 'Editada'));
     await pausa(700);
     const ids = await a.eval(IDS_HOY);
-    const nombre = await a.eval(`${PADRON_GUARDADO}.afiliados[0].nombres`);
+    const nombre = await a.eval(`(async () => (${PADRON_GUARDADO}).afiliados[0].nombres)()`);
     comprobar('dos pestañas: la asistencia marcada en la otra sigue',
       JSON.stringify(ids) === JSON.stringify(['alfa0001', 'gama0003']), JSON.stringify(ids));
     comprobar('dos pestañas: la edición del padrón también se guardó', nombre === 'Editada', nombre);

@@ -3,7 +3,8 @@
 
 import {
   CLAVES, leer, guardar, borrarTodo, descargarJson, avisosAlmacenamiento, hoyIso,
-  cifrarRespaldo, descifrarRespaldo, esRespaldoCifrado, revisarRespaldo, restaurarRespaldo
+  cifrarRespaldo, descifrarRespaldo, esRespaldoCifrado, revisarRespaldo, restaurarRespaldo,
+  usoAlmacenamiento
 } from './modelo.js';
 
 /**
@@ -375,6 +376,10 @@ export function bloquePrivacidad() {
       }),
       estadoProteccion,
       crearElemento('p', {
+        texto: `Ocupa el ${Math.max(1, Math.round(usoAlmacenamiento().fraccion * 100))} % ` +
+          'del espacio que el navegador le da.'
+      }),
+      crearElemento('p', {
         texto: 'El archivo de respaldo contiene nombres, números de documento y el ' +
           'registro de asistencia de personas reales. Guárdalo en tu teléfono o en ' +
           'tu Drive. Si tiene que viajar por WhatsApp o por correo, usa «Exportar ' +
@@ -735,8 +740,24 @@ export function pintarAvisosAlmacenamiento(contenedor) {
     contenedor.append(crearElemento('div', { clase: 'aviso-sistema', role: 'alert' },
       avisos.map((a) => crearElemento('p', {}, [icono('aviso', { tam: 15 }), ' ' + a]))));
   }
+  const espacio = avisoEspacio();
+  if (espacio) contenedor.append(espacio);
   const recordatorio = recordatorioRespaldo();
   if (recordatorio) contenedor.append(recordatorio);
+}
+
+const UMBRAL_ESPACIO = 0.7;
+
+/** Antes de que se llene, no cuando ya no se puede guardar. */
+function avisoEspacio() {
+  const { fraccion } = usoAlmacenamiento();
+  if (fraccion < UMBRAL_ESPACIO) return null;
+  return crearElemento('div', { clase: 'aviso-sistema', role: 'alert' }, [
+    crearElemento('p', {}, [icono('aviso', { tam: 15 }),
+      ` El espacio de la aplicación en este navegador va al ${Math.round(fraccion * 100)} %. ` +
+      'Cuando se llene, ya no podrá guardar. Exporta un respaldo y avisa a quien ' +
+      'mantiene la aplicación.'])
+  ]);
 }
 
 const DIAS_ENTRE_RESPALDOS = 14;

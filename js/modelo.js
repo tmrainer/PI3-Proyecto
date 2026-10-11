@@ -337,6 +337,106 @@ export function avisosAlmacenamiento() {
   return avisos.slice();
 }
 
+// ------------------------------------- asistencia compacta en localStorage
+
+// Cada día con 40 personas ocupaba ~3,1 KB: cada marca repetía
+// {"afiliadoId":"…","tipoMenu":"normal"}. A ese ritmo, el límite de Safari
+// (~5 MB) se llenaba en menos de 3 años. Guardada, la marca va como
+// marcas: { ids: [...], social: [...] } (el orden de ids es el de los toques;
+// social lista a quienes comieron menú de ayuda social). Es SOLO el formato en
+// localStorage: en memoria, en los cálculos y en los respaldos exportados la
+// forma sigue siendo asistencias: [{ afiliadoId, tipoMenu }]. leer() y
+// guardar() traducen solos; leer() entiende también el formato anterior.
+
+const MENUS = new Set(['normal', 'ayuda_social']);
+
+// Un UUID (36 caracteres) va como «~» y sus 16 bytes en base64url (23 en
+// total). Solo los de la forma exacta que da crypto.randomUUID(), en
+// minúsculas: así la vuelta da el mismo texto, letra por letra. Cualquier otro
+// id pasa tal cual.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+
+function idCorto(id) {
+  if (!UUID.test(id)) return id;   // (un id propio nunca empieza con «~»: lo da uuid())
+  const hex = id.replace(/-/g, '');
+  let bits = '';
+  for (const h of hex) bits += parseInt(h, 16).toString(2).padStart(4, '0');
+  bits += '0000';                                    // 128 bits -> 22 grupos de 6
+  let out = '~';
+  for (let i = 0; i < 132; i += 6) out += B64[parseInt(bits.slice(i, i + 6), 2)];
+  return out;
+}
+
+function idLargo(id) {
+  if (typeof id !== 'string' || id[0] !== '~' || id.length !== 23) return id;
+  let bits = '';
+  for (const c of id.slice(1)) bits += B64.indexOf(c).toString(2).padStart(6, '0');
+  let hex = '';
+  for (let i = 0; i < 128; i += 4) hex += parseInt(bits.slice(i, i + 4), 2).toString(16);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+/** Padrón tal como se guarda: la asistencia de cada día, compacta. */
+export function empacarPadron(padron) {
+  if (!padron || !Array.isArray(padron.atenciones)) return padron;
+  return {
+    ...padron,
+    atenciones: padron.atenciones.map((at) => {
+      const lista = at && at.asistencias;
+      // Lo que no tiene la forma de siempre se guarda tal cual: nunca se pierde un dato.
+      if (!Array.isArray(lista) || !lista.every((x) => x && typeof x.afiliadoId === 'string' &&
+        MENUS.has(x.tipoMenu) && Object.keys(x).length === 2)) return at;
+      const { asistencias, ...resto } = at;
+      return {
+        ...resto,
+        marcas: {
+          ids: lista.map((x) => idCorto(x.afiliadoId)),
+          social: lista.filter((x) => x.tipoMenu === 'ayuda_social').map((x) => idCorto(x.afiliadoId))
+        }
+      };
+    })
+  };
+}
+
+/** El camino de vuelta de empacarPadron(). Lo que ya viene sin empacar, pasa igual. */
+export function desempacarPadron(padron) {
+  if (!padron || !Array.isArray(padron.atenciones)) return padron;
+  return {
+    ...padron,
+    atenciones: padron.atenciones.map((at) => {
+      if (!at || !at.marcas || !Array.isArray(at.marcas.ids)) return at;
+      const { marcas, ...resto } = at;
+      const social = new Set(marcas.social || []);
+      return {
+        ...resto,
+        asistencias: marcas.ids.map((id) => ({
+          afiliadoId: idLargo(id), tipoMenu: social.has(id) ? 'ayuda_social' : 'normal'
+        }))
+      };
+    })
+  };
+}
+
+// Safari da ~5 MB por sitio y cuenta 2 bytes por carácter: ~2,5 millones de
+// caracteres. Chrome da algo más. Se mide contra lo más chico.
+const LIMITE_CARACTERES = 2500000;
+
+/**
+ * Cuánto ocupa la app en localStorage: sus claves (b1.*) y sus valores.
+ * @returns {{ caracteres: number, fraccion: number }}  fraccion de 0 a 1 (o más)
+ */
+export function usoAlmacenamiento() {
+  let caracteres = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('b1.')) caracteres += k.length + (localStorage.getItem(k) || '').length;
+    }
+  } catch (e) { /* bloqueado: ya lo avisa leer() */ }
+  return { caracteres, fraccion: caracteres / LIMITE_CARACTERES };
+}
+
 export function leer(clave, porDefecto) {
   let crudo = null;
   try {
@@ -350,7 +450,7 @@ export function leer(clave, porDefecto) {
   try {
     const valor = JSON.parse(crudo);
     if (valor === null || typeof valor !== 'object') throw new Error('forma inesperada');
-    return valor;
+    return clave === CLAVES.padron ? desempacarPadron(valor) : valor;
   } catch (e) {
     // Se conserva lo ilegible por si se puede recuperar a mano.
     try {
@@ -364,7 +464,7 @@ export function leer(clave, porDefecto) {
 
 export function guardar(clave, valor) {
   try {
-    localStorage.setItem(clave, JSON.stringify(valor));
+    localStorage.setItem(clave, JSON.stringify(clave === CLAVES.padron ? empacarPadron(valor) : valor));
     return true;
   } catch (e) {
     avisos.push(`No se pudo guardar en "${clave}". Puede que el almacenamiento ` +

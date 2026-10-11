@@ -4,7 +4,8 @@
 import {
   aCentimos, formatearSoles, aNumero, aDdMmAa, esIso, normalizarNombre,
   nuevaRendicion, nuevoEgreso, nuevoAfiliado, nuevaAtencion, padronVacio,
-  nombreCompleto, migrarPadron, calendarioVacio, VERSION_PADRON, revisarRespaldo
+  nombreCompleto, migrarPadron, calendarioVacio, VERSION_PADRON, revisarRespaldo,
+  empacarPadron, desempacarPadron
 } from './modelo.js';
 import {
   totales, totalRendicionGastos, gastosConSubsidio, aporteCentroAtencion,
@@ -1218,6 +1219,39 @@ export const casos = [
       ok(revisarRespaldo({}).error.includes('no trae'));
       ok(revisarRespaldo(null).error);
       ok(revisarRespaldo([1]).error);
+    }
+  },
+
+  {
+    grupo: 'Respaldos',
+    nombre: 'La asistencia compacta vuelve idéntica, y ocupa menos de la mitad',
+    fn: () => {
+      const u1 = '0f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a00';
+      const u2 = 'ffffffff-ffff-4fff-bfff-ffffffffffff';
+      const at = {
+        id: 'd1', fecha: '2026-10-10', precioMenuNormalCent: 300,
+        asistencias: [
+          { afiliadoId: u2, tipoMenu: 'normal' },
+          { afiliadoId: u1, tipoMenu: 'ayuda_social' },
+          { afiliadoId: 'alfa0001', tipoMenu: 'normal' }
+        ]
+      };
+      const raro = { id: 'd2', fecha: '2026-10-09', asistencias: [{ afiliadoId: 'x', tipoMenu: 'otro' }] };
+      const p = { version: 3, afiliados: [], atenciones: [at, raro] };
+      const e = empacarPadron(p);
+      ok(!JSON.stringify(e.atenciones[0]).includes('afiliadoId'), 'se empaca');
+      igual(e.atenciones[0].marcas.ids[0].length, 23, 'UUID corto');
+      igual(JSON.stringify(e.atenciones[1]), JSON.stringify(raro), 'lo raro se guarda tal cual');
+      const v = desempacarPadron(e).atenciones[0];
+      igual(JSON.stringify(v.asistencias), JSON.stringify(at.asistencias), 'mismo orden, ids y menús');
+      igual(v.precioMenuNormalCent, 300);
+      // El formato anterior se sigue leyendo igual.
+      igual(JSON.stringify(desempacarPadron(p)), JSON.stringify(p));
+      // 40 personas: menos de la mitad que antes.
+      const ids = Array.from({ length: 40 }, (_, i) => u1.slice(0, -2) + String(i).padStart(2, '0'));
+      const dia = { version: 3, afiliados: [], atenciones: [{ id: 'd', fecha: '2026-10-10',
+        asistencias: ids.map((id) => ({ afiliadoId: id, tipoMenu: 'normal' })) }] };
+      ok(JSON.stringify(empacarPadron(dia)).length < JSON.stringify(dia).length / 2, 'menos de la mitad');
     }
   },
 
