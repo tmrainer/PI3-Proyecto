@@ -577,7 +577,7 @@ function pintarRevision(hallazgos) {
     ]));
   } else {
     const lista = crearElemento('ul', { clase: 'revision-pendientes' });
-    for (const h of errores) {
+    for (const h of errores.slice().sort((x, y) => pasoDe(x) - pasoDe(y))) {
       const n = pasoDe(h);
       lista.append(crearElemento('li', {}, [
         crearElemento('span', { clase: 'revision-paso', texto: `Paso ${n}` }),

@@ -5,7 +5,6 @@
 
 import { hoyIso, cuantos } from './modelo.js';
 import { validarAfiliados } from './validaciones.js';
-import { alertaProximaEntrega } from './alertas.js';
 import {
   estado, cargar, alGuardar, guardarPronto, guardarYa, periodoPorDefecto,
   vigilarPestanas, descartarPendiente
@@ -16,7 +15,7 @@ import {
 import { montarImportacion } from './ui-importar.js';
 import { pintarReportePadron, montarControlesReporte } from './ui-reportes.js';
 import {
-  buscar, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
+  buscar, montarCabecera, bloquePrivacidad, barraDatos,
   pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo,
   repintarConservandoVista, mostrarGuardado, crearElemento, icono
 } from './ui.js';
@@ -70,8 +69,7 @@ buscar('#barra-datos').append(barraDatos({ antesDeRecargar: descartarPendiente }
 ctx.conteo = buscar('#conteo-afiliados');
 ctx.estadoTexto = buscar('#estado-guardado');
 
-const b = bannerAlerta(alertaProximaEntrega(estado.calendario, hoyIso()), { pedirConfigurar: false });
-if (b) buscar('#banner').append(b);
+// La próxima entrega la dicen el Inicio, Entregas y el B-1.
 
 const fRef = buscar('#fechaRef');
 fRef.value = ctx.fechaRef;

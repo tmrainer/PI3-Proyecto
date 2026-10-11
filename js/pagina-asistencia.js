@@ -4,14 +4,13 @@
 import { hoyIso, aCentimos, formatearSoles, nuevaAtencion, fechaLarga } from './modelo.js';
 import { resumenEconomicoRaciones } from './calculos.js';
 import { validarAtenciones, validarPreciosMenu } from './validaciones.js';
-import { alertaProximaEntrega } from './alertas.js';
 import {
   estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, periodoPorDefecto, vigilarPestanas,
   descartarPendiente
 } from './estado.js';
 import { pintarAsistenciaDeHoy, pintarOtrosDias } from './ui-asistencia.js';
 import {
-  buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
+  buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos,
   pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo,
   repintarConservandoVista, chip, pantallaEncendidaMientrasSeUsa, mostrarGuardado
 } from './ui.js';
@@ -96,8 +95,8 @@ buscar('#barra-datos').append(barraDatos({ antesDeRecargar: descartarPendiente }
 
 ctx.titulo = buscar('#titulo-hoy');
 
-const b = bannerAlerta(alertaProximaEntrega(estado.calendario, hoyIso()), { pedirConfigurar: false });
-if (b) buscar('#banner').append(b);
+// La próxima entrega la dicen el Inicio, Entregas y el B-1: aquí, mientras se
+// pasa lista, sería una franja más encima de la lista.
 
 const fIni = buscar('#periodoInicio');
 const fFin = buscar('#periodoFin');

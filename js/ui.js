@@ -1042,10 +1042,11 @@ export function avatarPersona(persona, grupo) {
 
 /**
  * Avisos del almacenamiento arriba de la página: si no se puede leer o
- * guardar, el espacio, y el recordatorio de guardar una copia (Inicio lo
- * muestra a su manera, con `{ recordatorio: false }`).
+ * guardar y el espacio. El recordatorio de guardar una copia solo si se pide
+ * (`{ recordatorio: true }`): el Inicio lo muestra a su manera, y repetirlo
+ * arriba de cada pantalla empujaba el contenido hacia abajo.
  */
-export function pintarAvisosAlmacenamiento(contenedor, { recordatorio: conRecordatorio = true } = {}) {
+export function pintarAvisosAlmacenamiento(contenedor, { recordatorio: conRecordatorio = false } = {}) {
   const avisos = avisosAlmacenamiento();
   contenedor.textContent = '';
   if (avisos.length > 0) {
