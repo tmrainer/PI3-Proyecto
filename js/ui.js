@@ -162,6 +162,7 @@ const PAGINAS = [
 
 export function montarCabecera(claveActiva, subtitulo) {
   document.documentElement.classList.add('listo');   // ver «reservar el sitio» en estilos.css
+  montarLetraGrande();
   if (claveActiva === 'pruebas') {
     PAGINAS.push({ href: './pruebas.html', texto: 'Pruebas', clave: 'pruebas' });
   }
@@ -188,6 +189,34 @@ export function montarCabecera(claveActiva, subtitulo) {
   vigilarAltoFijo(nav, '--alto-nav-abajo', 'fixed');
   registrarTrabajador();
   pedirAlmacenPersistente();
+  ofrecerInstalar();
+}
+
+// ------------------------------------------------------------ letra grande
+//
+// Muchas dirigentes leen con dificultad la letra chica del celular. Todo el
+// CSS va en rem, así que basta con agrandar la letra base. Se recuerda en este
+// equipo (no es un dato de la olla: no va en los respaldos).
+
+const CLAVE_LETRA = 'pi3.letraGrande';
+
+function montarLetraGrande() {
+  let grande = false;
+  try { grande = localStorage.getItem(CLAVE_LETRA) === '1'; } catch (e) { /* sin almacenamiento: chica */ }
+  const raiz = document.documentElement;
+  raiz.classList.toggle('letra-grande', grande);
+  const titulo = buscar('.cabecera-titulo');
+  if (!titulo || titulo.querySelector('.boton-letra')) return;
+  const boton = crearElemento('button', {
+    type: 'button', clase: 'boton-letra', 'aria-pressed': grande ? 'true' : 'false', texto: 'Letra grande'
+  });
+  boton.addEventListener('click', () => {
+    grande = !grande;
+    raiz.classList.toggle('letra-grande', grande);
+    boton.setAttribute('aria-pressed', grande ? 'true' : 'false');
+    try { localStorage.setItem(CLAVE_LETRA, grande ? '1' : '0'); } catch (e) { /* solo esta vez */ }
+  });
+  titulo.append(boton);
 }
 
 const fijos = new Map();
@@ -253,6 +282,64 @@ function avisarVersionNueva() {
     crearElemento('button', {
       type: 'button', clase: 'boton diminuto secundario', texto: 'Usar la versión nueva',
       onclick: () => location.reload()
+    })
+  ]));
+}
+
+// ---------------------------------------------------- instalar con un toque
+//
+// Instalada (ícono en la pantalla de inicio), el navegador protege los datos
+// y no los borra solo. Antes había que encontrar «Agregar a pantalla de
+// inicio» en el menú del navegador; donde el navegador lo permite (Chrome y
+// Edge, en Android y en computadora), la app ofrece su propio botón. En
+// Safari no existe: ahí queda la instrucción del menú.
+
+let pedidoInstalar = null;
+const CLAVE_POSTERGAR = 'pi3.instalar.postergadoHasta';   // de este equipo, no es un dato
+
+function ofrecerInstalar() {
+  addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();               // sin la barra genérica del navegador: el botón es nuestro
+    pedidoInstalar = e;
+    pintarOfertaInstalar();
+  });
+  addEventListener('appinstalled', () => {
+    pedidoInstalar = null;
+    pintarOfertaInstalar();
+  });
+}
+
+async function instalar() {
+  if (!pedidoInstalar) return;
+  const pedido = pedidoInstalar;
+  pedidoInstalar = null;
+  pedido.prompt();
+  await pedido.userChoice.catch(() => null);
+  pintarOfertaInstalar();
+}
+
+function postergada() {
+  try { return Number(localStorage.getItem(CLAVE_POSTERGAR) || 0) > Date.now(); } catch (e) { return false; }
+}
+
+/** La franja de arriba y el botón de «Copia de tus datos», según se pueda instalar o no. */
+function pintarOfertaInstalar() {
+  for (const b of document.querySelectorAll('.boton-instalar')) b.hidden = !pedidoInstalar;
+  for (const el of document.querySelectorAll('.estado-proteccion')) el.textContent = textoProteccion();
+  const previa = document.getElementById('oferta-instalar');
+  if (!pedidoInstalar || postergada()) { if (previa) previa.remove(); return; }
+  const contenedor = document.getElementById('avisos-sistema');
+  if (previa || !contenedor) return;
+  const aparato = esPantallaTactil() ? 'este teléfono' : 'este equipo';
+  contenedor.append(crearElemento('div', { clase: 'recordatorio-respaldo', id: 'oferta-instalar', role: 'status' }, [
+    crearElemento('span', { texto: `Instala la aplicación en ${aparato}: abre con un toque y tus datos quedan protegidos.` }),
+    crearElemento('button', { type: 'button', clase: 'boton diminuto', texto: 'Instalar', onclick: instalar }),
+    crearElemento('button', {
+      type: 'button', clase: 'boton diminuto secundario', texto: 'Ahora no',
+      onclick: () => {
+        try { localStorage.setItem(CLAVE_POSTERGAR, String(Date.now() + 14 * 86400000)); } catch (e) { /* igual se quita */ }
+        pintarOfertaInstalar();
+      }
     })
   ]));
 }
@@ -376,6 +463,10 @@ export function bloquePrivacidad() {
         'Guarda una copia cada dos semanas.'
     }),
     estadoProteccion,
+    crearElemento('button', {
+      type: 'button', clase: 'boton diminuto boton-instalar', texto: 'Instalar la aplicación',
+      hidden: !pedidoInstalar, onclick: instalar
+    }),
     crearElemento('p', {
       texto: 'La copia tiene nombres y DNI. Si la mandas por WhatsApp o correo, ponle contraseña.'
     })
@@ -385,6 +476,7 @@ export function bloquePrivacidad() {
 /** Qué tan protegidos están los datos contra el borrado automático del navegador. */
 function textoProteccion() {
   if (almacenPersistente === true || esAppInstalada()) return '';
+  if (pedidoInstalar) return 'Para que el teléfono no borre tus datos, instala la aplicación.';
   return 'Para que el teléfono no borre tus datos: menú del navegador → «Agregar a pantalla de inicio».';
 }
 

@@ -518,6 +518,61 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
+  // 1j. DNI sin el 0 de adelante (Excel lo quita): se avisa, y el 0 se
+  // agrega solo cuando la persona toca el botón.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar`);
+    await p.ir(`${base}/padron.html`);
+    const r = await p.actuar(`(async () => {
+      const area = document.getElementById('pegarPadron');
+      area.value = 'Apellido paterno\\tNombres\\tDNI\\tGrupo de edad\\tTipo\\nQuispe\\tRosa\\t4567891\\tAdulto\\tHabitual';
+      area.dispatchEvent(new Event('input'));
+      document.getElementById('revisar-importacion').click();
+      const antes = document.getElementById('vista-importacion').innerText.replace(/\\s+/g, ' ');
+      const boton = [...document.querySelectorAll('.imp-ceros button')][0];
+      if (!boton) return { antes };
+      boton.click();
+      return { antes, despues: document.getElementById('vista-importacion').innerText.replace(/\\s+/g, ' ') };
+    })()`);
+    comprobar('importar: un DNI de 7 cifras se avisa y no se rellena solo',
+      /quitó el 0/.test(r.antes) && /DNI 4567891/.test(r.antes), r.antes && r.antes.slice(0, 200));
+    comprobar('importar: «Agregar el 0» lo completa a 8 cifras',
+      /DNI 04567891/.test(r.despues || '') && !/imp-ceros/.test(r.despues || ''), (r.despues || '').slice(0, 200));
+    await p.cerrar();
+  }
+
+  // 1k. Letra grande: se activa en la cabecera y se recuerda al volver.
+  // Instalar: cuando el navegador lo permite, la app ofrece su propio botón.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar?padron=1`);
+    await p.ir(`${base}/index.html`);
+    await p.actuar(`document.querySelector('.boton-letra').click()`);
+    await p.ir(`${base}/padron.html`);
+    const letra = await p.eval(`({ clase: document.documentElement.classList.contains('letra-grande'),
+      base: getComputedStyle(document.documentElement).fontSize,
+      pulsado: document.querySelector('.boton-letra').getAttribute('aria-pressed') })`);
+    comprobar('letra grande: se activa y se recuerda en otra página',
+      letra.clase && letra.base === '18px' && letra.pulsado === 'true', JSON.stringify(letra));
+    const oferta = await p.actuar(`(async () => {
+      let pedido = 0;
+      const e = new Event('beforeinstallprompt', { cancelable: true });
+      e.prompt = () => { pedido += 1; };
+      e.userChoice = Promise.resolve({ outcome: 'accepted' });
+      dispatchEvent(e);
+      const franja = !!document.getElementById('oferta-instalar');
+      document.querySelector('#oferta-instalar .boton').click();
+      await new Promise((o) => setTimeout(o, 50));
+      return { franja, pedido, sigue: !!document.getElementById('oferta-instalar') };
+    })()`);
+    comprobar('instalar: aparece «Instalar» y abre el pedido del navegador',
+      oferta.franja && oferta.pedido === 1 && !oferta.sigue, JSON.stringify(oferta));
+    await p.actuar(`document.querySelector('.boton-letra').click()`);
+    comprobar('letra grande / instalar: sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
+    await p.cerrar();
+  }
+
   // 2. Marcar a alguien y salir enseguida, antes de los 400 ms: no se pierde.
   {
     const p = await pestana(cdp);

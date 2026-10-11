@@ -142,7 +142,7 @@ function fichaAtencion(at, ctx) {
 
   // ---- lista de un toque ----
   const buscador = crearElemento('input', {
-    id: `at-buscar-${idp}`, type: 'search', placeholder: 'Buscar nombre…', autocomplete: 'off'
+    id: `at-buscar-${idp}`, type: 'search', placeholder: 'Buscar…', autocomplete: 'off'
   });
   const listaAsistencia = crearElemento('div', { clase: 'lista-toque' });
   let filtro = '';
@@ -332,7 +332,7 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   }
 
   const buscador = crearElemento('input', {
-    id: 'hoy-buscar', type: 'search', placeholder: 'Buscar nombre…', autocomplete: 'off'
+    id: 'hoy-buscar', type: 'search', placeholder: 'Buscar…', autocomplete: 'off'
   });
   buscador.value = filtroHoy;
   const lista = crearElemento('div', { clase: 'lista-toque' });

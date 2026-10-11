@@ -30,6 +30,8 @@ export function montarImportacion(ctx) {
   const btnRevisar = buscar('#revisar-importacion');
   const btnConfirmar = buscar('#confirmar-importacion');
   const btnCancelar = buscar('#cancelar-importacion');
+  // «Agregar el 0» lo decide la persona, para el archivo que está revisando.
+  let completarCeros = false;
 
   archivo.addEventListener('change', async () => {
     const f = archivo.files && archivo.files[0];
@@ -49,6 +51,7 @@ export function montarImportacion(ctx) {
       } else {
         area.value = new TextDecoder().decode(datos);
       }
+      completarCeros = false;
       revisar();
     } catch (e) {
       avisar('No se pudo leer el archivo. Prueba abriéndolo y copiando las filas aquí.');
@@ -58,6 +61,7 @@ export function montarImportacion(ctx) {
 
   function limpiar() {
     importacionPendiente = null;
+    completarCeros = false;
     vista.textContent = '';
     btnConfirmar.hidden = true;
     btnCancelar.hidden = true;
@@ -67,7 +71,7 @@ export function montarImportacion(ctx) {
     const texto = area.value;
     if (!texto.trim()) { limpiar(); return; }
 
-    const r = prepararImportacion(texto, estado.padron);
+    const r = prepararImportacion(texto, estado.padron, { completarCeros });
     vista.textContent = '';
 
     if (r.error) {
@@ -88,6 +92,20 @@ export function montarImportacion(ctx) {
       r.resumen.vacia ? chip(`Filas vacías`, `${r.resumen.vacia}`) : null
     ]);
     vista.append(chips);
+
+    if (r.resumen.sinCero) {
+      vista.append(crearElemento('div', { clase: 'aviso-sistema imp-ceros' }, [
+        crearElemento('p', {
+          texto: `${r.resumen.sinCero === 1 ? '1 DNI tiene' : `${r.resumen.sinCero} DNI tienen`} menos de 8 cifras. ` +
+            'Excel suele quitar el 0 de adelante (01234567 queda 1234567).'
+        }),
+        crearElemento('button', {
+          type: 'button', clase: 'boton diminuto',
+          texto: r.resumen.sinCero === 1 ? 'Agregar el 0 a ese DNI' : `Agregar el 0 a esos ${r.resumen.sinCero} DNI`,
+          onclick: () => { completarCeros = true; revisar(); }
+        })
+      ]));
+    }
 
     if (r.sinReconocer.length) {
       vista.append(crearElemento('p', {
@@ -129,6 +147,7 @@ export function montarImportacion(ctx) {
     btnCancelar.hidden = false;
   }
 
+  area.addEventListener('input', () => { completarCeros = false; });
   btnRevisar.addEventListener('click', revisar);
   btnCancelar.addEventListener('click', () => { area.value = ''; limpiar(); });
 

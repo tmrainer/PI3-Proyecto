@@ -20,7 +20,7 @@ Claves de almacenamiento (`js/modelo.js:4-11`):
 | `b1.calendario.v1`  | periodicidad y fechas de entrega                | `calendarioVacio()` `modelo.js:242` |
 | `b1.rendiciones.v1` | lista de Formatos B-1                           | `nuevaRendicion()` `modelo.js:163` |
 | `b1.insumos.v1`     | reservada para el catálogo de insumos (fase 6); hoy **sin uso** | —                |
-| `b1.respaldo.v1`    | `{ ultimoEn }`: fecha del último respaldo exportado, para el recordatorio | `exportarTodo()` `ui.js:553` |
+| `b1.respaldo.v1`    | `{ ultimoEn }`: fecha del último respaldo exportado, para el recordatorio | `exportarTodo()` `ui.js:645` |
 
 Si una clave no se puede leer, `leer()` copia lo ilegible a `<clave>.respaldo` y
 arranca vacío (`modelo.js:491-514`).
@@ -90,6 +90,19 @@ con «Falta…», «Compra N: falta…» o «No hay ningún…»). `pintarPanel(
 cuenta aparte y en verde, «Faltan 12 datos», en vez de «12 errores» en rojo en
 un formulario recién abierto. Sin hallazgos, el panel no se muestra.
 
+**DNI sin el 0 de adelante.** Excel guarda `01234567` como el número
+`1234567`. `prepararImportacion()` marca `ceroPerdido` en los DNI de 5 a 7
+cifras, los cuenta en `resumen.sinCero` y reconoce como duplicado a quien ya
+está con el 0 puesto; solo con `{ completarCeros: true }` (el botón «Agregar el
+0», en `ui-importar.js`) les antepone los ceros.
+
+**Instalar y letra grande** (`ui.js`, desde `montarCabecera()`). Si el navegador
+dispara `beforeinstallprompt` (Chrome y Edge), la app ofrece su propio botón
+«Instalar» arriba y en «Copia de tus datos»; «Ahora no» lo posterga 14 días.
+«Letra grande» pone la letra base en 18 px (todo el CSS va en rem). Ambas
+preferencias son de ese equipo (`localStorage`, claves `pi3.*`): no son datos de
+la olla y no van en los respaldos.
+
 **Validar sin recorrer todos contra todos.** `indicePadron()`
 (`validaciones.js:258`) arma una vez por pasada mapas por id, documento,
 nombre y fecha; `validarAfiliados()` y `validarAtenciones()` lo reciben y cada
@@ -127,15 +140,15 @@ En el **reporte del padrón**, la lectura es:
 | `vigilarPestanas()`       | lo pendiente, al ocultarse o cerrarse la página | `estado.js:103-118` |
 | `pagina-calendario.js`    | `calendario` (no usa `estado.js`), 400 ms después; lo pendiente, al ocultarse | L22 |
 | `pagina-b1.js`            | `rendiciones`, y de `config` solo `ultimoCentro`: relee lo guardado antes de escribir. También escribe lo pendiente al ocultarse | L30-65 |
-| Restaurar un respaldo     | revisa qué trae (`revisarRespaldo()`, `modelo.js:565`), escribe **todas** las partes que trae (`restaurarRespaldo()`, `modelo.js:615`), descarta lo pendiente de la página y recarga. Igual desde cualquier página | `barraDatos()` `ui.js:397` |
-| Fallo al guardar          | `guardar()` devuelve false; la página muestra «NO SE GUARDÓ» y un aviso con «Exportar respaldo» | `mostrarGuardado()` `ui.js:739` |
+| Restaurar un respaldo     | revisa qué trae (`revisarRespaldo()`, `modelo.js:565`), escribe **todas** las partes que trae (`restaurarRespaldo()`, `modelo.js:615`), descarta lo pendiente de la página y recarga. Igual desde cualquier página | `barraDatos()` `ui.js:489` |
+| Fallo al guardar          | `guardar()` devuelve false; la página muestra «NO SE GUARDÓ» y un aviso con «Exportar respaldo» | `mostrarGuardado()` `ui.js:831` |
 
 **Varias pestañas.** Las páginas que usan `estado.js` (asistencia y padrón)
 llaman a `vigilarPestanas()` al arrancar (`pagina-asistencia.js:129`,
 `pagina-padron.js:92`). Cuando otra pestaña guarda el padrón, la config o el
 calendario, el evento `storage` las recarga y repinta; así no guardan después
 su copia vieja encima. El repintado pasa por `repintarConservandoVista()`
-(`ui.js:827-857`), que vuelve a abrir las fichas abiertas y devuelve el foco y
+(`ui.js:919-949`), que vuelve a abrir las fichas abiertas y devuelve el foco y
 el cursor. El B-1 relee la config justo antes de guardarla, y si otra pestaña
 guarda la rendición, se recarga entera (`pagina-b1.js:64-68`). Límite: si dos
 pestañas cambian algo dentro de los mismos 400 ms, gana la que guardó la otra.
@@ -147,14 +160,14 @@ Storage y la sirve siempre desde ahí, con o sin señal. Las novedades se
 revalidan aparte (ETag, cada 30 min como mucho) y solo si llegaron todas se
 arma una copia nueva y se reemplaza la vieja de una vez: nunca se mezcla un
 HTML nuevo con un JS viejo. La página avisa «Hay una versión nueva». Los datos
-no pasan por él: siguen en `localStorage`. Lo registra `montarCabecera()` (`ui.js:231`), que también pide
-`navigator.storage.persist()` (`ui.js:268`) para que el navegador no borre los
+no pasan por él: siguen en `localStorage`. Lo registra `montarCabecera()` (`ui.js:260`), que también pide
+`navigator.storage.persist()` (`ui.js:355`) para que el navegador no borre los
 datos por su cuenta (Safari los borra tras 7 días sin abrir el sitio, salvo que
 la app esté instalada). Al agregar un archivo a la app hay que sumarlo a
 `ARCHIVOS` en `sw.js`, o no abrirá sin conexión.
 
 **Recordatorio de respaldo.** Con datos y sin respaldo en 14 días, una franja
-arriba lo pide (`ui.js:797`). `exportarTodo()` (`ui.js:553`) abre el menú del
+arriba lo pide (`ui.js:889`). `exportarTodo()` (`ui.js:645`) abre el menú del
 sistema para guardarlo en un celular y lo descarga en la computadora.
 
 ---
@@ -208,7 +221,7 @@ Dos detalles que conviene saber:
 | Padrón: resumen por grupos | `ctx.fechaRef` | `ui-personas.js:362` |
 | Padrón: reporte y CSV | `ctx.fechaRef` (no el periodo `inicio`/`fin`) | `ui-reportes.js:16`, L81 → `calculos.js:406-416` |
 | Alta de afiliados | hoy (`hoyIso()`), tanto en la pista como en la validación | `ui-personas.js:39`, L73; `validaciones.js:317` |
-| Importación | **ninguna**. Con fecha de nacimiento, se guarda la fecha y el grupo se calcula después en cada pantalla. Con solo una columna «edad», el grupo se calcula con `grupoPorEdad(edad)` y se **guarda fijo** en `grupoEtarioManual`: no cambia cuando la persona cumple años. La revisión de la importación lo avisa en esa fila | `importar.js:247-260`, `calculos.js:122-126` |
+| Importación | **ninguna**. Con fecha de nacimiento, se guarda la fecha y el grupo se calcula después en cada pantalla. Con solo una columna «edad», el grupo se calcula con `grupoPorEdad(edad)` y se **guarda fijo** en `grupoEtarioManual`: no cambia cuando la persona cumple años. La revisión de la importación lo avisa en esa fila | `importar.js:259-272`, `calculos.js:122-126` |
 
 Si no se pasa una fecha válida, `grupoEtario()`, `afiliadosActivos()` y
 `filasPadron()` usan hoy por defecto (`calculos.js:88`, L133, L403).

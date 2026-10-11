@@ -77,8 +77,26 @@ a { color: var(--verde-600); }
   max-width: 980px; margin-inline: auto; padding: 12px 16px 10px;
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
 }
+.cabecera-titulo h1 { flex: 0 1 auto; min-width: 0; }
 .cabecera-titulo h1 { margin: 0; color: #fff; font-size: 1.2rem; }
 .cabecera-sub { margin: 0; font-size: .82rem; color: var(--cabecera-sub); }
+/* Letra grande: todo va en rem, así que crece entero (y lo que no cabe,
+   baja de renglón). 112,5 % = 18 px de letra normal. */
+html.letra-grande { font-size: 112.5%; }
+/* Lo que es de navegar no crece: con 18 px, el título y el botón no cabían en
+   un renglón y «Formato B-1» se partía en el menú de abajo. */
+.letra-grande .cabecera-titulo h1 { font-size: 1.05rem; }
+.letra-grande .boton-letra { font-size: 13px; }
+.letra-grande .nav-enlace { font-size: 14px; white-space: nowrap; }
+.boton-letra {
+  margin-inline-start: auto; align-self: center;
+  font: inherit; font-size: .82rem; font-weight: 600; line-height: 1.2; white-space: nowrap;
+  color: var(--cabecera-texto); background: transparent;
+  border: 1px solid var(--cabecera-enlace); border-radius: var(--radio);
+  padding: 6px 10px; min-height: 36px; cursor: pointer;
+}
+.boton-letra[aria-pressed="true"] { background: var(--cabecera-texto); color: var(--verde-900); }
+.boton-letra:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 .nav {
   max-width: 980px; margin-inline: auto; padding: 0 10px;

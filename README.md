@@ -17,8 +17,9 @@ computadora.
 
 ### Instalarla en el celular
 
-Desde el navegador del celular: menú → **Instalar aplicación** (Android) o
-**Compartir → Agregar a pantalla de inicio** (iPhone). Queda un ícono como el de
+En Android (Chrome), la app ofrece arriba un botón **Instalar**. Si no aparece:
+menú del navegador → **Instalar aplicación**. En iPhone: **Compartir → Agregar
+a pantalla de inicio**. Queda un ícono como el de
 cualquier app, y desde entonces:
 
 - **Abre sin internet.** La primera vez hace falta conexión; después, la app
@@ -96,6 +97,10 @@ la copia mientras programas: DevTools → Application → Service workers →
 
   GitHub la corre sola en cada push y en cada pull request
   (`.github/workflows/pruebas.yml`).
+
+- **Prueba con dirigentes**: `herramientas/prueba-con-dirigentes.md` trae seis
+  tareas para observar a quien usará la app, y `padron-de-ejemplo.xlsx` (datos
+  ficticios) para la de cargar el padrón.
 
 ---
 

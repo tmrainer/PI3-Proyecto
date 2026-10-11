@@ -3,6 +3,7 @@
 
 # Iconos: no aportan nada al modelo de datos ni al flujo.
 *.svg
+*.png
 
 # Página de pruebas: sus llamadas directas a ui.js aparecían como
 # «conexiones sorprendentes» y desordenaban las comunidades.
