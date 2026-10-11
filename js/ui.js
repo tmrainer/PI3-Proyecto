@@ -189,8 +189,12 @@ export function montarCabecera(claveActiva, subtitulo) {
   // abajo (Lighthouse medía un CLS de 0,258).
   const nav = buscar('.cabecera .nav');
   if (!nav) return;
-  nav.textContent = '';
-  for (const p of PAGINAS) {
+  // El menú viene escrito en el HTML de cada página (así existe desde el
+  // primer cuadro y no parpadea al cambiar de pantalla). Solo si falta, o si
+  // le falta una página, se arma aquí.
+  const yaEsta = nav.querySelectorAll('.nav-enlace').length;
+  if (yaEsta < PAGINAS.length) nav.textContent = '';
+  for (const p of yaEsta < PAGINAS.length ? PAGINAS : []) {
     nav.append(crearElemento('a', {
       href: p.href,
       clase: p.clave === claveActiva ? 'nav-enlace activo' : 'nav-enlace',
@@ -244,19 +248,23 @@ function aplicarLetraGrande() {
 
 function montarBarraTitulo(claveActiva) {
   const barra = buscar('.cabecera-titulo');
-  if (!barra || barra.querySelector('.cabecera-menu')) return;
+  if (!barra || barra.querySelector('.menu-opciones')) return;
 
-  if (claveActiva !== 'inicio' && claveActiva !== 'pruebas') {
+  // La flecha y el botón ⋮ vienen en el HTML; si una página no los trae, se crean.
+  if (claveActiva !== 'inicio' && claveActiva !== 'pruebas' && !barra.querySelector('.cabecera-volver')) {
     barra.prepend(crearElemento('a', {
       clase: 'cabecera-volver', href: './', 'aria-label': 'Volver al inicio', title: 'Volver al inicio'
     }, [icono('atras', { tam: 26 })]));
   }
 
   const opciones = crearElemento('div', { clase: 'menu-opciones', role: 'menu', hidden: true });
-  const botonMenu = crearElemento('button', {
-    type: 'button', clase: 'cabecera-menu', 'aria-label': 'Más opciones',
-    'aria-haspopup': 'menu', 'aria-expanded': 'false'
-  }, [icono('puntos', { tam: 26 })]);
+  let botonMenu = barra.querySelector('.cabecera-menu');
+  if (!botonMenu) {
+    botonMenu = crearElemento('button', {
+      type: 'button', clase: 'cabecera-menu', 'aria-label': 'Más opciones',
+      'aria-haspopup': 'menu', 'aria-expanded': 'false'
+    }, [icono('puntos', { tam: 26 })]);
+  }
   const cerrar = () => { opciones.hidden = true; botonMenu.setAttribute('aria-expanded', 'false'); };
   const abrir = () => {
     pintarOpciones();
@@ -289,7 +297,8 @@ function montarBarraTitulo(claveActiva) {
       opcion('escudo', 'Copia de tus datos', irACopia)
     );
   }
-  barra.append(botonMenu, opciones);
+  if (!botonMenu.isConnected) barra.append(botonMenu);
+  barra.append(opciones);
 }
 
 /** Abre «Copia de tus datos y privacidad» y la trae a la vista. */

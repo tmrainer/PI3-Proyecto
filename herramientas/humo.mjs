@@ -239,6 +239,23 @@ const ESCRIBIR = (sel, valor) => `(() => { const el = document.querySelector(${J
 // 0. La lista del service worker coincide con los archivos de la app. Un
 // archivo que falte ahí no abre sin internet; uno que ya no exista hace fallar
 // la instalación entera, sin que nadie se entere.
+// El menú de abajo está escrito en el HTML de cada página (para que no
+// parpadee al cambiar de pantalla): las cinco copias tienen que ser iguales y
+// marcar su propia página.
+function revisarMenuEscrito() {
+  const paginas = { index: './', asistencia: './asistencia.html', padron: './padron.html',
+    'formato-b1': './formato-b1.html', calendario: './calendario.html' };
+  const mal = [];
+  for (const [nombre, propia] of Object.entries(paginas)) {
+    const html = fs.readFileSync(path.join(RAIZ, nombre + '.html'), 'utf8');
+    const enlaces = [...html.matchAll(/<a href="([^"]+)" class="nav-enlace( activo)?"/g)];
+    const hrefs = enlaces.map((m) => m[1]).join(',');
+    const activos = enlaces.filter((m) => m[2]).map((m) => m[1]);
+    if (hrefs !== Object.values(paginas).join(',') || activos.join() !== propia) mal.push(nombre);
+  }
+  comprobar('el menú escrito en cada página está completo y marca la suya', mal.length === 0, mal.join(' '));
+}
+
 function revisarListaDelServiceWorker() {
   const sw = fs.readFileSync(path.join(RAIZ, 'sw.js'), 'utf8');
   const bloque = sw.match(/const ARCHIVOS = \[([\s\S]*?)\];/)[1];
@@ -266,6 +283,7 @@ function revisarListaDelServiceWorker() {
 
 async function correr(base, cdp) {
   revisarListaDelServiceWorker();
+  revisarMenuEscrito();
   // 1. Cada página, sin datos y con datos: carga sin errores.
   for (const sembrado of [false, true]) {
     for (const nombre of PAGINAS) {

@@ -15,6 +15,7 @@
 <link rel="apple-touch-icon" href="./icono-180.png">
 <link rel="stylesheet" href="./estilos.css">
 <script src="./js/errores.js"></script>
+<script src="./js/preferencias.js"></script>
 <style>
   .caso { display: flex; gap: 8px; align-items: baseline; padding: 6px 8px;
           border-bottom: 1px solid var(--borde); font-size: .9rem; }
@@ -31,9 +32,18 @@
 <header class="cabecera">
   <div class="cabecera-titulo">
     <h1>Sistema de Asistencia</h1>
-    <p class="cabecera-sub">Ollas comunes y comedores de Villa María del Triunfo</p>
+    <p class="cabecera-sub"></p>
+    <button type="button" class="cabecera-menu" aria-label="Más opciones" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M12 5h.01M12 12h.01M12 19h.01"/></svg></button>
   </div>
-  <nav class="nav" aria-label="Secciones"></nav>
+  <!-- El menú está escrito aquí, no lo arma el JS: así existe desde el primer
+       cuadro y no desaparece al pasar de una pantalla a otra. -->
+  <nav class="nav" aria-label="Secciones">
+    <a href="./" class="nav-enlace"><span class="nav-icono"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6"/></svg></span><span class="nav-texto">Inicio</span></a>
+    <a href="./asistencia.html" class="nav-enlace"><span class="nav-icono"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M4 6l2 2 3-3M4 13l2 2 3-3M12 7h8M12 14h8M5 20h1M12 20h8"/></svg></span><span class="nav-texto">Asistencia</span></a>
+    <a href="./padron.html" class="nav-enlace"><span class="nav-icono"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M12.5 8a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5M19.5 9a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0M17 14c2.5 0 4 1.5 4.5 4"/></svg></span><span class="nav-texto">Padrón</span></a>
+    <a href="./formato-b1.html" class="nav-enlace"><span class="nav-icono"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3"/></svg></span><span class="nav-texto">B-1</span></a>
+    <a href="./calendario.html" class="nav-enlace"><span class="nav-icono"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M5.5 5h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3.5 10h17M8 3v4M16 3v4M8 14h2M12 14h2"/></svg></span><span class="nav-texto">Entregas</span></a>
+  </nav>
 </header>
 <main id="principal" tabindex="-1">
   <div id="resumen" class="panel" role="status" aria-live="polite"></div>
