@@ -120,7 +120,7 @@ buscar('#agregar-atencion').addEventListener('click', () => {
   estado.padron.atenciones.push(at);
   ctx.onRepintar();
   const caja = document.getElementById(`ficha-${at.id}`);
-  if (caja) { caja.open = true; caja.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  if (caja) { caja.open = true; caja.scrollIntoView({ block: 'center' }); }
 });
 
 repintar();

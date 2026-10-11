@@ -29,7 +29,7 @@
 
   <section class="bloque">
     <h2>Inscribir a una persona</h2>
-    <p class="pista">Los cinco campos son obligatorios.</p>
+    <p class="pista">Los campos con * son obligatorios. El grupo de edad no hace falta si pones la fecha de nacimiento.</p>
     <div class="rejilla tres">
       <div class="campo">
         <label for="altaPaterno">Apellido paterno</label>
@@ -63,11 +63,11 @@
       </div>
     </div>
     <fieldset style="margin-top:10px">
-      <legend>Grupo de edad</legend>
+      <legend class="obligatoria">Grupo de edad</legend>
       <div class="opciones" id="alta-grupo"></div>
     </fieldset>
     <fieldset style="margin-top:10px">
-      <legend>Tipo</legend>
+      <legend class="obligatoria">Tipo</legend>
       <div class="opciones" id="alta-tipo"></div>
     </fieldset>
     <div class="acciones" style="margin-top:12px">
@@ -131,7 +131,7 @@
         <input id="repInicio" type="date">
       </div>
       <div class="campo">
-        <label for="repFin">hasta</label>
+        <label for="repFin">Hasta</label>
         <input id="repFin" type="date">
       </div>
     </div>

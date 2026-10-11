@@ -99,7 +99,7 @@ function refrescarValidacion() {
 function irACampo(campo) {
   const caja = document.querySelector(`[data-campo="${CSS.escape(campo)}"]`);
   if (!caja) return;
-  caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  caja.scrollIntoView({ block: 'center' });
   const control = caja.querySelector('input, select');
   if (control) control.focus({ preventScroll: true });
 }

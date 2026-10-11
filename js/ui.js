@@ -101,7 +101,7 @@ export function irACampo(nombre, { antesDeBuscar } = {}) {
   if (!caja) return;
   if (caja._desplegar) caja._desplegar(true);
   if (caja.tagName === 'DETAILS') caja.open = true;
-  caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  caja.scrollIntoView({ block: 'center' });
   const control = caja.querySelector('input, select, textarea');
   if (control && !control.disabled) {
     // Si se llega aquí desde el panel es justo para ver qué pasa con el campo.
@@ -172,6 +172,21 @@ export function montarCabecera(claveActiva, subtitulo) {
     const sub = buscar('.cabecera-sub');
     if (sub) sub.textContent = subtitulo;
   }
+  reservarAltoDelPanel();
+}
+
+/**
+ * El panel de revisión se queda pegado arriba al bajar. Sin este margen, al
+ * volver con Shift+Tab el campo enfocado quedaba entero debajo del panel
+ * (WCAG 2.4.11). Su alto cambia al abrir el detalle, así que se mide en vivo.
+ */
+function reservarAltoDelPanel() {
+  const panel = document.getElementById('panel');
+  if (!panel || typeof ResizeObserver === 'undefined') return;
+  const raiz = document.documentElement;
+  new ResizeObserver(() => {
+    raiz.style.setProperty('--alto-panel', `${Math.ceil(panel.getBoundingClientRect().height)}px`);
+  }).observe(panel);
 }
 
 // ------------------------------------------- aviso de la próxima entrega (§6.6)

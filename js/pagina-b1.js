@@ -443,7 +443,7 @@ function refrescarValidacion() {
 function irACampo(campo) {
   const caja = document.querySelector(`[data-campo="${CSS.escape(campo)}"]`);
   if (!caja) return;
-  caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  caja.scrollIntoView({ block: 'center' });
   const control = caja.querySelector('input, select, textarea');
   if (control && !control.disabled) control.focus({ preventScroll: true });
 }
@@ -478,7 +478,7 @@ buscar('#agregar-egreso').addEventListener('click', () => {
   const fichas = document.querySelectorAll('#lista-egresos .ficha');
   const ultima = fichas[fichas.length - 1];
   if (ultima) {
-    ultima.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    ultima.scrollIntoView({ block: 'center' });
     const primero = ultima.querySelector('input');
     if (primero) primero.focus({ preventScroll: true });
   }
