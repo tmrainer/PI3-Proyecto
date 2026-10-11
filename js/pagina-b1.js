@@ -12,7 +12,7 @@ import { alertaProximaEntrega } from './alertas.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
   marcarCampo, cajaSugerencia, bannerAlerta, pintarAvisosAlmacenamiento,
-  avisarAlSalirDelCampo, chip, mostrarGuardado
+  avisarAlSalirDelCampo, chip, mostrarGuardado, icono, avisoAbajo
 } from './ui.js';
 
 // ------------------------------------------------------------------- estado
@@ -369,11 +369,16 @@ function fichaEgreso(fila, indice) {
       crearElemento('button', {
         type: 'button', clase: 'boton diminuto peligro', texto: `Quitar la compra ${indice + 1}`,
         onclick: () => {
-          if (!confirm(`¿Quitar la compra ${indice + 1}? Esto borra lo que escribiste en esa ficha.`)) return;
+          const antes = rendicion.egresos.slice();
           rendicion.egresos = rendicion.egresos.filter((f) => f.id !== fila.id);
           if (rendicion.egresos.length === 0) rendicion.egresos.push(nuevoEgreso());
           pintarEgresos();
           cambio();
+          avisoAbajo(`Quitaste la compra ${indice + 1}`, () => {
+            rendicion.egresos = antes;
+            pintarEgresos();
+            cambio();
+          });
         }
       })
     ]),
@@ -470,6 +475,8 @@ function refrescarValidacion() {
     const control = caja.querySelector('input, select, textarea');
     if (control) marcarCampo(control, propios);
   }
+  pintarPasos(hallazgos);
+  pintarRevision(hallazgos);
   // Una compra plegada con un problema lo dice en su línea, no solo con el color.
   for (const ficha of document.querySelectorAll('#lista-egresos .ficha')) {
     const estado = ficha.querySelector('.ficha-estado');
@@ -482,10 +489,119 @@ function refrescarValidacion() {
 function irACampo(campo) {
   const caja = document.querySelector(`[data-campo="${CSS.escape(campo)}"]`);
   if (!caja) return;
+  const seccion = caja.closest('[data-paso]');
+  if (seccion) irAPaso(Number(seccion.dataset.paso), { enfocar: false });
   if (caja.tagName === 'DETAILS') caja.open = true;
   caja.scrollIntoView({ block: 'center' });
   const control = caja.querySelector('input, select, textarea');
   if (control && !control.disabled) control.focus({ preventScroll: true });
+}
+
+// ----------------------------------------------------------- por pasos
+//
+// Una sección a la vez, con «Atrás / Siguiente» y una barra que dice dónde
+// estás y qué paso tiene algo pendiente. Los nombres son los del formato en
+// papel (Ingresos, Egresos), con la palabra de todos los días al lado.
+
+const PASOS = ['Centro de atención', 'Periodo', 'Ingresos (dinero recibido)', 'Compras (egresos)', 'Firmas', 'Revisar'];
+let pasoActual = 1;
+
+/** Paso de cada hallazgo, por la sección donde está su campo. */
+function pasoDe(hallazgo) {
+  const caja = document.querySelector(`[data-campo="${CSS.escape(hallazgo.campo)}"]`);
+  const seccion = caja && caja.closest('[data-paso]');
+  return seccion ? Number(seccion.dataset.paso) : 6;
+}
+
+function irAPaso(n, { enfocar = true } = {}) {
+  pasoActual = Math.min(PASOS.length, Math.max(1, n));
+  for (const s of document.querySelectorAll('[data-paso]')) {
+    s.classList.toggle('paso-actual', Number(s.dataset.paso) === pasoActual);
+  }
+  pintarPasos(validarRendicion(rendicion));
+  pintarPiePasos();
+  const fab = document.getElementById('fab-compra');
+  if (fab) fab.hidden = pasoActual !== 4;
+  if (enfocar) {
+    window.scrollTo(0, 0);
+    const titulo = document.querySelector(`[data-paso="${pasoActual}"] h2`);
+    if (titulo) titulo.focus({ preventScroll: true });
+  }
+}
+
+function pintarPasos(hallazgos) {
+  const nav = buscar('#pasos-b1');
+  const pendientes = new Set(hallazgos.filter((x) => x.severidad === 'error').map(pasoDe));
+  nav.textContent = '';
+  const barra = crearElemento('div', { clase: 'pasos-barra' });
+  PASOS.forEach((nombre, i) => {
+    const n = i + 1;
+    const estadoPaso = n === pasoActual ? 'ahora' : pendientes.has(n) ? 'pendiente' : n < pasoActual ? 'hecho' : '';
+    barra.append(crearElemento('button', {
+      type: 'button', clase: `paso-segmento ${estadoPaso}`,
+      'aria-label': `Paso ${n}: ${nombre}${pendientes.has(n) ? ', le falta algo' : ''}`,
+      'aria-current': n === pasoActual ? 'step' : null,
+      onclick: () => irAPaso(n)
+    }));
+  });
+  nav.append(barra, crearElemento('p', { clase: 'pasos-texto', 'data-leer': '' }, [
+    `Paso ${pasoActual} de ${PASOS.length} · `,
+    crearElemento('b', { texto: PASOS[pasoActual - 1] })
+  ]));
+}
+
+function pintarPiePasos() {
+  const pie = buscar('#pie-pasos');
+  pie.textContent = '';
+  pie.append(crearElemento('button', {
+    type: 'button', clase: 'boton secundario', texto: 'Atrás',
+    disabled: pasoActual === 1, onclick: () => irAPaso(pasoActual - 1)
+  }));
+  if (pasoActual < PASOS.length) {
+    pie.append(crearElemento('button', {
+      type: 'button', clase: 'boton', texto: `Siguiente: ${PASOS[pasoActual].replace(/ \(.*\)$/, '')}`,
+      onclick: () => irAPaso(pasoActual + 1)
+    }));
+  }
+}
+
+/** El último paso: qué falta, paso por paso, y las cuentas del mes. */
+function pintarRevision(hallazgos) {
+  const caja = buscar('#revision-b1');
+  caja.textContent = '';
+  const errores = hallazgos.filter((x) => x.severidad === 'error');
+  if (errores.length === 0) {
+    caja.append(crearElemento('p', { clase: 'revision-lista', 'data-leer': '' }, [
+      icono('ok', { tam: 20 }),
+      ' El B-1 está completo. Revísalo con la tesorera y el fiscal antes de entregarlo.'
+    ]));
+  } else {
+    const lista = crearElemento('ul', { clase: 'revision-pendientes' });
+    for (const h of errores) {
+      const n = pasoDe(h);
+      lista.append(crearElemento('li', {}, [
+        crearElemento('span', { clase: 'revision-paso', texto: `Paso ${n}` }),
+        crearElemento('span', { clase: 'revision-texto', texto: h.mensaje }),
+        crearElemento('button', { type: 'button', clase: 'boton diminuto secundario', texto: h.falta ? 'Completar' : 'Corregir', onclick: () => irACampo(h.campo) })
+      ]));
+    }
+    caja.append(crearElemento('p', { 'data-leer': '', texto: errores.length === 1 ? 'Antes de entregarlo, falta esto:' : `Antes de entregarlo, faltan ${errores.length} cosas:` }), lista);
+  }
+  const t = totales(rendicion);
+  if (t.total !== null) {
+    caja.append(crearElemento('div', { clase: 'resumen-chips', style: 'margin-top:12px' }, [
+      chip('Subsidio', `S/ ${formatearSoles(rendicion.montoSubsidioCent)}`),
+      chip('Compras', `S/ ${formatearSoles(t.total)}`),
+      chip('Aporte de la olla', `S/ ${formatearSoles(t.aporte)}`)
+    ]));
+  }
+}
+
+/** Con qué paso abrir: el pedido (#compras), el primero con algo pendiente, o Revisar. */
+function pasoInicial() {
+  if (location.hash === '#compras') return 4;
+  const pend = validarRendicion(rendicion).filter((x) => x.severidad === 'error').map(pasoDe);
+  return pend.length ? Math.min(...pend) : 6;
 }
 
 // ----------------------------------------------------- meses anteriores
@@ -590,6 +706,19 @@ montarPeriodo();
 pintarMeses();
 pintarEgresos();
 refrescarTotales();
+
+// Por pasos: botón flotante para las compras, como en Padrón para inscribir.
+document.body.classList.add('por-pasos');
+document.body.append(crearElemento('button', {
+  type: 'button', clase: 'fab', id: 'fab-compra', hidden: true, 'aria-label': 'Agregar una compra',
+  onclick: () => buscar('#agregar-egreso').click()
+}, [icono('mas', { tam: 26 }), crearElemento('span', { texto: 'Compra' })]));
+irAPaso(pasoInicial(), { enfocar: false });
 refrescarValidacion();
+// «Anotar una compra» desde el Inicio: si la última ficha ya tiene datos, una nueva.
+if (location.hash === '#compras') {
+  const ultima = rendicion.egresos[rendicion.egresos.length - 1];
+  if (ultima && egresoCompleto(ultima)) buscar('#agregar-egreso').click();
+}
 
 avisarAlSalirDelCampo(refrescarValidacion);

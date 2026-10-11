@@ -782,13 +782,67 @@ details.bloque.desplegable[open] > summary + * { margin-top: 14px; }
   font: inherit; font-weight: 700; font-size: 1.05rem; box-shadow: 0 6px 18px rgba(27, 46, 30, .35); cursor: pointer;
 }
 .fab:active { transform: scale(.97); }
+.fab[hidden] { display: none; }
 
-.fichas { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; margin: 0 -2px; }
+.fichas { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 0 6px; }
 .ficha-filtro {
   flex: none; border: 1.5px solid var(--borde-control); background: var(--papel); color: var(--tinta);
   border-radius: 20px; padding: 0 14px; min-height: 40px; font: inherit; font-size: .92rem; white-space: nowrap; cursor: pointer;
 }
 .ficha-filtro[aria-pressed="true"] { background: var(--verde-200); border-color: var(--verde-600); font-weight: 700; }
+
+/* ------------------------------------------------------- B-1 por pasos */
+
+body.por-pasos [data-paso]:not(.paso-actual) { display: none; }
+.pasos { margin: 0 0 12px; }
+.pasos-barra { display: flex; gap: 6px; }
+.paso-segmento {
+  flex: 1; height: 24px; padding: 0; border: 0; background: none; cursor: pointer; position: relative;
+}
+.paso-segmento::before {
+  content: ''; position: absolute; inset-inline: 0; top: 9px; height: 6px; border-radius: 3px; background: var(--verde-200);
+}
+.paso-segmento.hecho::before { background: var(--verde-600); }
+.paso-segmento.ahora::before { background: var(--verde-700); top: 8px; height: 8px; box-shadow: 0 0 0 2px var(--verde-200); }
+.paso-segmento.pendiente::before { background: #e0b25e; }
+.pasos-texto { margin: 2px 0 0; color: var(--tinta-suave); font-size: .92rem; }
+.pasos-texto b { color: var(--verde-900); }
+[data-paso] > h2:focus { outline: none; }
+
+.pie-pasos {
+  position: sticky; bottom: 0; z-index: 12; display: flex; gap: 10px;
+  margin: 8px -16px 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(rgba(250, 251, 245, 0), var(--crema) 28%);
+}
+.pie-pasos .boton { min-height: 52px; border-radius: 26px; }
+.pie-pasos .boton:not(.secundario) { flex: 1; }
+.pie-pasos:empty { display: none; }
+
+.revision-lista { display: flex; align-items: center; gap: 8px; color: var(--ok); font-weight: 600; }
+.revision-pendientes { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.revision-pendientes li {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 10px 12px;
+  background: var(--aviso-fondo); border-left: 4px solid #e0b25e; border-radius: 0 var(--radio) var(--radio) 0;
+}
+.revision-paso { font-size: .8rem; font-weight: 700; color: var(--aviso); }
+.revision-texto { flex: 1 1 14em; }
+
+/* ------------------------------------------------- entregas: cuenta regresiva */
+
+.reloj-entrega { text-align: center; margin: 4px 0 14px; --color-reloj: var(--verde-600); }
+.reloj-entrega.proxima { --color-reloj: #b07a16; }
+.reloj-entrega.urgente, .reloj-entrega.hoy, .reloj-entrega.vencida { --color-reloj: #a8402f; }
+.reloj-circulo {
+  width: 168px; height: 168px; margin: 0 auto 10px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--color-reloj) 0 var(--lleno), var(--verde-050) 0);
+}
+.reloj-circulo > div {
+  width: 136px; height: 136px; border-radius: 50%; background: var(--papel);
+  display: grid; place-content: center; line-height: 1.1;
+}
+.reloj-circulo b { font-size: 3rem; color: var(--color-reloj); font-variant-numeric: tabular-nums; }
+.reloj-circulo span { color: var(--tinta-suave); font-size: .9rem; }
+.reloj-texto { margin: 0 auto; max-width: 26em; font-weight: 600; color: var(--verde-900); }
 
 /* ------------------------------------------------------------- inicio */
 
@@ -884,6 +938,8 @@ dialog.bienvenida::backdrop { background: rgba(27, 46, 30, .55); }
   .aviso-abajo { bottom: calc(var(--alto-nav-abajo, 68px) + 12px); }
   .fab { bottom: calc(var(--alto-nav-abajo, 68px) + 16px); }
   body.con-fab main { padding-bottom: calc(110px + var(--alto-nav-abajo, 68px)); }
+  .pie-pasos { bottom: var(--alto-nav-abajo, 68px); padding-bottom: 10px; }
+  body.por-pasos .fab { bottom: calc(var(--alto-nav-abajo, 68px) + 84px); }
   html { scroll-padding-bottom: calc(var(--alto-nav-abajo, 56px) + 8px); }
 
   .banner-alerta { padding: 8px 12px; gap: 4px 8px; margin-bottom: 10px; font-size: .84rem; }

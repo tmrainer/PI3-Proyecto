@@ -31,8 +31,12 @@
   <div id="banner"></div>
   <div id="panel" class="panel" role="status" aria-live="polite" aria-label="Resumen de revisión"></div>
 
-  <section class="bloque">
-    <h2>Centro de atención</h2>
+  <!-- El B-1 se llena por pasos, una sección a la vez (pagina-b1.js): una
+       página de diez pantallas de alto asustaba en el celular. -->
+  <nav class="pasos" id="pasos-b1" aria-label="Pasos del Formato B-1"></nav>
+
+  <section class="bloque" data-paso="1">
+    <h2 tabindex="-1">Centro de atención</h2>
     <div id="sugerencias-encabezado"></div>
 
     <fieldset>
@@ -70,8 +74,8 @@
     </div>
   </section>
 
-  <section class="bloque">
-    <h2>Periodo que se rinde</h2>
+  <section class="bloque" data-paso="2">
+    <h2 tabindex="-1">Periodo que se rinde</h2>
     <div class="rejilla dos">
       <div class="campo" data-campo="periodo.tipo">
         <label for="periodoTipo">Cada cuánto se entrega</label>
@@ -107,8 +111,8 @@
     </div>
   </section>
 
-  <section class="bloque">
-    <h2>Ingresos</h2>
+  <section class="bloque" data-paso="3">
+    <h2 tabindex="-1">Ingresos</h2>
     <div class="rejilla par">
       <div class="campo" data-campo="montoSubsidio">
         <label for="montoSubsidio">Monto del subsidio (S/)</label>
@@ -121,8 +125,8 @@
     </div>
   </section>
 
-  <section class="bloque">
-    <h2>Egresos</h2>
+  <section class="bloque" data-paso="4">
+    <h2 tabindex="-1">Egresos</h2>
     <p class="pista">
       Una ficha por boleta. Si agrupa varios productos sin precio por unidad,
       marca «varios» y escribe solo el monto total.
@@ -151,8 +155,8 @@
     </div>
   </section>
 
-  <section class="bloque">
-    <h2>Firmas</h2>
+  <section class="bloque" data-paso="5">
+    <h2 tabindex="-1">Firmas</h2>
     <p class="pista">Lo que va debajo de cada línea de firma. El sello se pone a mano.</p>
     <div class="rejilla dos">
       <fieldset>
@@ -180,10 +184,17 @@
     </div>
   </section>
 
-  <section class="bloque apoyo" id="bloque-meses">
+  <section class="bloque" data-paso="6" id="bloque-revisar">
+    <h2 tabindex="-1">Revisar antes de entregar</h2>
+    <div id="revision-b1"></div>
+  </section>
+
+  <section class="bloque apoyo" id="bloque-meses" data-paso="6">
     <h2>Meses anteriores</h2>
     <div id="meses-b1"></div>
   </section>
+
+  <div class="pie-pasos" id="pie-pasos"></div>
 
   <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras escribes.</p>
 

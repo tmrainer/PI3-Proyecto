@@ -615,6 +615,70 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
+  // 1n. El diseño de app: Inicio con tareas y primer uso; «Deshacer»; botón
+  // flotante; B-1 por pasos; cuenta regresiva en Entregas.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar`);
+    await p.ir(`${base}/index.html`);
+    const inicio = await p.eval(`({ tareas: document.querySelectorAll('.tarea').length,
+      bienvenida: !!document.querySelector('dialog#bienvenida[open]'),
+      menu: [...document.querySelectorAll('.nav-enlace')].map((a) => a.textContent).join(',') })`);
+    comprobar('Inicio: cinco tareas, menú con Inicio y primer uso la primera vez',
+      inicio.tareas === 5 && inicio.bienvenida && inicio.menu === 'Inicio,Asistencia,Padrón,B-1,Entregas', JSON.stringify(inicio));
+    await p.actuar(`[...document.querySelectorAll('#bienvenida button')].find((b) => b.textContent === 'Saltar').click()`);
+    await p.ir(`${base}/index.html`);
+    comprobar('primer uso: con «Saltar» no vuelve a aparecer', !(await p.eval(`!!document.querySelector('dialog#bienvenida')`)), '');
+
+    await p.ir(`${base}/__sembrar?padron=1`);
+    await p.ir(`${base}/asistencia.html`);
+    const deshacer = await p.actuar(`(async () => {
+      const cuenta = () => document.querySelector('.hoy-cuenta').textContent;
+      const antes = cuenta();
+      [...document.querySelectorAll('#hoy .toque-nombre')].find((b) => /Beta/.test(b.textContent)).click();
+      const marcado = cuenta();
+      const aviso = document.querySelector('#aviso-abajo').innerText;
+      document.querySelector('#aviso-abajo button').click();
+      return { antes, marcado, aviso, despues: cuenta() };
+    })()`);
+    comprobar('asistencia: tocar avisa «Marcaste a …» y «Deshacer» lo revierte',
+      deshacer.antes === '1 de 3' && deshacer.marcado === '2 de 3' && /Marcaste a/.test(deshacer.aviso) && deshacer.despues === '1 de 3',
+      JSON.stringify(deshacer));
+
+    await p.ir(`${base}/padron.html`);
+    const fab = await p.actuar(`(() => { document.querySelector('.fab').click();
+      return { abierto: document.getElementById('bloque-alta').open, foco: document.activeElement.id }; })()`);
+    comprobar('padrón: «+ Inscribir» abre el formulario y pone el cursor', fab.abierto && fab.foco === 'altaPaterno', JSON.stringify(fab));
+
+    await p.ir(`${base}/__sembrar`);
+    await p.ir(`${base}/formato-b1.html`);
+    const pasos = await p.actuar(`(() => {
+      const visibles = () => [...document.querySelectorAll('[data-paso]')].filter((s) => s.offsetParent !== null).map((s) => s.dataset.paso);
+      const r = { inicio: visibles(), texto: document.querySelector('.pasos-texto').textContent };
+      [...document.querySelectorAll('#pie-pasos button')].find((b) => /Siguiente/.test(b.textContent)).click();
+      r.siguiente = visibles();
+      document.querySelector('#panel .enlace-ir')?.click();
+      r.alDato = visibles();
+      return r;
+    })()`);
+    comprobar('B-1 por pasos: uno a la vez, «Siguiente» avanza y «Ir al dato» lleva a su paso',
+      pasos.inicio.join() === '1' && /Paso 1 de 6/.test(pasos.texto) && pasos.siguiente.join() === '2' && pasos.alDato.length === 1,
+      JSON.stringify(pasos));
+
+    await p.eval(`(() => {
+      const iso = (d) => \`\${d.getFullYear()}-\${String(d.getMonth() + 1).padStart(2, '0')}-\${String(d.getDate()).padStart(2, '0')}\`;
+      const base = new Date(); base.setDate(base.getDate() + 5);
+      const antes = new Date(base); antes.setMonth(antes.getMonth() - 1);
+      localStorage.setItem('b1.calendario.v1', JSON.stringify({ periodicidad: 'mensual', fechaLimiteBase: iso(base),
+        diasDeAviso: [3], entregas: [{ fechaLimite: iso(antes), estado: 'entregada' }] }));
+      return 1; })()`);
+    await p.ir(`${base}/calendario.html`);
+    const reloj = await p.eval(TEXTO('#cuenta-regresiva'));
+    comprobar('Entregas: cuenta regresiva arriba', /^5 días ?Faltan 5 días para entregar el B-1/.test(reloj), reloj);
+    comprobar('diseño de app: sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
+    await p.cerrar();
+  }
+
   // 2. Marcar a alguien y salir enseguida, antes de los 400 ms: no se pierde.
   {
     const p = await pestana(cdp);

@@ -1,14 +1,14 @@
 // pagina-calendario.js — entregas del formato y cuenta regresiva.
 
 import {
-  CLAVES, leer, guardar, calendarioVacio, nuevaEntrega, aDdMmAa, hoyIso, debounce, esIso, cuantos
+  CLAVES, leer, guardar, calendarioVacio, nuevaEntrega, aDdMmAa, hoyIso, debounce, esIso, cuantos, fechaLarga
 } from './modelo.js';
 import { alertaProximaEntrega, agendaEntregas, PERIODICIDADES } from './alertas.js';
 import { validarCalendario, validarRendicion } from './validaciones.js';
 import { hayAvisosNativos, permisoDeAvisos, pedirPermisoDeAvisos, reprogramarAvisos } from './avisos-nativos.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
-  marcarCampo, bannerAlerta, pintarAvisosAlmacenamiento, avisarAlSalirDelCampo, mostrarGuardado
+  marcarCampo, pintarAvisosAlmacenamiento, avisarAlSalirDelCampo, mostrarGuardado
 } from './ui.js';
 
 let calendario = leer(CLAVES.calendario, calendarioVacio());
@@ -71,16 +71,14 @@ function cambio() {
   pendiente = true;
   guardarDiferido();
   pintarBanner();
+  pintarCuentaRegresiva();
   pintarAgenda();
   refrescarValidacion();
 }
 
 function pintarBanner() {
-  const caja = buscar('#banner');
-  caja.textContent = '';
-  // «Todavía no has indicado cuándo entregas» sobra en la página donde se indica.
-  const b = bannerAlerta(alertaProximaEntrega(calendario, hoyIso()), { mostrarEnlace: false, pedirConfigurar: false });
-  if (b) caja.append(b);
+  // Aquí no hay franja: lo dice, más grande, la cuenta regresiva de arriba.
+  buscar('#banner').textContent = '';
 }
 
 const ETIQUETA_ESTADO = {
@@ -122,6 +120,32 @@ function pintarEstadoB1() {
       texto: listo ? `El Formato B-1${nombre} está listo para entregar.` : `Al Formato B-1${nombre} le ${partes.join(' y ')}.`
     }),
     crearElemento('a', { clase: 'boton diminuto secundario', href: './formato-b1.html', texto: listo ? 'Ver el B-1' : 'Completar el B-1' })
+  ]));
+}
+
+/** Lo primero que se ve: cuántos días faltan, grande, como en un reloj. */
+function pintarCuentaRegresiva() {
+  const caja = buscar('#cuenta-regresiva');
+  caja.textContent = '';
+  const a = alertaProximaEntrega(calendario, hoyIso());
+  if (!a || !a.configurado) return;
+  const dias = a.diasRestantes;
+  const largo = { semanal: 7, quincenal: 15, mensual: 30 }[calendario.periodicidad] || 30;
+  const lleno = dias < 0 ? 100 : Math.round(Math.max(0, Math.min(1, 1 - dias / largo)) * 100);
+  const numero = dias < 0 ? String(-dias) : String(dias);
+  const unidad = dias < 0 ? (dias === -1 ? 'día de atraso' : 'días de atraso')
+    : dias === 0 ? 'hoy' : dias === 1 ? 'día' : 'días';
+  caja.append(crearElemento('div', { clase: `reloj-entrega ${a.nivel}`, 'data-leer': '' }, [
+    crearElemento('div', { clase: 'reloj-circulo', style: `--lleno:${lleno}%`, 'aria-hidden': 'true' }, [
+      crearElemento('div', {}, [
+        crearElemento('b', { texto: dias === 0 ? '¡Hoy!' : numero }),
+        dias === 0 ? null : crearElemento('span', { texto: ' ' + unidad })
+      ])
+    ]),
+    crearElemento('p', { clase: 'reloj-texto', texto: dias < 0
+      ? `La entrega del ${aDdMmAa(a.fechaLimite)} venció hace ${cuantos(-dias, 'día')}.`
+      : dias === 0 ? `Hoy vence la entrega del B-1 (${aDdMmAa(a.fechaLimite)}).`
+        : `Faltan ${cuantos(dias, 'día')} para entregar el B-1: ${fechaLarga(a.fechaLimite).toLowerCase()}.` })
   ]));
 }
 
@@ -224,6 +248,7 @@ for (const [clave, , detalle] of PERIODICIDADES) {
 }
 
 pintarBanner();
+pintarCuentaRegresiva();
 pintarEstadoB1();
 pintarAgenda();
 pintarAvisosTelefono();
