@@ -75,6 +75,14 @@ la copia mientras programas: DevTools → Application → Service workers →
 
 ---
 
+## App Android (APK)
+
+En `app-android/` está la misma app empaquetada como APK con Capacitor. Suma
+**avisos de entrega con la app cerrada**, que en el navegador no se pueden dar
+sin un servidor. Cómo armarla, instalarla y firmarla: `app-android/LEEME.md`.
+
+---
+
 ## Pruebas
 
 - **Cálculos y validaciones**: abre `http://localhost:8000/pruebas.html`. Las

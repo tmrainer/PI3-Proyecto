@@ -14,3 +14,6 @@ js/casos-prueba.js
 
 # Herramientas de desarrollo (prueba de humo): no son parte de la app.
 herramientas/
+
+# App Android: el proyecto nativo y sus librerías no describen la app.
+app-android/

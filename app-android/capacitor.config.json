@@ -1,0 +1,15 @@
+{
+  "appId": "io.github.tmrainer.asistencia",
+  "appName": "Sistema de Asistencia",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": false
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_aviso",
+      "iconColor": "#3a5533"
+    }
+  }
+}

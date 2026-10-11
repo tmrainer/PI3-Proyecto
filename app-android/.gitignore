@@ -1,0 +1,17 @@
+# La .gitignore de la raíz ignora *.json y *.png; aquí sí van: package.json,
+# la configuración de Capacitor y los íconos de Android.
+!*.json
+!*.png
+
+# Librerías y copias que se regeneran (npm install, npm run sync)
+node_modules/
+www/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/capacitor-cordova-android-plugins/
+
+# Claves de firma: NUNCA en el repositorio (ver LEEME.md)
+*.keystore
+*.jks
+firma.properties

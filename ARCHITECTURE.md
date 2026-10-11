@@ -20,7 +20,7 @@ Claves de almacenamiento (`js/modelo.js:4-11`):
 | `b1.calendario.v1`  | periodicidad y fechas de entrega                | `calendarioVacio()` `modelo.js:242` |
 | `b1.rendiciones.v1` | lista de Formatos B-1                           | `nuevaRendicion()` `modelo.js:163` |
 | `b1.insumos.v1`     | reservada para el catálogo de insumos (fase 6); hoy **sin uso** | —                |
-| `b1.respaldo.v1`    | `{ ultimoEn }`: fecha del último respaldo exportado, para el recordatorio | `exportarTodo()` `ui.js:645` |
+| `b1.respaldo.v1`    | `{ ultimoEn }`: fecha del último respaldo exportado, para el recordatorio | `exportarTodo()` `ui.js:656` |
 
 Si una clave no se puede leer, `leer()` copia lo ilegible a `<clave>.respaldo` y
 arranca vacío (`modelo.js:491-514`).
@@ -116,6 +116,15 @@ dispara `beforeinstallprompt` (Chrome y Edge), la app ofrece su propio botón
 preferencias son de ese equipo (`localStorage`, claves `pi3.*`): no son datos de
 la olla y no van en los respaldos.
 
+**App Android y avisos con la app cerrada.** `app-android/` empaqueta la app
+web con Capacitor (ver su `LEEME.md`); `copiar-web.mjs` copia los archivos de
+`ARCHIVOS` de `sw.js`. Dentro del APK, `js/avisos-nativos.js` le pasa a Android
+los avisos que calcula `programaDeAvisos()` (`alertas.js`, pura): uno por cada
+día de anticipación y uno el mismo día, a las 9:00, sin las entregas ya
+marcadas. Se reprograman al abrir cualquier página (`montarCabecera()`) y al
+guardar Entregas. En el navegador el módulo no hace nada, y `montarCabecera()`
+no registra el service worker ni ofrece instalar cuando corre en el APK.
+
 **Validar sin recorrer todos contra todos.** `indicePadron()`
 (`validaciones.js:258`) arma una vez por pasada mapas por id, documento,
 nombre y fecha; `validarAfiliados()` y `validarAtenciones()` lo reciben y cada
@@ -153,15 +162,15 @@ En el **reporte del padrón**, la lectura es:
 | `vigilarPestanas()`       | lo pendiente, al ocultarse o cerrarse la página | `estado.js:103-118` |
 | `pagina-calendario.js`    | `calendario` (no usa `estado.js`), 400 ms después; lo pendiente, al ocultarse | L22 |
 | `pagina-b1.js`            | `rendiciones`, y de `config` solo `ultimoCentro`: relee lo guardado antes de escribir. También escribe lo pendiente al ocultarse | L30-65 |
-| Restaurar un respaldo     | revisa qué trae (`revisarRespaldo()`, `modelo.js:565`), escribe **todas** las partes que trae (`restaurarRespaldo()`, `modelo.js:615`), descarta lo pendiente de la página y recarga. Igual desde cualquier página | `barraDatos()` `ui.js:489` |
-| Fallo al guardar          | `guardar()` devuelve false; la página muestra «NO SE GUARDÓ» y un aviso con «Exportar respaldo» | `mostrarGuardado()` `ui.js:831` |
+| Restaurar un respaldo     | revisa qué trae (`revisarRespaldo()`, `modelo.js:565`), escribe **todas** las partes que trae (`restaurarRespaldo()`, `modelo.js:615`), descarta lo pendiente de la página y recarga. Igual desde cualquier página | `barraDatos()` `ui.js:500` |
+| Fallo al guardar          | `guardar()` devuelve false; la página muestra «NO SE GUARDÓ» y un aviso con «Exportar respaldo» | `mostrarGuardado()` `ui.js:842` |
 
 **Varias pestañas.** Las páginas que usan `estado.js` (asistencia y padrón)
 llaman a `vigilarPestanas()` al arrancar (`pagina-asistencia.js:129`,
 `pagina-padron.js:92`). Cuando otra pestaña guarda el padrón, la config o el
 calendario, el evento `storage` las recarga y repinta; así no guardan después
 su copia vieja encima. El repintado pasa por `repintarConservandoVista()`
-(`ui.js:919-949`), que vuelve a abrir las fichas abiertas y devuelve el foco y
+(`ui.js:930-960`), que vuelve a abrir las fichas abiertas y devuelve el foco y
 el cursor. El B-1 relee la config justo antes de guardarla, y si otra pestaña
 guarda la rendición, se recarga entera (`pagina-b1.js:71-75`). Límite: si dos
 pestañas cambian algo dentro de los mismos 400 ms, gana la que guardó la otra.
@@ -173,14 +182,14 @@ Storage y la sirve siempre desde ahí, con o sin señal. Las novedades se
 revalidan aparte (ETag, cada 30 min como mucho) y solo si llegaron todas se
 arma una copia nueva y se reemplaza la vieja de una vez: nunca se mezcla un
 HTML nuevo con un JS viejo. La página avisa «Hay una versión nueva». Los datos
-no pasan por él: siguen en `localStorage`. Lo registra `montarCabecera()` (`ui.js:260`), que también pide
-`navigator.storage.persist()` (`ui.js:355`) para que el navegador no borre los
+no pasan por él: siguen en `localStorage`. Lo registra `montarCabecera()` (`ui.js:269`), que también pide
+`navigator.storage.persist()` (`ui.js:364`) para que el navegador no borre los
 datos por su cuenta (Safari los borra tras 7 días sin abrir el sitio, salvo que
 la app esté instalada). Al agregar un archivo a la app hay que sumarlo a
 `ARCHIVOS` en `sw.js`, o no abrirá sin conexión.
 
 **Recordatorio de respaldo.** Con datos y sin respaldo en 14 días, una franja
-arriba lo pide (`ui.js:889`). `exportarTodo()` (`ui.js:645`) abre el menú del
+arriba lo pide (`ui.js:900`). `exportarTodo()` (`ui.js:656`) abre el menú del
 sistema para guardarlo en un celular y lo descarga en la computadora.
 
 ---
@@ -252,9 +261,10 @@ xlsx.js          primera hoja de un .xlsx como texto con tabuladores. Sin import
    ↑
 calculos.js      funciones puras                         ← modelo
 alertas.js       fechas de entrega y avisos              ← modelo
+avisos-nativos.js avisos del teléfono, solo en el APK    ← modelo, alertas
 sugerencias.js                                            ← modelo
 estado.js        estado en memoria + guardado            ← modelo
-ui.js            DOM compartido: buscar, crearElemento   ← modelo
+ui.js            DOM compartido: buscar, crearElemento   ← modelo, avisos-nativos
    ↑
 validaciones.js                                           ← modelo, calculos
 importar.js      lectura de Excel/CSV                    ← modelo, calculos
