@@ -296,16 +296,40 @@ function montarBarraTitulo(claveActiva) {
 // Para quien lee con dificultad: la voz del propio teléfono (sin internet en
 // Android). Lee el título y lo que la página marcó con data-leer.
 
+/** La voz nativa del APK (plugin de Capacitor): el WebView de Android no trae speechSynthesis. */
+function vozNativa() {
+  const C = window.Capacitor;
+  return (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.TextToSpeech) || null;
+}
+
+/** ¿Este equipo puede leer en voz alta? */
+export function puedeHablar() {
+  return !!vozNativa() || 'speechSynthesis' in window;
+}
+
 export function decir(texto) {
-  if (!('speechSynthesis' in window) || !texto) return false;
-  const voz = new SpeechSynthesisUtterance(texto);
-  voz.lang = 'es-PE';
+  if (!texto || !puedeHablar()) return false;
   let lenta = false;
   try { lenta = localStorage.getItem('pi3.voz.velocidad') === 'lenta'; } catch (e) { /* normal */ }
+  const nativa = vozNativa();
+  if (nativa) {
+    nativa.stop().catch(() => {}).then(() => nativa.speak({ text: texto, lang: 'es-PE', rate: lenta ? 0.75 : 0.95 }))
+      .catch(() => {});
+    return true;
+  }
+  const voz = new SpeechSynthesisUtterance(texto);
+  voz.lang = 'es-PE';
   voz.rate = lenta ? 0.75 : 0.95;
   speechSynthesis.cancel();
   speechSynthesis.speak(voz);
   return true;
+}
+
+/** Calla lo que se esté leyendo. */
+export function callar() {
+  const nativa = vozNativa();
+  if (nativa) nativa.stop().catch(() => {});
+  else if ('speechSynthesis' in window) speechSynthesis.cancel();
 }
 
 export function leerPantalla() {
@@ -367,7 +391,7 @@ export function mostrarBienvenida() {
   }
   function terminar() {
     try { localStorage.setItem(CLAVE_BIENVENIDA, '1'); } catch (e) { /* se volverá a ver */ }
-    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    callar();
     dialogo.close();
     dialogo.remove();
   }

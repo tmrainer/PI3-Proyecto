@@ -8,10 +8,12 @@ se programa los avisos a sí mismo, sin internet y sin servidor.
 - El código de la app **no se duplica**: `copiar-web.mjs` copia a `www/` los
   archivos que lista `ARCHIVOS` en `../sw.js` (la misma lista que ya comprueba
   `herramientas/humo.mjs`).
-- La app web sigue sin librerías. Capacitor y su complemento de avisos viven
-  solo aquí (`package.json`). Dentro del APK, la app los encuentra en
-  `window.Capacitor`; ver `../js/avisos-nativos.js`. En el navegador ese módulo
-  no hace nada.
+- La app web sigue sin librerías. Capacitor y sus complementos (avisos y voz)
+  viven solo aquí (`package.json`). Dentro del APK, la app los encuentra en
+  `window.Capacitor`; ver `../js/avisos-nativos.js` y `decir()` en
+  `../js/ui.js`. En el navegador no hacen nada.
+- Leer en voz alta: el WebView de Android no trae `speechSynthesis`, así que en
+  el APK la voz es la del teléfono, con `@capacitor-community/text-to-speech`.
 - Los datos del APK **no son los de Chrome**: cada uno guarda por separado.
   Para pasarse: en Chrome, «Guardar una copia»; en el APK, «Recuperar una copia».
 

@@ -8,7 +8,7 @@
 import { CLAVES, leer, hoyIso, cuantos, fechaLarga } from './modelo.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, botonBorrarTodo,
-  pintarAvisosAlmacenamiento, mostrarBienvenida, decir, sincronizarBarras, avisoAbajo
+  pintarAvisosAlmacenamiento, mostrarBienvenida, decir, puedeHablar, sincronizarBarras, avisoAbajo
 } from './ui.js';
 
 montarCabecera('ajustes', 'De este teléfono');
@@ -60,7 +60,7 @@ elegirUno(buscar('#opciones-letra'), 'letra',
   (valor) => guardarPreferencia('pi3.letra', valor));
 
 // ---- voz ----
-const hayVoz = 'speechSynthesis' in window;
+const hayVoz = puedeHablar();
 const casilla = buscar('#voz-boton');
 casilla.checked = leerPreferencia('pi3.voz.boton', '0') === '1';
 casilla.addEventListener('change', () => {
