@@ -7,19 +7,33 @@ import { alertaProximaEntrega, agendaEntregas, PERIODICIDADES } from './alertas.
 import { validarCalendario } from './validaciones.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
-  marcarCampo, bannerAlerta, pintarAvisosAlmacenamiento, avisarAlSalirDelCampo
+  marcarCampo, bannerAlerta, pintarAvisosAlmacenamiento, avisarAlSalirDelCampo, mostrarGuardado
 } from './ui.js';
 
 let calendario = leer(CLAVES.calendario, calendarioVacio());
 if (!Array.isArray(calendario.entregas)) calendario.entregas = [];
 if (!Array.isArray(calendario.diasDeAviso)) calendario.diasDeAviso = [7, 3, 1];
 
-const guardarDiferido = debounce(() => {
-  guardar(CLAVES.calendario, calendario);
-  buscar('#estado-guardado').textContent = 'Guardado en este dispositivo.';
-}, 400);
+// Hay un cambio que el guardado diferido todavía no escribió.
+let pendiente = false;
+
+function escribir() {
+  pendiente = false;
+  const ok = guardar(CLAVES.calendario, calendario);
+  mostrarGuardado(ok);
+  return ok;
+}
+
+const guardarDiferido = debounce(() => { if (pendiente) escribir(); }, 400);
+
+// Como en las otras páginas: salir antes de los 400 ms no pierde lo último.
+addEventListener('pagehide', () => { if (pendiente) escribir(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && pendiente) escribir();
+});
 
 function cambio() {
+  pendiente = true;
   guardarDiferido();
   pintarBanner();
   pintarAgenda();
@@ -109,7 +123,7 @@ function irACampo(campo) {
 montarCabecera('calendario', 'Ollas comunes y comedores de Villa María del Triunfo');
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
 buscar('#privacidad').append(bloquePrivacidad());
-buscar('#barra-datos').append(barraDatos());
+buscar('#barra-datos').append(barraDatos({ antesDeRecargar: () => { pendiente = false; } }));
 
 const selPer = buscar('#periodicidad');
 selPer.value = calendario.periodicidad || 'mensual';

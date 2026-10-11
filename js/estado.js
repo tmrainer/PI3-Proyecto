@@ -30,28 +30,31 @@ export function cargar() {
 
 let avisarGuardado = () => {};
 
-/** La página dice dónde mostrar el «Guardado». */
+/** La página dice cómo mostrar si se guardó: fn(true) o fn(false). */
 export function alGuardar(fn) { avisarGuardado = fn || (() => {}); }
 
 // Hay un cambio pedido con guardarPronto() que todavía no llegó a escribirse.
 let pendiente = false;
 
+// true si las dos claves se escribieron. Un fallo se avisa en el momento.
 function escribir() {
   pendiente = false;
-  guardar(CLAVES.padron, estado.padron);
-  guardar(CLAVES.config, estado.config);
+  const padronOk = guardar(CLAVES.padron, estado.padron);
+  const configOk = guardar(CLAVES.config, estado.config);
+  if (!padronOk || !configOk) avisarGuardado(false);
+  return padronOk && configOk;
 }
 
 const guardarDiferido = debounce(() => {
-  if (pendiente) escribir();      // si no, ya lo escribió guardarYa()
-  avisarGuardado('Guardado en este dispositivo.');
+  if (pendiente && !escribir()) return;   // si no estaba pendiente, ya lo escribió guardarYa()
+  avisarGuardado(true);
 }, 400);
 
 /**
  * Pide guardar `estado.padron` y `estado.config` en localStorage
  * ('b1.padron.v1' y 'b1.config.v1'), 400 ms después del ÚLTIMO pedido: varios
- * toques seguidos producen una sola escritura. Al terminar avisa con el texto
- * de alGuardar().
+ * toques seguidos producen una sola escritura. Al terminar avisa con la
+ * función de alGuardar(): true si se guardó, false si falló.
  *
  * Es lo que llaman las páginas en cada cambio (ctx.onCambio). No guarda
  * `estado.calendario`. Si la página se oculta o se cierra antes de los 400 ms,
@@ -62,14 +65,15 @@ export function guardarPronto() { pendiente = true; guardarDiferido(); }
 
 /**
  * Guarda YA `estado.padron` y `estado.config` en localStorage ('b1.padron.v1'
- * y 'b1.config.v1'), sin esperar y sin mostrar el aviso de «Guardado».
+ * y 'b1.config.v1'), sin esperar y sin mostrar el aviso de «Guardado» (sí
+ * el de error, si falla).
  *
  * Se usa al arrancar una página, para consolidar una migración del padrón, y
  * tras una importación. Deja sin efecto un guardarPronto pendiente: cuando se
  * cumpla su plazo solo mostrará el aviso, sin volver a escribir.
- * @returns {void}
+ * @returns {boolean}  false si no se pudo escribir
  */
-export function guardarYa() { escribir(); }
+export function guardarYa() { return escribir(); }
 
 /**
  * Olvida un guardarPronto pendiente sin escribirlo. Para justo antes de

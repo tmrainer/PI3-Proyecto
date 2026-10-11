@@ -425,6 +425,26 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
+  // 1g. Si el navegador no deja guardar, la app no dice «Guardado»: lo avisa.
+  for (const [pagina, accion] of [
+    ['index', TOCAR('Beta')],
+    ['formato-b1', ESCRIBIR('#nombreCentro', 'Comedor sin espacio')],
+    ['calendario', `(() => { const s = document.querySelector('#periodicidad'); s.value = 'semanal';
+      s.dispatchEvent(new Event('change', { bubbles: true })); return 1; })()`]
+  ]) {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar?padron=1`);
+    await p.ir(`${base}/${pagina}.html`);
+    await p.eval(`Storage.prototype.setItem = function () {
+      throw new DOMException('lleno', 'QuotaExceededError'); }; 1`);
+    await p.actuar(accion);
+    await pausa(700);
+    const r = await p.eval(`({ estado: ${TEXTO('#estado-guardado')}, aviso: !!document.getElementById('aviso-no-guarda') })`);
+    comprobar(`${pagina}.html: si no se puede guardar, lo avisa`,
+      r.aviso && /NO SE GUARDÓ/.test(r.estado), JSON.stringify(r));
+    await p.cerrar();
+  }
+
   // 2. Marcar a alguien y salir enseguida, antes de los 400 ms: no se pierde.
   {
     const p = await pestana(cdp);
@@ -557,6 +577,20 @@ async function correr(base, cdp) {
     await p.ir(`${base}/formato-b1.html`);
     const v = await p.eval(`document.querySelector('#nombreCentro').value`);
     comprobar('B-1: salir justo después de escribir no lo pierde', v === 'Comedor Dos', v);
+    await p.cerrar();
+  }
+
+  // 6b. Entregas: lo mismo (antes no guardaba lo pendiente al salir).
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar`);
+    await p.ir(`${base}/calendario.html`);
+    await p.actuar(`(() => { const s = document.querySelector('#periodicidad'); s.value = 'semanal';
+      s.dispatchEvent(new Event('change', { bubbles: true })); return 1; })()`);
+    await p.ir('about:blank');
+    await p.ir(`${base}/calendario.html`);
+    const v = await p.eval(`document.querySelector('#periodicidad').value`);
+    comprobar('Entregas: salir justo después de cambiar no lo pierde', v === 'semanal', v);
     await p.cerrar();
   }
 

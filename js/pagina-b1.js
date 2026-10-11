@@ -12,7 +12,7 @@ import { alertaProximaEntrega } from './alertas.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
   marcarCampo, cajaSugerencia, bannerAlerta, pintarAvisosAlmacenamiento,
-  avisarAlSalirDelCampo, chip
+  avisarAlSalirDelCampo, chip, mostrarGuardado
 } from './ui.js';
 
 // ------------------------------------------------------------------- estado
@@ -30,23 +30,26 @@ const propuestos = new Set();
 // Hay un cambio que el guardado diferido todavía no escribió.
 let pendiente = false;
 
+// true si se escribió todo. Un fallo se avisa en el momento.
 function escribir() {
   pendiente = false;
   rendicion.actualizadoEn = new Date().toISOString();
   rendiciones[0] = rendicion;
-  guardar(CLAVES.rendiciones, rendiciones);
+  const rendicionesOk = guardar(CLAVES.rendiciones, rendiciones);
   // La config la comparte con la página de asistencia, que puede estar abierta
   // en otra pestaña y cambiar el precio del menú. Se relee lo guardado y solo
   // se toca el campo que administra esta página; guardar la copia leída al
   // abrir devolvería el precio viejo.
   config = Object.assign(configVacia(), leer(CLAVES.config, {}),
     { ultimoCentro: instantaneaCentro(rendicion) });
-  guardar(CLAVES.config, config);
+  const configOk = guardar(CLAVES.config, config);
+  if (!rendicionesOk || !configOk) mostrarGuardado(false);
+  return rendicionesOk && configOk;
 }
 
 const guardarDiferido = debounce(() => {
-  if (pendiente) escribir();
-  buscar('#estado-guardado').textContent = 'Guardado en este dispositivo.';
+  if (pendiente && !escribir()) return;
+  mostrarGuardado(true);
 }, 400);
 
 // Igual que en estado.js (vigilarPestanas): al ocultarse o cerrarse la página se

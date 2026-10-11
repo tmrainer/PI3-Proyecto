@@ -13,11 +13,11 @@ import { pintarAsistenciaDeHoy, pintarOtrosDias } from './ui-asistencia.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
   pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo,
-  repintarConservandoVista, chip, pantallaEncendidaMientrasSeUsa
+  repintarConservandoVista, chip, pantallaEncendidaMientrasSeUsa, mostrarGuardado
 } from './ui.js';
 
 cargar();
-alGuardar((t) => { buscar('#estado-guardado').textContent = t; });
+alGuardar(mostrarGuardado);
 
 const periodo = periodoPorDefecto();
 

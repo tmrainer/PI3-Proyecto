@@ -18,11 +18,11 @@ import { pintarEstadoEscaneo } from './ui-escaneo.js';
 import {
   buscar, montarCabecera, bloquePrivacidad, barraDatos, bannerAlerta,
   pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo,
-  repintarConservandoVista
+  repintarConservandoVista, mostrarGuardado
 } from './ui.js';
 
 cargar();
-alGuardar((t) => { buscar('#estado-guardado').textContent = t; });
+alGuardar(mostrarGuardado);
 
 const periodo = periodoPorDefecto();
 

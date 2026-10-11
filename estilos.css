@@ -712,3 +712,6 @@ details.bloque.desplegable[open] > summary + * { margin-top: 14px; }
 .respaldo-clave { margin-top: 12px; }
 .respaldo-clave > summary { cursor: pointer; font-weight: 600; color: var(--verde-700); }
 .respaldo-clave .campo, .respaldo-clave .acciones { margin-top: 8px; }
+
+/* Cuando NO se guardó, la línea de estado lo dice fuerte. */
+.estado-guardado.es-error { color: var(--error); font-weight: 700; font-size: .9rem; }

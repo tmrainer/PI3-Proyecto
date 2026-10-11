@@ -746,6 +746,37 @@ export function pintarAvisosAlmacenamiento(contenedor) {
   if (recordatorio) contenedor.append(recordatorio);
 }
 
+/**
+ * Dice si lo último quedó guardado. Si falló (almacenamiento lleno o
+ * bloqueado), lo dice dónde se ve y no solo abajo: antes la app seguía
+ * mostrando «Guardado» aunque nada se hubiera escrito.
+ * @param {boolean} ok
+ */
+export function mostrarGuardado(ok) {
+  const estado = document.getElementById('estado-guardado');
+  if (estado) {
+    estado.textContent = ok
+      ? 'Guardado en este dispositivo.'
+      : 'NO SE GUARDÓ lo último. Exporta un respaldo ahora.';
+    estado.classList.toggle('es-error', !ok);
+  }
+  const previo = document.getElementById('aviso-no-guarda');
+  if (ok) { if (previo) previo.remove(); return; }
+  if (previo) return;
+  const contenedor = document.getElementById('avisos-sistema');
+  if (!contenedor) return;
+  contenedor.prepend(crearElemento('div', { clase: 'aviso-sistema', id: 'aviso-no-guarda', role: 'alert' }, [
+    crearElemento('p', {}, [icono('aviso', { tam: 15 }),
+      ' No se pudo guardar en este dispositivo: puede que el almacenamiento esté ' +
+      'lleno o bloqueado. Lo que escribas ahora se perderá al cerrar. Exporta un ' +
+      'respaldo ya, y no cierres la página hasta tenerlo.']),
+    crearElemento('button', {
+      type: 'button', clase: 'boton diminuto secundario', texto: 'Exportar respaldo',
+      onclick: () => exportarTodo()
+    })
+  ]));
+}
+
 const UMBRAL_ESPACIO = 0.7;
 
 /** Antes de que se llene, no cuando ya no se puede guardar. */
