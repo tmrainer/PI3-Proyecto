@@ -182,7 +182,7 @@ function irACampo(campo) {
 
 // ------------------------------------------------------------------- arranque
 
-montarCabecera('calendario', 'Ollas comunes y comedores de Villa María del Triunfo');
+montarCabecera('calendario', 'Fechas de entrega del B-1');
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
 buscar('#privacidad').append(bloquePrivacidad());
 buscar('#barra-datos').append(barraDatos({ antesDeRecargar: () => { pendiente = false; } }));

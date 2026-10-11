@@ -563,7 +563,7 @@ function empezarMesSiguiente() {
 
 // ------------------------------------------------------------------- arranque
 
-montarCabecera('b1', 'Ollas comunes y comedores de Villa María del Triunfo');
+montarCabecera('b1', 'Rendición de cuentas');
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
 const bannerB1 = bannerAlerta(alertaProximaEntrega(leer(CLAVES.calendario, calendarioVacio()), hoyIso()));
 if (bannerB1) buscar('#banner').append(bannerB1);

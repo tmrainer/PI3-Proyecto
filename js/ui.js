@@ -979,6 +979,65 @@ export function cajaSugerencia(propuesta, alAceptar) {
   ]);
 }
 
+// ------------------------------------------------- aviso abajo, con «Deshacer»
+//
+// Las apps que la gente ya usa no preguntan «¿Está segura?» para todo: hacen
+// la acción, la dicen abajo y ofrecen deshacerla. Quien se equivoca lo
+// arregla con un toque, y quien no, no tiene que leer una ventana.
+
+let relojAviso = null;
+
+/**
+ * Muestra «texto» abajo unos segundos. Con `deshacer`, un botón que lo revierte.
+ * @param {string} texto
+ * @param {() => void} [deshacer]
+ */
+export function avisoAbajo(texto, deshacer) {
+  let caja = document.getElementById('aviso-abajo');
+  if (!caja) {
+    caja = crearElemento('div', { id: 'aviso-abajo', clase: 'aviso-abajo', role: 'status', 'aria-live': 'polite' });
+    document.body.append(caja);
+  }
+  clearTimeout(relojAviso);
+  caja.textContent = '';
+  caja.append(crearElemento('span', { texto }));
+  if (deshacer) {
+    caja.append(crearElemento('button', {
+      type: 'button', texto: 'Deshacer',
+      onclick: () => { cerrarAvisoAbajo(); deshacer(); }
+    }));
+  }
+  caja.classList.add('ver');
+  // 6 s: tiempo de leerlo y de reaccionar sin apuro (con «Deshacer», más).
+  relojAviso = setTimeout(cerrarAvisoAbajo, deshacer ? 7000 : 4000);
+}
+
+function cerrarAvisoAbajo() {
+  const caja = document.getElementById('aviso-abajo');
+  if (caja) caja.classList.remove('ver');
+}
+
+/** Un toque corto de vibración, donde el teléfono lo permite. */
+export function vibrar(ms = 20) {
+  try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* sin vibración */ }
+}
+
+// ------------------------------------------------------- iniciales en círculo
+//
+// Como los contactos de WhatsApp: se reconoce a la persona sin leer el nombre
+// entero. El color dice el grupo de edad (y la palabra sigue al lado: el
+// color nunca es lo único que lo dice).
+
+const COLOR_GRUPO = { nino: 'nino', adolescente: 'adolescente', adulto: 'adulto', adulto_mayor: 'mayor' };
+
+export function avatarPersona(persona, grupo) {
+  const letra = (t) => (String(t || '').trim()[0] || '').toUpperCase();
+  const iniciales = (letra(persona.nombres) + letra(persona.apellidoPaterno)) || '?';
+  return crearElemento('span', {
+    clase: `avatar ${COLOR_GRUPO[grupo] || 'sin-grupo'}`, 'aria-hidden': 'true', texto: iniciales
+  });
+}
+
 // ------------------------------------------------------- avisos del navegador
 
 /**

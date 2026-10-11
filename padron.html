@@ -82,25 +82,22 @@
 
   <section class="bloque">
     <h2>Personas afiliadas</h2>
-    <div class="rejilla tres">
+    <div class="rejilla dos">
       <div class="campo">
         <label for="buscarAfiliado">Buscar</label>
-        <input id="buscarAfiliado" type="search" placeholder="Nombre o número de documento…" autocomplete="off">
-      </div>
-      <div class="campo">
-        <label for="filtroAfiliado">Mostrar</label>
-        <select id="filtroAfiliado">
-          <option value="activos">Solo activas</option>
-          <option value="incompletas">Solo a las que les faltan datos</option>
-          <option value="ayuda_social">Solo de ayuda social</option>
-          <option value="bajas">Solo las dadas de baja</option>
-          <option value="todas">Todas</option>
-        </select>
+        <input id="buscarAfiliado" type="search" placeholder="Nombre o DNI" autocomplete="off">
       </div>
       <div class="campo">
         <label for="fechaRef">Edades a la fecha</label>
         <input id="fechaRef" type="date">
       </div>
+    </div>
+    <div class="fichas" id="filtroAfiliado" role="group" aria-label="Mostrar" style="margin-top:10px">
+      <button type="button" class="ficha-filtro" data-valor="activos">Activas</button>
+      <button type="button" class="ficha-filtro" data-valor="incompletas">Les faltan datos</button>
+      <button type="button" class="ficha-filtro" data-valor="ayuda_social">Ayuda social</button>
+      <button type="button" class="ficha-filtro" data-valor="bajas">De baja</button>
+      <button type="button" class="ficha-filtro" data-valor="todas">Todas</button>
     </div>
     <div id="resumen-etario" class="resumen-chips" style="margin-top:12px"></div>
     <p class="estado-guardado" id="conteo-afiliados" style="margin-top:8px"></p>

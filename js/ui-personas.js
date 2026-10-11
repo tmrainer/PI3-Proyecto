@@ -8,7 +8,7 @@ import {
 } from './calculos.js';
 import { validarAfiliado, indicePadron } from './validaciones.js';
 import { estado } from './estado.js';
-import { buscar, crearElemento, campo, icono, chip } from './ui.js';
+import { buscar, crearElemento, campo, icono, chip, avatarPersona } from './ui.js';
 
 // ctx: { fechaRef, busqueda, filtro, conteo, onCambio(), onRepintar() }
 
@@ -270,9 +270,10 @@ function filaAfiliado(a, ctx, indice) {
   const boton = crearElemento('button', {
     type: 'button', clase: 'persona-fila', 'aria-expanded': 'false'
   }, [
-    icono('flecha', { tam: 15, clase: 'icono persona-flecha' }),
+    avatarPersona(a, grupoEtario(a, ctx.fechaRef)),
     crearElemento('span', { clase: 'persona-texto' }, [nombre, meta]),
-    errores ? crearElemento('span', { clase: 'persona-falta', texto: 'faltan datos' }) : null
+    errores ? crearElemento('span', { clase: 'persona-falta', texto: 'faltan datos' }) : null,
+    icono('flecha', { tam: 18, clase: 'icono persona-flecha' })
   ]);
 
   const caja = crearElemento('article', {
@@ -333,6 +334,8 @@ export function pintarListaPersonas(lista, ctx) {
     .sort((a, b) => nombreCompleto(a).localeCompare(nombreCompleto(b), 'es'));
   incompletasPintadas = estado.padron.afiliados
     .filter((a) => a.activo && validarAfiliado(a, estado.padron, indice).some((x) => x.severidad === 'error')).length;
+  const fichaFaltan = document.querySelector('#filtroAfiliado [data-valor="incompletas"]');
+  if (fichaFaltan) fichaFaltan.textContent = incompletasPintadas ? `Les faltan datos (${incompletasPintadas})` : 'Les faltan datos';
 
   filasPintadas = new Map();
   for (const a of conFiltro) {
@@ -396,10 +399,23 @@ export function montarFiltrosPersonas(lista, ctx) {
     aplicarBusqueda(lista, ctx);
   }, 150));
 
-  const fFiltro = buscar('#filtroAfiliado');
-  fFiltro.value = ctx.filtro;
-  fFiltro.addEventListener('change', () => {
-    ctx.filtro = fFiltro.value;
-    pintarListaPersonas(lista, ctx);
-  });
+  // Fichas en vez de una lista desplegable: se ven todas las opciones de una
+  // vez y se elige con un toque.
+  for (const b of document.querySelectorAll('#filtroAfiliado .ficha-filtro')) {
+    b.addEventListener('click', () => elegirFiltro(lista, ctx, b.dataset.valor));
+  }
+  marcarFiltro(ctx.filtro);
+}
+
+function marcarFiltro(valor) {
+  for (const b of document.querySelectorAll('#filtroAfiliado .ficha-filtro')) {
+    b.setAttribute('aria-pressed', b.dataset.valor === valor ? 'true' : 'false');
+  }
+}
+
+/** Cambia el filtro de la lista y repinta (también para ir a una persona oculta). */
+export function elegirFiltro(lista, ctx, valor) {
+  ctx.filtro = valor;
+  marcarFiltro(valor);
+  pintarListaPersonas(lista, ctx);
 }

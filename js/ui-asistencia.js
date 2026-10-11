@@ -10,7 +10,7 @@ import {
   desgloseDelDia, recaudacionDelDiaCent, asistio, menuDe, asistenciasConTodos, sinInscribirDelDia
 } from './calculos.js';
 import { estado, preciosActuales } from './estado.js';
-import { crearElemento, campo, icono, vigilarAltoFijo, chip } from './ui.js';
+import { crearElemento, campo, icono, vigilarAltoFijo, chip, avatarPersona, avisoAbajo, vibrar } from './ui.js';
 
 // ctx: { fechaRef, titulo, onCambio(), onRepintar(), onResumen() }
 
@@ -25,16 +25,17 @@ export function filaToque(at, persona, ctx, alCambiar) {
   const menu = menuDe(at, persona.id) || menuPorDefecto(persona);
   const g = grupoEtario(persona, at.fecha || ctx.fechaRef);
 
-  const marca = crearElemento('span', { clase: 'toque-marca', 'aria-hidden': 'true' }, [icono('ok', { tam: 15 })]);
+  const marca = crearElemento('span', { clase: 'toque-marca', 'aria-hidden': 'true' }, [icono('ok', { tam: 18 })]);
   const botonNombre = crearElemento('button', {
     type: 'button', clase: 'toque-nombre',
     'aria-pressed': presente ? 'true' : 'false'
   }, [
-    marca,
+    avatarPersona(persona, g),
     crearElemento('span', { clase: 'toque-texto' }, [
       nombreCompleto(persona),
       crearElemento('span', { clase: 'toque-sub', texto: g ? etiquetaGrupoEtario(g) : 'Sin grupo' })
-    ])
+    ]),
+    marca
   ]);
 
   const botonMenu = crearElemento('button', {
@@ -63,18 +64,24 @@ export function filaToque(at, persona, ctx, alCambiar) {
     etiquetarMenu(m);
   }
 
+  const avisarCambio = () => { pintar(); if (alCambiar) alCambiar(); ctx.onCambio(); ctx.onResumen(); };
   botonNombre.addEventListener('click', () => {
     if (!Array.isArray(at.asistencias)) at.asistencias = [];
-    if (asistio(at, persona.id)) {
-      at.asistencias = at.asistencias.filter((x) => x.afiliadoId !== persona.id);
-    } else {
+    const antes = { asistencias: at.asistencias.slice(), legado: at.legado };
+    const vino = !asistio(at, persona.id);
+    if (vino) {
       at.legado = null;
       at.asistencias.push({ afiliadoId: persona.id, tipoMenu: menuPorDefecto(persona) });
+    } else {
+      at.asistencias = at.asistencias.filter((x) => x.afiliadoId !== persona.id);
     }
-    pintar();
-    if (alCambiar) alCambiar();
-    ctx.onCambio();
-    ctx.onResumen();
+    vibrar();
+    avisarCambio();
+    avisoAbajo(`${vino ? 'Marcaste a' : 'Quitaste a'} ${persona.nombres || nombrePersona}`, () => {
+      at.asistencias = antes.asistencias;
+      at.legado = antes.legado;
+      avisarCambio();
+    });
   });
 
   botonMenu.addEventListener('click', () => {
@@ -88,6 +95,11 @@ export function filaToque(at, persona, ctx, alCambiar) {
   });
 
   return fila;
+}
+
+/** Copia de las marcas de un día, para poder deshacer un cambio. */
+function asistenciasDelDiaCopia(at) {
+  return Array.isArray(at.asistencias) ? at.asistencias.map((x) => ({ ...x })) : [];
 }
 
 // --------------------------------------------- quienes comen sin estar inscritos
@@ -203,16 +215,20 @@ function fichaAtencion(at, ctx) {
 
   function marcarTodos(marcar) {
     const activos = afiliadosActivos(estado.padron, at.fecha);
+    const antes = { asistencias: asistenciasDelDiaCopia(at), legado: at.legado };
     if (marcar) {
       at.legado = null;
       at.asistencias = asistenciasConTodos(at, activos);
     } else {
       at.asistencias = [];
     }
-    pintarLista();
-    if (caja._refrescar) caja._refrescar();
-    ctx.onCambio();
-    ctx.onResumen();
+    const repintar = () => { pintarLista(); if (caja._refrescar) caja._refrescar(); ctx.onCambio(); ctx.onResumen(); };
+    repintar();
+    avisoAbajo(marcar ? 'Marcaste a todos' : 'Quitaste a todos', () => {
+      at.asistencias = antes.asistencias;
+      at.legado = antes.legado;
+      repintar();
+    });
   }
 
   refrescarResumenDia();
@@ -260,10 +276,16 @@ function fichaAtencion(at, ctx) {
         crearElemento('button', {
           type: 'button', clase: 'boton diminuto peligro', texto: 'Quitar el día',
           onclick: () => {
-            if (!confirm('¿Quitar este día? También se borra su asistencia.')) return;
-            estado.padron.atenciones = estado.padron.atenciones.filter((o) => o.id !== at.id);
+            const lista = estado.padron.atenciones;
+            const pos = lista.findIndex((o) => o.id === at.id);
+            estado.padron.atenciones = lista.filter((o) => o.id !== at.id);
             ctx.onRepintar();
             ctx.onResumen();
+            avisoAbajo(`Quitaste el día ${at.fecha ? aDdMmAa(at.fecha) : ''}`.trim(), () => {
+              estado.padron.atenciones.splice(Math.max(0, pos), 0, at);
+              ctx.onRepintar();
+              ctx.onResumen();
+            });
           }
         })
       ]),
@@ -343,6 +365,8 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   const at = atencionDeHoy;
 
   const cuenta = crearElemento('span', { clase: 'hoy-cuenta' });
+  const barraProgreso = crearElemento('i');
+  const progreso = crearElemento('span', { clase: 'hoy-progreso', 'aria-hidden': 'true' }, [barraProgreso]);
   const detalle = crearElemento('span', { clase: 'hoy-detalle' });
   // Marcar a alguien cambia el conteo; sin esto, quien usa lector de pantalla
   // toca y no recibe confirmación de nada.
@@ -353,6 +377,7 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
     const d = desgloseDelDia(at);
     const inscritos = d.total - d.sinInscribir;
     cuenta.textContent = `${inscritos} de ${activos.length}`;
+    barraProgreso.style.width = `${activos.length ? Math.min(100, (inscritos / activos.length) * 100) : 0}%`;
     resumenVivo.textContent = `${inscritos} de ${activos.length} personas marcadas` +
       (d.sinInscribir ? `, y ${cuantos(d.sinInscribir, 'ración', 'raciones')} sin inscribir.` : '.');
     if (d.total === 0) {
@@ -477,18 +502,27 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   });
 
   function marcarTodos(marcar) {
+    const antes = { asistencias: asistenciasDelDiaCopia(at), legado: at.legado };
     if (marcar) {
       at.legado = null;
       at.asistencias = asistenciasConTodos(at, activos);
     } else {
       at.asistencias = [];
     }
-    asegurarHoyGuardado();
-    filas.clear();                 // todas cambiaron: se vuelven a armar
-    pintarLista();
-    refrescar();
-    ctx.onCambio();
-    ctx.onResumen();
+    const repintar = () => {
+      asegurarHoyGuardado();
+      filas.clear();                 // todas cambiaron: se vuelven a armar
+      pintarLista();
+      refrescar();
+      ctx.onCambio();
+      ctx.onResumen();
+    };
+    repintar();
+    avisoAbajo(marcar ? 'Marcaste a todos' : 'Quitaste a todos', () => {
+      at.asistencias = antes.asistencias;
+      at.legado = antes.legado;
+      repintar();
+    });
   }
 
   // Sin nadie en el padrón, el contador, los botones de marcar y el buscador no
@@ -510,7 +544,7 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   // faltan») va junto: en el celular se queda pegado arriba al bajar por la
   // lista.
   const fija = crearElemento('div', { clase: 'hoy-fija' }, [
-    crearElemento('div', { clase: 'hoy-barra' }, [cuenta, detalle]),
+    crearElemento('div', { clase: 'hoy-barra' }, [cuenta, progreso, detalle]),
     crearElemento('div', { clase: 'hoy-filtros' }, [
       // El buscador solo hace falta cuando la lista no cabe de un vistazo.
       activos.length > 12 ? crearElemento('div', { clase: 'campo hoy-buscar' }, [
