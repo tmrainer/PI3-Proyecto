@@ -69,6 +69,9 @@ a { color: var(--verde-600); }
 /* ------------------------------------------------------------- cabecera */
 
 .cabecera {
+  /* Con la pantalla de borde a borde (app instalada, APK en Android 15+) la
+     cabecera empieza debajo de la barra de estado; en una pestaña común vale 0. */
+  padding-top: env(safe-area-inset-top, 0px);
   background: var(--verde-900);
   color: var(--cabecera-texto);
   border-bottom: 3px solid var(--verde-500);
@@ -192,7 +195,7 @@ legend { font-size: .84rem; font-weight: 600; color: var(--tinta); padding: 0 6p
 /* -------------------------------------------------------- panel validación */
 
 .panel {
-  position: sticky; top: 0; z-index: 5;
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
   background: var(--papel);
   border: 1px solid var(--borde); border-left: 5px solid var(--verde-500);
   border-radius: var(--radio-g);
@@ -574,10 +577,17 @@ section.bloque.apoyo h2 { font-size: .98rem; color: var(--verde-700); }
   .enlace-ir { padding: 6px 0; }
 }
 
+/* Detrás de la barra de estado (pantalla de borde a borde: app instalada o
+   APK), una franja del color de la cabecera: lo que se desplaza no se ve pasar
+   por debajo de la hora. En una pestaña común mide 0. */
+body::before {
+  content: ''; position: fixed; inset: 0 0 auto 0; z-index: 30;
+  height: env(safe-area-inset-top, 0px); background: var(--verde-900); pointer-events: none;
+}
+
 /* En app instalada no hay barra de navegador: el contenido respeta la
    zona segura del dispositivo. */
 @media (display-mode: standalone) {
-  .cabecera { padding-top: env(safe-area-inset-top); }
   main { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
 }
 
@@ -611,7 +621,7 @@ body[data-pagina="asistencia"] .panel { position: static; }
 
 /* El panel de revisión se pega arriba: lo enfocado nunca queda debajo de él.
    ui.js mide su alto real en --alto-panel. */
-html { scroll-padding-top: calc(var(--alto-panel, 6rem) + 8px); }
+html { scroll-padding-top: calc(var(--alto-panel, 6rem) + 8px + env(safe-area-inset-top, 0px)); }
 
 /* ------------------------------------------------------------ hover
 
@@ -752,7 +762,7 @@ details.bloque.desplegable[open] > summary + * { margin-top: 14px; }
   /* Asistencia: lo que se queda arriba al bajar es el conteo y el buscador. */
   #bloque-hoy > .pista { display: none; }
   .hoy-fija {
-    position: sticky; top: 0; z-index: 4;
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 4;
     margin: 0 -16px; padding: 8px 16px;
     background: var(--papel); border-bottom: 1px solid var(--borde);
   }
