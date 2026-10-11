@@ -65,10 +65,11 @@
   --g-nino: #9c4a14; --g-adolescente: #6a4c96; --g-adulto: #2f6672; --g-mayor: #7a4a36; --g-sin: #5b6657;
 }
 
-/* Modo oscuro: sigue al ajuste del teléfono. Cada par de texto y fondo se
-   midió (texto 4,5:1 o más; bordes de control 3:1 o más). */
+/* Modo oscuro: en Automático sigue al teléfono; en Ajustes se puede fijar
+   claro u oscuro. Cada par de texto y fondo se midió (texto 4,5:1 o más;
+   bordes de control 3:1 o más). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-tema="claro"]) {
     color-scheme: dark;
     --fondo: #101712;
     --superficie: #19221b;
@@ -94,6 +95,33 @@
     --sombra-2: 0 10px 28px rgba(0, 0, 0, .55);
     --toque: rgba(255, 255, 255, .08);
   }
+}
+/* Elegido a mano en Ajustes (js/preferencias.js pone data-tema en <html>). */
+:root[data-tema="oscuro"] {
+  color-scheme: dark;
+  --fondo: #101712;
+  --superficie: #19221b;
+  --superficie-2: #1f2b22;
+  --seleccion: #2f4834;
+  --tinta: #e4eadf;
+  --tinta-suave: #a9b4a3;
+  --titulo: #e8f1e0;
+  --marca: #152219;
+  --marca-texto: #eef2e9;
+  --marca-suave: #a9bd9c;
+  --acento: #46703c;
+  --acento-texto: #a7cf94;
+  --borde: #2a362c;
+  --borde-fuerte: #3d4c40;
+  --contorno: #7a9d6c;
+  --error: #f29b8c;  --error-fondo: #3a1d19;
+  --aviso: #f0c26c;  --aviso-fondo: #33290f;
+  --ok: #9fcf8a;     --ok-fondo: #1b2e1c;
+  --azul: #8fc5d1;   --azul-fondo: #16292d;
+  --pendiente: #b88a35;
+  --sombra-1: 0 1px 2px rgba(0, 0, 0, .35);
+  --sombra-2: 0 10px 28px rgba(0, 0, 0, .55);
+  --toque: rgba(255, 255, 255, .08);
 }
 
 /* ---------------------------------------------------------------- base */
@@ -127,7 +155,7 @@ a { color: var(--acento-texto); }
 /* Al tocar, todo lo que se toca se oscurece un poco, como en Android. Sin
    cambiar su color: una capa encima, sirva para fondos claros u oscuros. */
 :is(.boton, .tarea, .toque-nombre, .toque-menu, .persona-fila, .dia > summary, .nav-enlace,
-  .ficha-filtro, .opcion, .menu-opciones button, .cabecera-volver, .cabecera-menu,
+  .ficha-filtro, .opcion, .menu-opciones button, .cabecera-volver, .cabecera-menu, .cabecera-voz, .enlace-ajustes,
   .plegable > summary, details.ficha > summary, .fab, .hoy-entrega, .enlace-ir,
   .paso-segmento, details.bloque.desplegable > summary, .aviso-abajo button):active {
   background-image: linear-gradient(var(--toque), var(--toque));
@@ -173,19 +201,22 @@ main:focus, [data-paso] > h2:focus { outline: none; }
 }
 .cabecera-titulo {
   max-width: 980px; margin-inline: auto; padding: var(--e2) 6px var(--e2) var(--e4); min-height: 64px;
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: var(--e1);
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; column-gap: var(--e1);
   position: relative;
 }
 .cabecera-titulo h1 { grid-column: 2; margin: 0; color: #fff; font-size: var(--t-titulo); line-height: 1.2; overflow-wrap: anywhere; }
 .cabecera-sub { grid-column: 2; margin: 0; font-size: .82rem; color: var(--marca-suave); line-height: 1.3; min-height: 1.3em; }   /* lo pone el JS: el lugar ya está */
-.cabecera-volver, .cabecera-menu {
+.cabecera-volver, .cabecera-menu, .cabecera-voz {
   grid-row: 1 / span 2; width: 48px; height: 48px; border-radius: 50%;
   display: grid; place-items: center; color: #fff; background: transparent; border: 0; cursor: pointer;
 }
 .cabecera-volver { grid-column: 1; margin-left: -12px; }
-.cabecera-menu { grid-column: 3; }
+.cabecera-menu { grid-column: 4; }
+/* 🔊: solo si se pidió en Ajustes (preferencias.js pone con-voz en <html>). */
+.cabecera-voz { grid-column: 3; display: none; }
+.con-voz .cabecera-voz { display: grid; }
 .cabecera-menu[aria-expanded="true"] { background: rgba(255, 255, 255, .14); }
-.cabecera-volver:focus-visible, .cabecera-menu:focus-visible { outline-color: #fff; outline-offset: -2px; }
+.cabecera-volver:focus-visible, .cabecera-menu:focus-visible, .cabecera-voz:focus-visible { outline-color: #fff; outline-offset: -2px; }
 
 .menu-opciones {
   position: absolute; right: var(--e2); top: calc(100% - 6px); z-index: 40; min-width: 250px;
@@ -202,8 +233,9 @@ main:focus, [data-paso] > h2:focus { outline: none; }
 /* Letra grande: todo va en rem, así que crece entero. Lo de navegar no
    crece: con 18 px, «Asistencia» se partía en el menú de abajo. */
 html.letra-grande { font-size: 112.5%; }
-.letra-grande .cabecera-titulo h1 { font-size: 1.1rem; }
-.letra-grande .nav-texto { font-size: 12.5px; }
+html.letra-muy-grande { font-size: 125%; }
+:is(.letra-grande, .letra-muy-grande) .cabecera-titulo h1 { font-size: 1.1rem; }
+:is(.letra-grande, .letra-muy-grande) .nav-texto { font-size: 12.5px; }
 
 /* El menú de secciones: arriba en pantallas anchas, abajo en el celular. */
 .nav {
@@ -454,7 +486,7 @@ body[data-pagina="asistencia"] .panel { position: static; }
 .mes-item:last-child, .agenda-item:last-child, .revision-pendientes li:last-child { border-bottom: 0; }
 
 /* Asistencia: una fila, un toque */
-.lista-toque { display: grid; grid-template-columns: 1fr; }
+.lista-toque { display: grid; grid-template-columns: minmax(0, 1fr); }
 .toque { display: flex; align-items: center; min-height: 64px; background: var(--superficie); }
 .toque-nombre {
   flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: var(--e3);
@@ -882,3 +914,18 @@ dialog.bienvenida::backdrop { background: rgba(10, 18, 12, .6); }
 
 /* El panel se pega arriba: lo enfocado nunca queda debajo de él. ui.js mide su alto. */
 html { scroll-padding-top: calc(var(--alto-panel, 6rem) + var(--e2) + env(safe-area-inset-top, 0px)); }
+
+/* ---------- Ajustes ---------- */
+.enlace-ajustes {
+  display: flex; align-items: center; gap: var(--e3); min-height: 48px; padding: var(--e3) var(--e4);
+  margin-top: var(--e3); border-radius: var(--r-m); background: var(--superficie); color: var(--tinta);
+  text-decoration: none; font-weight: 600;
+}
+.enlace-ajustes .icono { color: var(--acento-texto); flex: none; }
+.vista-previa {
+  margin: var(--e3) 0 0; padding: var(--e3) var(--e4); border-radius: var(--r-s);
+  background: var(--superficie-2); color: var(--tinta);
+}
+.zona-peligro h2 { color: var(--error); }
+#ultima-copia { margin: var(--e2) 0 var(--e3); }
+#ultima-copia.pendiente { color: var(--aviso); font-weight: 600; }

@@ -10,7 +10,7 @@ import { validarRendicion } from './validaciones.js';
 import { sugerenciasEncabezado, instantaneaCentro } from './sugerencias.js';
 import { alertaProximaEntrega } from './alertas.js';
 import {
-  buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
+  buscar, crearElemento, montarCabecera, pintarPanel,
   marcarCampo, cajaSugerencia, bannerAlerta, pintarAvisosAlmacenamiento,
   avisarAlSalirDelCampo, chip, mostrarGuardado, icono, avisoAbajo, vibrar
 } from './ui.js';
@@ -684,10 +684,6 @@ montarCabecera('b1', 'Rendición de cuentas');
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
 const bannerB1 = bannerAlerta(alertaProximaEntrega(leer(CLAVES.calendario, calendarioVacio()), hoyIso()));
 if (bannerB1) buscar('#banner').append(bannerB1);
-buscar('#privacidad').append(bloquePrivacidad());
-// Antes de recargar se descarta lo pendiente: si no, el pagehide de la recarga
-// escribiría encima la copia vieja.
-buscar('#barra-datos').append(barraDatos({ antesDeRecargar: () => { pendiente = false; } }));
 
 buscar('#agregar-egreso').addEventListener('click', () => {
   rendicion.egresos.push(nuevoEgreso());

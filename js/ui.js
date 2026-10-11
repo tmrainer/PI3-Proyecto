@@ -86,6 +86,7 @@ const TRAZOS = {
   ayuda: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17.5h.01',
   letra: 'M4 19l5-14 5 14M6 14h6M15 19l3-8 3 8M16.2 16h3.6',
   buscar: 'M17.5 11a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0M16 16l4.5 4.5',
+  ajustes: 'M15.5 12a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
   lapiz: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z'
 };
 
@@ -179,7 +180,6 @@ const PAGINAS = [
 ];
 
 export function montarCabecera(claveActiva, subtitulo) {
-  aplicarLetraGrande();
   if (claveActiva === 'pruebas') {
     PAGINAS.push({ href: './pruebas.html', texto: 'Pruebas', clave: 'pruebas' });
   }
@@ -218,8 +218,8 @@ export function montarCabecera(claveActiva, subtitulo) {
     // Íconos claros en la barra de estado: la cabecera es verde oscuro en los
     // dos modos. (Por defecto siguen al tema del teléfono y en modo claro se
     // veían oscuros sobre oscuro.)
-    const barras = window.Capacitor.Plugins && window.Capacitor.Plugins.SystemBars;
-    if (barras && barras.setStyle) barras.setStyle({ style: 'DARK', bar: 'StatusBar' }).catch(() => {});
+    sincronizarBarras();
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', sincronizarBarras);
     reprogramarAvisos(leer(CLAVES.calendario, null));
     abrirEntregasAlTocarAviso();
   } else {
@@ -233,18 +233,6 @@ export function montarCabecera(claveActiva, subtitulo) {
 //
 // Como en cualquier app: arriba, dónde estás (el título de la pantalla) y una
 // flecha para volver al Inicio; lo que se usa poco va en el menú ⋮.
-
-const CLAVE_LETRA = 'pi3.letraGrande';   // de este equipo, no es un dato de la olla
-
-function letraGrandeActiva() {
-  try { return localStorage.getItem(CLAVE_LETRA) === '1'; } catch (e) { return false; }
-}
-
-// Muchas dirigentes leen con dificultad la letra chica del celular. Todo el CSS
-// va en rem: basta con agrandar la letra base.
-function aplicarLetraGrande() {
-  document.documentElement.classList.toggle('letra-grande', letraGrandeActiva());
-}
 
 function montarBarraTitulo(claveActiva) {
   const barra = buscar('.cabecera-titulo');
@@ -284,30 +272,23 @@ function montarBarraTitulo(claveActiva) {
       icono(nombreIcono, { tam: 22 }), crearElemento('span', { texto })
     ]);
   }
+  // Lo que se usa poco: el resto (copia de los datos, letra, modo, voz) está
+  // en Ajustes, en un solo lugar.
   function pintarOpciones() {
     opciones.textContent = '';
-    const grande = letraGrandeActiva();
     opciones.append(
-      opcion('letra', grande ? 'Letra normal' : 'Letra grande', () => {
-        try { localStorage.setItem(CLAVE_LETRA, grande ? '0' : '1'); } catch (e) { /* solo esta vez */ }
-        document.documentElement.classList.toggle('letra-grande', !grande);
-      }, { role: 'menuitemcheckbox', 'aria-checked': grande ? 'true' : 'false' }),
       opcion('voz', 'Leer esta pantalla en voz alta', leerPantalla),
       opcion('ayuda', '¿Cómo se usa?', () => mostrarBienvenida()),
-      opcion('escudo', 'Copia de tus datos', irACopia)
+      opcion('ajustes', 'Ajustes', () => { location.href = './ajustes.html'; })
     );
   }
   if (!botonMenu.isConnected) barra.append(botonMenu);
   barra.append(opciones);
-}
 
-/** Abre «Copia de tus datos y privacidad» y la trae a la vista. */
-function irACopia() {
-  const plegable = [...document.querySelectorAll('details.plegable')]
-    .find((d) => d.querySelector('#barra-datos'));
-  if (!plegable) return;
-  plegable.open = true;
-  plegable.scrollIntoView({ block: 'start' });
+  // 🔊 en la cabecera, si se pidió en Ajustes (viene en el HTML; preferencias.js
+  // lo muestra con la clase con-voz).
+  const botonVoz = barra.querySelector('.cabecera-voz');
+  if (botonVoz) botonVoz.addEventListener('click', leerPantalla);
 }
 
 // ------------------------------------------------------------ leer en voz alta
@@ -319,13 +300,15 @@ export function decir(texto) {
   if (!('speechSynthesis' in window) || !texto) return false;
   const voz = new SpeechSynthesisUtterance(texto);
   voz.lang = 'es-PE';
-  voz.rate = 0.95;
+  let lenta = false;
+  try { lenta = localStorage.getItem('pi3.voz.velocidad') === 'lenta'; } catch (e) { /* normal */ }
+  voz.rate = lenta ? 0.75 : 0.95;
   speechSynthesis.cancel();
   speechSynthesis.speak(voz);
   return true;
 }
 
-function leerPantalla() {
+export function leerPantalla() {
   const partes = [buscar('.cabecera-titulo h1')?.textContent || ''];
   for (const el of document.querySelectorAll('[data-leer]')) {
     if (el.offsetParent !== null) partes.push(el.textContent);
@@ -343,7 +326,7 @@ const PASOS_BIENVENIDA = [
   { titulo: 'Inscribe a las personas', texto: 'En Padrón anotas a cada persona una sola vez: nombre, DNI y su grupo de edad.', dibujo: 'personas' },
   { titulo: 'Toca a quien vino', texto: 'Cada día, en Asistencia, tocas el nombre de quien llegó. La app cuenta las raciones sola.', dibujo: 'lista' },
   { titulo: 'Anota tus compras', texto: 'En el Formato B-1 anotas cada boleta. La app suma y te dice qué falta antes de entregar.', dibujo: 'boleta' },
-  { titulo: 'Guarda una copia', texto: 'Tus datos están solo en este teléfono. Guarda una copia cada dos semanas, en el menú de los tres puntos.', dibujo: 'escudo' }
+  { titulo: 'Guarda una copia', texto: 'Tus datos están solo en este teléfono. Guarda una copia cada dos semanas, en Ajustes.', dibujo: 'escudo' }
 ];
 
 /** ¿Ya vio la bienvenida en este equipo? */
@@ -524,6 +507,21 @@ function pintarOfertaInstalar() {
   ]));
 }
 
+/**
+ * APK: la barra de estado siempre con íconos claros (la cabecera es verde
+ * oscuro en los dos modos); la de navegación, según el modo que se ve (el del
+ * teléfono, o el elegido en Ajustes).
+ */
+export function sincronizarBarras() {
+  const C = window.Capacitor;
+  const barras = C && C.Plugins && C.Plugins.SystemBars;
+  if (!barras || !barras.setStyle) return;
+  const tema = document.documentElement.getAttribute('data-tema');
+  const oscuro = tema ? tema === 'oscuro' : matchMedia('(prefers-color-scheme: dark)').matches;
+  barras.setStyle({ style: 'DARK', bar: 'StatusBar' }).catch(() => {});
+  barras.setStyle({ style: oscuro ? 'DARK' : 'LIGHT', bar: 'NavigationBar' }).catch(() => {});
+}
+
 /** null mientras no se sabe; true/false según lo que conceda el navegador. */
 export let almacenPersistente = null;
 
@@ -631,8 +629,8 @@ export function bannerAlerta(alerta, { mostrarEnlace = true, pedirConfigurar = t
 // --------------------------------------------------- aviso de privacidad (§9)
 
 export function bloquePrivacidad() {
-  // Va dentro del plegable «Copia de tus datos y privacidad»: plegarlo otra
-  // vez aquí obligaba a abrir dos cosas para leer tres líneas.
+  // Va en Ajustes, arriba de «Copia de tus datos»: tres líneas a la vista,
+  // sin plegar.
   const estadoProteccion = crearElemento('p', { clase: 'dato-fuerte estado-proteccion', texto: textoProteccion() });
   return crearElemento('div', { clase: 'privacidad privacidad-cuerpo' }, [
     crearElemento('p', {
@@ -671,7 +669,7 @@ function textoProteccion() {
  *   hacer antes de recargarse (descartar lo pendiente, para que el pagehide no
  *   escriba encima la copia vieja)
  */
-export function barraDatos({ antesDeRecargar } = {}) {
+export function barraDatos({ antesDeRecargar, borrar = true } = {}) {
   const recargar = () => {
     if (antesDeRecargar) antesDeRecargar();
     location.reload();
@@ -756,24 +754,33 @@ export function barraDatos({ antesDeRecargar } = {}) {
       }),
       crearElemento('label', { clase: 'boton secundario', for: 'importar-archivo', texto: 'Recuperar una copia' }),
       entrada,
-      crearElemento('button', {
-        type: 'button', clase: 'boton peligro',
-        texto: 'Borrar todo',
-        onclick: () => {
-          const confirmado = confirm(
-            'Se borrará de este equipo: el padrón, la asistencia, el formato B-1 ' +
-            'y las entregas.\n\n' +
-            'No se puede deshacer. ¿Guardaste una copia?\n\n' +
-            'Aceptar para borrar todo.');
-          if (!confirmado) return;
-          borrarTodo();
-          recargar();
-        }
-      })
+      borrar ? botonBorrarTodo(recargar) : null
     ]),
     abrirCifrado,
     exportarConContrasena()
   ]);
+}
+
+/**
+ * «Borrar todo»: con confirmación que nombra lo que se borra (no se puede
+ * deshacer, así que aquí sí se pregunta).
+ * @param {() => void} recargar  lo que hace la página después de borrar
+ */
+export function botonBorrarTodo(recargar = () => location.reload()) {
+  return crearElemento('button', {
+    type: 'button', clase: 'boton peligro',
+    texto: 'Borrar todo',
+    onclick: () => {
+      const confirmado = confirm(
+        'Se borrará de este equipo: el padrón, la asistencia, el formato B-1 ' +
+        'y las entregas.\n\n' +
+        'No se puede deshacer. ¿Guardaste una copia?\n\n' +
+        'Aceptar para borrar todo.');
+      if (!confirmado) return;
+      borrarTodo();
+      recargar();
+    }
+  });
 }
 
 /** «Exportar con contraseña»: plegado, con la contraseña dos veces. */

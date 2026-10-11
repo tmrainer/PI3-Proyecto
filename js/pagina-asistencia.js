@@ -5,12 +5,11 @@ import { hoyIso, aCentimos, formatearSoles, nuevaAtencion, fechaLarga } from './
 import { resumenEconomicoRaciones } from './calculos.js';
 import { validarAtenciones, validarPreciosMenu } from './validaciones.js';
 import {
-  estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, periodoPorDefecto, vigilarPestanas,
-  descartarPendiente
+  estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, periodoPorDefecto, vigilarPestanas
 } from './estado.js';
 import { pintarAsistenciaDeHoy, pintarOtrosDias } from './ui-asistencia.js';
 import {
-  buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos,
+  buscar, crearElemento, montarCabecera,
   pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo,
   repintarConservandoVista, chip, pantallaEncendidaMientrasSeUsa, mostrarGuardado
 } from './ui.js';
@@ -90,8 +89,6 @@ function repintar() {
 montarCabecera('asistencia', fechaLarga(hoyIso()));
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
 pantallaEncendidaMientrasSeUsa();
-buscar('#privacidad').append(bloquePrivacidad());
-buscar('#barra-datos').append(barraDatos({ antesDeRecargar: descartarPendiente }));
 
 ctx.titulo = buscar('#titulo-hoy');
 

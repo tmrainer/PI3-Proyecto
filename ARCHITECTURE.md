@@ -109,29 +109,42 @@ ayudaSocial }` (opcional) se suma en `desgloseDelDia()` a las raciones, la
 recaudación y el promedio; `sinInscribirDelDia()` lo lee. Se cuenta con los
 botones −/+ de «Comieron sin estar en el padrón», hoy y en los días anteriores.
 
-**Instalar y letra grande** (`ui.js`, desde `montarCabecera()`). Si el navegador
-dispara `beforeinstallprompt` (Chrome y Edge), la app ofrece su propio botón
-«Instalar» arriba y en «Copia de tus datos»; «Ahora no» lo posterga 14 días.
-«Letra grande» pone la letra base en 18 px (todo el CSS va en rem). Ambas
-preferencias son de ese equipo (`localStorage`, claves `pi3.*`): no son datos de
-la olla y no van en los respaldos.
+**Instalar** (`ui.js`, desde `montarCabecera()`). Si el navegador dispara
+`beforeinstallprompt` (Chrome y Edge), la app ofrece su propio botón «Instalar»
+arriba; «Ahora no» lo posterga 14 días.
+
+**Ajustes** (`ajustes.html`, `pagina-ajustes.js`; se llega desde el menú ⋮ y
+desde el Inicio). En un solo lugar: la privacidad y la copia de los datos
+(guardar, con contraseña, recuperar, fecha de la última), el modo
+(automático, claro u oscuro), el tamaño de letra (normal 16 px, grande 18,
+muy grande 20; todo el CSS va en rem), el botón 🔊 en la cabecera, la velocidad
+de la voz y, aparte y al final, «Borrar todo». `js/preferencias.js` es un script
+clásico en el `<head>` que aplica modo, letra y 🔊 antes del primer cuadro
+(`data-tema` y clases en `<html>`); Ajustes vuelve a llamar a
+`window.aplicarPreferencias()` tras cada cambio. Son preferencias del equipo
+(`localStorage`, claves `pi3.tema`, `pi3.letra`, `pi3.voz.boton`,
+`pi3.voz.velocidad`): no son datos de la olla y no van en los respaldos. El
+`pi3.letraGrande` de antes se sigue leyendo.
 
 **Diseño de app** (aprobado sobre una maqueta, probado en un Moto G77).
 `index.html` es el **Inicio**: el día de un vistazo y botones por tarea; la
 asistencia está en `asistencia.html`. `montarCabecera()` arma el menú de abajo
-(ícono y palabra), la flecha para volver y el menú ⋮ (letra grande, leer la
-pantalla en voz alta con `speechSynthesis`, ¿cómo se usa?, copia). En `ui.js`
+(ícono y palabra), la flecha para volver y el menú ⋮ (leer la pantalla en voz
+alta con `speechSynthesis`, ¿cómo se usa?, Ajustes). El menú de abajo, la flecha
+y el ⋮ vienen escritos en el HTML de cada página (así no parpadean en la
+transición); `montarCabecera()` solo les agrega el comportamiento. En `ui.js`
 también: `avisoAbajo()` (aviso con «Deshacer», en vez de `confirm()`),
 `avatarPersona()` (iniciales del color del grupo de edad) y
 `mostrarBienvenida()` (primer uso). El B-1 va por pasos (`irAPaso()` en
 `pagina-b1.js`; cada sección lleva `data-paso`) y Entregas abre con la cuenta
-regresiva. Preferencias del equipo, fuera de los respaldos: `pi3.letraGrande`,
+regresiva. Preferencias del equipo, fuera de los respaldos: las de Ajustes,
 `pi3.bienvenidaVista`, `pi3.instalar.postergadoHasta`.
 
 **Sistema visual** (`estilos.css`). Colores con nombre de uso (`--fondo`,
 `--superficie`, `--superficie-2`, `--seleccion`, `--titulo`, `--acento`,
 `--acento-texto`, `--marca`, `--contorno` y los de estado); el modo oscuro solo
-redefine esos valores bajo `prefers-color-scheme: dark`. Espacios `--e1`…`--e6`
+redefine esos valores, bajo `prefers-color-scheme: dark` (si no se eligió
+«Claro») y bajo `[data-tema="oscuro"]`. Espacios `--e1`…`--e6`
 (4–32 px), esquinas `--r-s/m/l` (8/12/16) y redondeadas, sombras `--sombra-1/2`.
 Una sola capa: secciones sobre el fondo y una superficie por lista (filas
 separadas por una línea), sin rayas de color al costado. Entre páginas,

@@ -7,7 +7,7 @@ import { alertaProximaEntrega, agendaEntregas, PERIODICIDADES } from './alertas.
 import { validarCalendario, validarRendicion } from './validaciones.js';
 import { hayAvisosNativos, permisoDeAvisos, pedirPermisoDeAvisos, reprogramarAvisos } from './avisos-nativos.js';
 import {
-  buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
+  buscar, crearElemento, montarCabecera, pintarPanel,
   marcarCampo, pintarAvisosAlmacenamiento, avisarAlSalirDelCampo, mostrarGuardado
 } from './ui.js';
 
@@ -208,8 +208,6 @@ function irACampo(campo) {
 
 montarCabecera('calendario', 'Fechas de entrega del B-1');
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
-buscar('#privacidad').append(bloquePrivacidad());
-buscar('#barra-datos').append(barraDatos({ antesDeRecargar: () => { pendiente = false; } }));
 
 const selPer = buscar('#periodicidad');
 selPer.value = calendario.periodicidad || 'mensual';

@@ -10,7 +10,7 @@ import {
 import { desgloseDelDia, recaudacionDelDiaCent } from './calculos.js';
 import { alertaProximaEntrega } from './alertas.js';
 import {
-  buscar, crearElemento, icono, montarCabecera, bloquePrivacidad, barraDatos,
+  buscar, crearElemento, icono, montarCabecera,
   pintarAvisosAlmacenamiento, mostrarBienvenida, bienvenidaVista, exportarTodo
 } from './ui.js';
 
@@ -24,8 +24,6 @@ montarCabecera('inicio', fechaLarga(hoy));
 const centro = config.ultimoCentro && String(config.ultimoCentro.nombreCentro || '').trim();
 if (centro) buscar('.cabecera-titulo h1').textContent = centro;
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'), { recordatorio: false });
-buscar('#privacidad').append(bloquePrivacidad());
-buscar('#barra-datos').append(barraDatos());
 
 // ---- el día de hoy ----
 const atHoy = (padron.atenciones || []).find((a) => a.fecha === hoy);
@@ -61,6 +59,8 @@ for (const t of document.querySelectorAll('.tarea')) {
   );
 }
 buscar('#como-se-usa').addEventListener('click', () => mostrarBienvenida());
+const enlaceAjustes = buscar('#enlace-ajustes');
+enlaceAjustes.prepend(icono('ajustes', { tam: 22 }));
 
 // ---- la copia de los datos ----
 const nota = buscar('#nota-copia');

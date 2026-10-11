@@ -18,7 +18,7 @@ ver dónde se traban, no enseñarles: no expliques nada mientras hacen las tarea
 3. «Hoy vinieron Ana María y Rosa. Márcalas.»
 4. «Rosa comió el menú de ayuda social. Corrígelo.»
 5. «Guarda una copia de tus datos.»
-6. «Pon la letra más grande.»
+6. «Pon la letra más grande.» (está en Ajustes: ⋮ o el Inicio)
 
 ## Qué anotar en cada tarea
 

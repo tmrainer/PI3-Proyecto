@@ -24,7 +24,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = path.resolve(process.argv[2] || path.join(path.dirname(fileURLToPath(import.meta.url)), '..'));
-const PAGINAS = ['index', 'asistencia', 'padron', 'formato-b1', 'calendario', 'pruebas'];
+const PAGINAS = ['index', 'asistencia', 'padron', 'formato-b1', 'calendario', 'ajustes', 'pruebas'];
 
 // ------------------------------------------------------------ padrón de prueba
 
@@ -370,7 +370,7 @@ async function correr(base, cdp) {
     comprobar('respaldo con contraseña: cifrado, y la equivocada no lo abre',
       r1.oculto && r1.malaFalla && r1.vuelta === 3, JSON.stringify(r1));
 
-    await p.ir(`${base}/padron.html`);       // ya con el padrón vacío
+    await p.ir(`${base}/ajustes.html`);      // ya con el padrón vacío
     const ABRIR_CON = (clave) => `(async () => {
       document.getElementById('clave-importar').value = ${JSON.stringify(clave)};
       [...document.querySelectorAll('.respaldo-clave button')].find((b) => b.textContent === 'Abrir copia').click();
@@ -395,8 +395,8 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
-  // 1e. Importar desde cualquier página restaura TODO lo que trae el respaldo
-  // (antes, Asistencia solo restauraba el padrón y el resto se perdía).
+  // 1e. Recuperar una copia (en Ajustes) restaura TODO lo que trae el
+  // respaldo: padrón, calendario y B-1.
   {
     const p = await pestana(cdp);
     await p.ir(`${base}/__sembrar?padron=1`);
@@ -410,7 +410,7 @@ async function correr(base, cdp) {
       localStorage.clear();
       return 1;
     })()`);
-    await p.ir(`${base}/asistencia.html`);
+    await p.ir(`${base}/ajustes.html`);
     await p.actuar(`(async () => {
       window.confirm = () => true;
       const dt = new DataTransfer();
@@ -426,7 +426,7 @@ async function correr(base, cdp) {
       calendario: (JSON.parse(localStorage.getItem('b1.calendario.v1')) || {}).periodicidad,
       centro: ((JSON.parse(localStorage.getItem('b1.rendiciones.v1')) || [])[0] || {}).nombreCentro
     })`);
-    comprobar('importar desde Asistencia restaura padrón, calendario y B-1',
+    comprobar('recuperar una copia en Ajustes restaura padrón, calendario y B-1',
       r.personas === 3 && r.calendario === 'quincenal' && r.centro === 'Comedor del respaldo', JSON.stringify(r));
     await p.cerrar();
   }
@@ -553,21 +553,36 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
-  // 1k. Letra grande: se activa en el menú ⋮ y se recuerda al volver.
+  // 1k. Ajustes: se llega desde el menú ⋮; la letra, el modo y el botón 🔊
+  // se eligen ahí y valen en las otras páginas desde el primer cuadro.
   // Instalar: cuando el navegador lo permite, la app ofrece su propio botón.
   {
     const p = await pestana(cdp);
     await p.ir(`${base}/__sembrar?padron=1`);
     await p.ir(`${base}/asistencia.html`);
-    await p.actuar(`(() => { document.querySelector('.cabecera-menu').click(); [...document.querySelectorAll('.menu-opciones button')].find((b) => /Letra/.test(b.textContent)).click(); })()`);
+    const menu = await p.eval(`(document.querySelector('.cabecera-menu').click(),
+      [...document.querySelectorAll('.menu-opciones button')].map((b) => b.textContent.trim()))`);
+    comprobar('menú ⋮: leer, ayuda y Ajustes', menu.join('|') === 'Leer esta pantalla en voz alta|¿Cómo se usa?|Ajustes', menu.join('|'));
+    await p.ir(`${base}/ajustes.html`);
+    const ajustes = await p.actuar(`(() => {
+      document.getElementById('letra-grande').click();
+      document.getElementById('tema-oscuro').click();
+      document.getElementById('voz-boton').click();
+      return { copia: !!document.querySelector('#barra-datos .boton'),
+        borrarAparte: !document.querySelector('#barra-datos .peligro') && !!document.querySelector('#borrar-todo .peligro'),
+        ultima: document.getElementById('ultima-copia').textContent };
+    })()`);
+    comprobar('ajustes: copia arriba, «Borrar todo» aparte al final',
+      ajustes.copia && ajustes.borrarAparte && /Todavía no guardaste/.test(ajustes.ultima), JSON.stringify(ajustes));
     await p.ir(`${base}/padron.html`);
     const letra = await p.eval(`({ clase: document.documentElement.classList.contains('letra-grande'),
       base: getComputedStyle(document.documentElement).fontSize,
-      pulsado: (document.querySelector('.cabecera-menu').click(),
-        document.querySelector('.menu-opciones [role=menuitemcheckbox]').getAttribute('aria-checked')) })`);
-    await p.actuar(`document.querySelector('.cabecera-menu').click()`);
-    comprobar('letra grande: se activa y se recuerda en otra página',
-      letra.clase && letra.base === '18px' && letra.pulsado === 'true', JSON.stringify(letra));
+      tema: document.documentElement.dataset.tema,
+      fondo: getComputedStyle(document.body).backgroundColor,
+      voz: getComputedStyle(document.querySelector('.cabecera-voz')).display })`);
+    comprobar('ajustes: letra grande, modo oscuro y 🔊 valen en otra página',
+      letra.clase && letra.base === '18px' && letra.tema === 'oscuro' && letra.fondo === 'rgb(16, 23, 18)' && letra.voz === 'grid',
+      JSON.stringify(letra));
     const oferta = await p.actuar(`(async () => {
       let pedido = 0;
       const e = new Event('beforeinstallprompt', { cancelable: true });
@@ -581,8 +596,8 @@ async function correr(base, cdp) {
     })()`);
     comprobar('instalar: aparece «Instalar» y abre el pedido del navegador',
       oferta.franja && oferta.pedido === 1 && !oferta.sigue, JSON.stringify(oferta));
-    await p.actuar(`(() => { document.querySelector('.cabecera-menu').click(); [...document.querySelectorAll('.menu-opciones button')].find((b) => /Letra/.test(b.textContent)).click(); })()`);
-    comprobar('letra grande / instalar: sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
+    await p.actuar(`['pi3.letra', 'pi3.tema', 'pi3.voz.boton'].forEach((c) => localStorage.removeItem(c))`);
+    comprobar('ajustes / instalar: sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
     await p.cerrar();
   }
 

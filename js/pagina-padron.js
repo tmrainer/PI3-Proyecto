@@ -7,7 +7,7 @@ import { hoyIso, cuantos } from './modelo.js';
 import { validarAfiliados } from './validaciones.js';
 import {
   estado, cargar, alGuardar, guardarPronto, guardarYa, periodoPorDefecto,
-  vigilarPestanas, descartarPendiente
+  vigilarPestanas
 } from './estado.js';
 import {
   montarAltaPersona, pintarListaPersonas, pintarResumenEtario, montarFiltrosPersonas, elegirFiltro
@@ -15,7 +15,7 @@ import {
 import { montarImportacion } from './ui-importar.js';
 import { pintarReportePadron, montarControlesReporte } from './ui-reportes.js';
 import {
-  buscar, montarCabecera, bloquePrivacidad, barraDatos,
+  buscar, montarCabecera,
   pintarAvisosAlmacenamiento, aplicarHallazgos, irACampo, avisarAlSalirDelCampo,
   repintarConservandoVista, mostrarGuardado, crearElemento, icono
 } from './ui.js';
@@ -63,8 +63,6 @@ function repintar() {
 
 montarCabecera('padron', cuantos(estado.padron.afiliados.length, 'persona'));
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
-buscar('#privacidad').append(bloquePrivacidad());
-buscar('#barra-datos').append(barraDatos({ antesDeRecargar: descartarPendiente }));
 
 ctx.conteo = buscar('#conteo-afiliados');
 ctx.estadoTexto = buscar('#estado-guardado');
