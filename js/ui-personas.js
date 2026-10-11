@@ -6,7 +6,7 @@ import {
   grupoEtario, etiquetaGrupoEtario, edadEnFecha, resumenEtario, afiliadosActivos,
   TRAMOS_ETARIOS, TIPOS_AFILIADO
 } from './calculos.js';
-import { validarAfiliado } from './validaciones.js';
+import { validarAfiliado, indicePadron } from './validaciones.js';
 import { estado } from './estado.js';
 import { buscar, crearElemento, campo, icono, chip } from './ui.js';
 
@@ -237,8 +237,8 @@ function cuerpoAfiliado(a, ctx) {
 }
 
 /** Una línea por persona. El editor se construye al desplegarla, no antes. */
-function filaAfiliado(a, ctx) {
-  const hallazgos = validarAfiliado(a, estado.padron);
+function filaAfiliado(a, ctx, indice) {
+  const hallazgos = validarAfiliado(a, estado.padron, indice);
   const errores = hallazgos.filter((x) => x.severidad === 'error').length;
 
   const nombre = crearElemento('span', { clase: 'persona-nombre', texto: nombreCompleto(a) || 'Persona sin nombre' });
@@ -309,25 +309,26 @@ function coincideBusqueda(a, ctx) {
     String(a.numeroDocumento || '').includes(ctx.busqueda.trim());
 }
 
-function pasaFiltro(a, ctx) {
+function pasaFiltro(a, ctx, indice) {
   switch (ctx.filtro) {
     case 'activos': return a.activo;
     case 'bajas': return !a.activo;
     case 'ayuda_social': return a.activo && a.tipoAfiliado === 'caso_social';
     case 'incompletas':
-      return validarAfiliado(a, estado.padron).some((x) => x.severidad === 'error');
+      return validarAfiliado(a, estado.padron, indice).some((x) => x.severidad === 'error');
     default: return true;
   }
 }
 
 export function pintarListaPersonas(lista, ctx) {
   lista.textContent = '';
+  const indice = indicePadron(estado.padron);
   const visibles = estado.padron.afiliados
-    .filter((a) => pasaFiltro(a, ctx) && coincideBusqueda(a, ctx))
+    .filter((a) => pasaFiltro(a, ctx, indice) && coincideBusqueda(a, ctx))
     .sort((a, b) => nombreCompleto(a).localeCompare(nombreCompleto(b), 'es'));
 
   const incompletas = estado.padron.afiliados
-    .filter((a) => a.activo && validarAfiliado(a, estado.padron).some((x) => x.severidad === 'error')).length;
+    .filter((a) => a.activo && validarAfiliado(a, estado.padron, indice).some((x) => x.severidad === 'error')).length;
   const activas = estado.padron.afiliados.filter((a) => a.activo).length;
   if (ctx.conteo) ctx.conteo.textContent =
     `Mostrando ${visibles.length} de ${estado.padron.afiliados.length}. ` +
@@ -343,7 +344,7 @@ export function pintarListaPersonas(lista, ctx) {
     }));
     return;
   }
-  for (const a of visibles) lista.append(filaAfiliado(a, ctx));
+  for (const a of visibles) lista.append(filaAfiliado(a, ctx, indice));
 }
 
 // ------------------------------------------- resumen por grupos y filtros

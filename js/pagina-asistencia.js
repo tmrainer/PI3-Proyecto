@@ -3,7 +3,7 @@
 
 import { hoyIso, aCentimos, formatearSoles, nuevaAtencion } from './modelo.js';
 import { resumenEconomicoRaciones } from './calculos.js';
-import { validarPadron, validarPreciosMenu } from './validaciones.js';
+import { validarAtenciones, validarPreciosMenu } from './validaciones.js';
 import { alertaProximaEntrega } from './alertas.js';
 import {
   estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, periodoPorDefecto, vigilarPestanas,
@@ -24,12 +24,23 @@ const periodo = periodoPorDefecto();
 const ctx = {
   fechaRef: hoyIso(),
   titulo: null,
-  onCambio: () => { guardarPronto(); refrescar(); },
+  onCambio: () => { guardarPronto(); refrescarPronto(); },
   onRepintar: () => { guardarPronto(); repintar(); },
-  onResumen: () => refrescar()
+  onResumen: () => refrescarPronto()
 };
 
+// Un toque debe verse marcado AL INSTANTE: el resumen del periodo y la
+// revisión de todos los días van después, una sola vez aunque se pidan
+// varias (onCambio y onResumen llegan juntos en cada toque).
+let refrescoPendiente = 0;
+function refrescarPronto() {
+  if (refrescoPendiente) return;
+  refrescoPendiente = setTimeout(() => { refrescoPendiente = 0; refrescar(); }, 0);
+}
+
 function refrescar() {
+  clearTimeout(refrescoPendiente);
+  refrescoPendiente = 0;
   const r = resumenEconomicoRaciones(estado.padron, periodo.inicio, periodo.fin);
   const caja = buscar('#resumen-raciones');
   caja.textContent = '';
@@ -64,8 +75,7 @@ function refrescar() {
 }
 
 function validar() {
-  const hallazgos = validarPadron(estado.padron)
-    .filter((x) => x.campo.startsWith('atencion.') || x.campo.startsWith('precio.'))
+  const hallazgos = validarAtenciones(estado.padron)
     .concat(validarPreciosMenu(estado.config, estado.padron.atenciones.length > 0));
   aplicarHallazgos(buscar('#panel'), hallazgos, (c) => irACampo(c));
 }

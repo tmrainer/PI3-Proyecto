@@ -3,7 +3,7 @@
 // y ui-escaneo.js.
 
 import { hoyIso } from './modelo.js';
-import { validarPadron } from './validaciones.js';
+import { validarAfiliados } from './validaciones.js';
 import { alertaProximaEntrega } from './alertas.js';
 import {
   estado, cargar, alGuardar, guardarPronto, guardarYa, periodoPorDefecto,
@@ -39,7 +39,7 @@ const ctx = {
 };
 
 function validar() {
-  const hallazgos = validarPadron(estado.padron).filter((x) => x.campo.startsWith('afiliado.'));
+  const hallazgos = validarAfiliados(estado.padron);
   aplicarHallazgos(buscar('#panel'), hallazgos, (c) => irACampo(c, {
     antesDeBuscar: () => {        // puede estar oculta por el filtro o la búsqueda
       ctx.busqueda = '';

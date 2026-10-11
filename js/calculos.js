@@ -76,14 +76,17 @@ export function descuadreFila(fila) {
 
 // --------------------------------------------------------- §6.2 / §6.3 Padrón
 
+/** ¿Estaba activa esta persona en la fecha `ref` ('AAAA-MM-DD' válida)? */
+export function activoEn(a, ref) {
+  if (!a.activo) return false;
+  if (esIso(a.altaEn) && a.altaEn > ref) return false;
+  if (esIso(a.bajaEn) && a.bajaEn <= ref) return false;
+  return true;
+}
+
 export function afiliadosActivos(padron, fechaIso) {
   const ref = esIso(fechaIso) ? fechaIso : hoyIso();
-  return ((padron && padron.afiliados) || []).filter((a) => {
-    if (!a.activo) return false;
-    if (esIso(a.altaEn) && a.altaEn > ref) return false;
-    if (esIso(a.bajaEn) && a.bajaEn <= ref) return false;
-    return true;
-  });
+  return ((padron && padron.afiliados) || []).filter((a) => activoEn(a, ref));
 }
 
 export function edadEnFecha(fechaNacimientoIso, fechaRefIso) {

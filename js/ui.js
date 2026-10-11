@@ -793,16 +793,27 @@ function avisoEspacio() {
 
 const DIAS_ENTRE_RESPALDOS = 14;
 
+// Sin abrir el padrón entero (con años de asistencia, leerlo de nuevo solo para
+// esto demoraba la apertura): guardar() escribe JSON.stringify, que deja
+// «"afiliados":[]» exacto cuando no hay nadie.
+function hayDatosGuardados() {
+  try {
+    const padron = localStorage.getItem(CLAVES.padron);
+    const rendiciones = localStorage.getItem(CLAVES.rendiciones);
+    return (padron !== null && !padron.includes('"afiliados":[]')) ||
+      (rendiciones !== null && rendiciones !== '[]');
+  } catch (e) {
+    return false;
+  }
+}
+
 /**
  * Una línea con botón cuando hay datos y el último respaldo es viejo (o no hay
  * ninguno). En un celular los datos viven en un solo aparato: si se pierde o
  * se borra, sin respaldo no hay de dónde recuperarlos.
  */
 function recordatorioRespaldo() {
-  const padron = leer(CLAVES.padron, null);
-  const hayDatos = (padron && Array.isArray(padron.afiliados) && padron.afiliados.length > 0) ||
-    leer(CLAVES.rendiciones, []).length > 0;
-  if (!hayDatos) return null;
+  if (!hayDatosGuardados()) return null;
   const ultimo = leer(CLAVES.respaldo, {}).ultimoEn;
   const dias = ultimo ? Math.round((Date.parse(hoyIso()) - Date.parse(ultimo)) / 86400000) : null;
   if (dias !== null && dias < DIAS_ENTRE_RESPALDOS) return null;

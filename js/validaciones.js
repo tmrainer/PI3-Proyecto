@@ -6,7 +6,7 @@ import {
 } from './modelo.js';
 import {
   totales, totalRendicionGastos, gastoPorOrigen, descuadreFila,
-  duracionPeriodo, afiliadosActivos, racionesDelDia, asistenciasDelDia,
+  duracionPeriodo, activoEn, racionesDelDia, asistenciasDelDia,
   desgloseDelDia, grupoEtario, TRAMOS_ETARIOS
 } from './calculos.js';
 
@@ -239,7 +239,33 @@ export function validarRendicion(rendicion) {
 
 // ----------------------------------------------------------------- §5.5 Padrón
 
-export function validarAfiliado(afiliado, padron) {
+function agrupar(mapa, clave, valor) {
+  const lista = mapa.get(clave);
+  if (lista) lista.push(valor); else mapa.set(clave, [valor]);
+}
+
+/**
+ * Índice del padrón para validar sin comparar a cada persona con todas las
+ * demás: con cientos de personas y un año de asistencia, eso hacía que cada
+ * toque tardara segundos en un celular modesto. Se arma una vez por pasada de
+ * validación; no se guarda, así que nunca queda viejo.
+ * @param {?{afiliados: Object[], atenciones: Object[]}} padron
+ */
+export function indicePadron(padron) {
+  const porId = new Map();
+  const porDocumento = new Map();     // solo activas, como pide la regla
+  const porNombre = new Map();
+  const porFecha = new Map();
+  for (const o of (padron && padron.afiliados) || []) {
+    porId.set(o.id, o);
+    if (o.activo && !vacio(o.numeroDocumento)) agrupar(porDocumento, o.numeroDocumento, o);
+    agrupar(porNombre, normalizarNombre(nombreCompleto(o)), o);
+  }
+  for (const at of (padron && padron.atenciones) || []) agrupar(porFecha, at.fecha, at);
+  return { porId, porDocumento, porNombre, porFecha };
+}
+
+export function validarAfiliado(afiliado, padron, indice = indicePadron(padron)) {
   const hs = [];
   const a = afiliado;
   const campo = `afiliado.${a.id}`;
@@ -257,16 +283,15 @@ export function validarAfiliado(afiliado, padron) {
     if (a.tipoDocumento === 'ce' && !/^[A-Za-z0-9]{8,12}$/.test(a.numeroDocumento)) {
       hs.push(h(ERROR, campo, 'El carné de extranjería debe tener entre 8 y 12 caracteres.'));
     }
-    const repetido = ((padron && padron.afiliados) || []).find(
-      (o) => o.id !== a.id && o.activo && o.numeroDocumento === a.numeroDocumento);
+    const repetido = (indice.porDocumento.get(a.numeroDocumento) || []).find((o) => o.id !== a.id);
     if (repetido) {
       hs.push(h(ERROR, campo,
         `El documento ${a.numeroDocumento} ya está registrado en ${nombreCompleto(repetido)}.`));
     }
   }
 
-  const mismoNombre = ((padron && padron.afiliados) || []).find(
-    (o) => o.id !== a.id && normalizarNombre(nombreCompleto(o)) === normalizarNombre(nombreCompleto(a)));
+  const mismoNombre = (indice.porNombre.get(normalizarNombre(nombreCompleto(a))) || [])
+    .find((o) => o.id !== a.id);
   if (mismoNombre && !vacio(nombreCompleto(a))) {
     hs.push(h(AVISO, campo, 'Ya hay otra persona registrada con el mismo nombre completo.'));
   }
@@ -315,7 +340,7 @@ export function validarAfiliado(afiliado, padron) {
 
 // --------------------------------------------------------------- §5.6 Raciones
 
-export function validarAtencion(atencion, padron) {
+export function validarAtencion(atencion, padron, indice = indicePadron(padron)) {
   const hs = [];
   const at = atencion;
   const campo = `atencion.${at.id}`;
@@ -358,7 +383,6 @@ export function validarAtencion(atencion, padron) {
   // --- asistencia ---
   const asistencias = asistenciasDelDia(at);
   const vistos = new Set();
-  const activosEseDia = afiliadosActivos(padron, at.fecha);
 
   for (const a of asistencias) {
     if (!a || !a.afiliadoId) continue;
@@ -366,23 +390,25 @@ export function validarAtencion(atencion, padron) {
       hs.push(h(ERROR, campo, 'Hay una persona marcada dos veces en la asistencia de ese día.'));
     }
     vistos.add(a.afiliadoId);
-    const persona = ((padron && padron.afiliados) || []).find((o) => o.id === a.afiliadoId);
+    const persona = indice.porId.get(a.afiliadoId);
     if (!persona) {
       hs.push(h(AVISO, campo, 'La asistencia incluye a alguien que ya no está en el padrón.'));
-    } else if (!activosEseDia.some((o) => o.id === a.afiliadoId)) {
+    } else if (!activoEn(persona, at.fecha)) {
       hs.push(h(AVISO, campo,
         `${nombreCompleto(persona)} figura en la asistencia pero no estaba activa ese día.`));
     }
   }
 
-  if (d.total > activosEseDia.length && d.origen === 'legado') {
+  const activosEseDia = d.origen === 'legado'
+    ? ((padron && padron.afiliados) || []).filter((o) => activoEn(o, at.fecha)).length
+    : 0;
+  if (d.origen === 'legado' && d.total > activosEseDia) {
     hs.push(h(AVISO, campo,
-      `Ese día cuenta ${d.total} raciones y el padrón tenía ${activosEseDia.length} ` +
+      `Ese día cuenta ${d.total} raciones y el padrón tenía ${activosEseDia} ` +
       'persona(s) activa(s).'));
   }
 
-  const repetida = ((padron && padron.atenciones) || [])
-    .find((o) => o.id !== at.id && o.fecha === at.fecha);
+  const repetida = (indice.porFecha.get(at.fecha) || []).find((o) => o.id !== at.id);
   if (repetida) {
     hs.push(h(AVISO, campo, 'Ya hay otro registro de atención con esta misma fecha.'));
   }
@@ -429,9 +455,20 @@ export function validarCalendario(calendario) {
 }
 
 export function validarPadron(padron) {
+  return [...validarAfiliados(padron), ...validarAtenciones(padron)];
+}
+
+/** Solo las personas del padrón (la página Padrón no mira los días). */
+export function validarAfiliados(padron, indice = indicePadron(padron)) {
   const hs = [];
-  for (const a of (padron && padron.afiliados) || []) hs.push(...validarAfiliado(a, padron));
-  for (const at of (padron && padron.atenciones) || []) hs.push(...validarAtencion(at, padron));
+  for (const a of (padron && padron.afiliados) || []) hs.push(...validarAfiliado(a, padron, indice));
+  return hs;
+}
+
+/** Solo los días de asistencia (la página Asistencia no mira las fichas). */
+export function validarAtenciones(padron, indice = indicePadron(padron)) {
+  const hs = [];
+  for (const at of (padron && padron.atenciones) || []) hs.push(...validarAtencion(at, padron, indice));
   return hs;
 }
 
