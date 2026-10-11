@@ -1,8 +1,8 @@
 // ui-importar.js — cargar un padrón pegado desde Excel o desde un CSV.
 // Nada se guarda hasta que la usuaria ve qué filas entran y confirma (§6.9).
 
-import { cuantos } from './modelo.js';
-import { etiquetaGrupoEtario } from './calculos.js';
+import { cuantos, hoyIso } from './modelo.js';
+import { etiquetaGrupoEtario, grupoEtario } from './calculos.js';
 import { prepararImportacion, filasImportables } from './importar.js';
 import { leerXlsx, pareceXlsx } from './xlsx.js';
 import { estado, guardarYa } from './estado.js';
@@ -16,6 +16,12 @@ import { buscar, crearElemento, chip } from './ui.js';
 // no, y confirma. Ver AGENTS.md §6.9.
 
 let importacionPendiente = null;
+
+const ESTADO_FILA = {
+  lista: 'Se agrega',
+  incompleta: 'Se agrega, le faltan datos',
+  duplicada: 'No se agrega: ya está'
+};
 
 export function montarImportacion(ctx) {
   const area = buscar('#pegarPadron');
@@ -90,30 +96,32 @@ export function montarImportacion(ctx) {
       }));
     }
 
-    const cuerpo = crearElemento('tbody');
-    for (const f of r.filas.slice(0, 50)) {
+    // Una tarjeta por persona, no una tabla de seis columnas: en el celular la
+    // tabla obligaba a deslizar de lado y cortaba justo la columna «Estado».
+    // Las filas vacías (títulos, totales al pie) no se listan: ya las cuenta
+    // el resumen de arriba.
+    const lista = crearElemento('ul', { clase: 'imp-lista' });
+    const visibles = r.filas.filter((f) => f.estado !== 'vacia');
+    for (const f of visibles.slice(0, 50)) {
       const a = f.afiliado;
-      cuerpo.append(crearElemento('tr', { clase: `imp-fila-${f.estado}` }, [
-        crearElemento('td', { clase: 'num', texto: String(f.linea) }),
-        crearElemento('td', { texto: f.nombreCompleto || '—' }),
-        crearElemento('td', { texto: a.numeroDocumento || '—' }),
-        crearElemento('td', { texto: a.grupoEtarioManual ? etiquetaGrupoEtario(a.grupoEtarioManual)
-          : (a.fechaNacimiento ? 'por fecha de nacimiento' : '—') }),
-        crearElemento('td', { texto: a.tipoAfiliado === 'caso_social' ? 'Ayuda social'
-          : a.tipoAfiliado === 'habitual' ? 'Habitual' : '—' }),
-        crearElemento('td', { texto: f.avisos.join('; ') || 'lista' })
+      const g = a.grupoEtarioManual || grupoEtario(a, hoyIso());
+      const datos = [
+        a.numeroDocumento ? `${a.tipoDocumento === 'ce' ? 'CE' : 'DNI'} ${a.numeroDocumento}` : 'sin documento',
+        g ? etiquetaGrupoEtario(g) : 'sin grupo de edad',
+        a.tipoAfiliado === 'caso_social' ? 'Ayuda social' : a.tipoAfiliado === 'habitual' ? 'Habitual' : 'sin tipo'
+      ];
+      lista.append(crearElemento('li', { clase: `imp-item imp-${f.estado}` }, [
+        crearElemento('div', { clase: 'imp-cabeza' }, [
+          crearElemento('span', { clase: 'imp-nombre', texto: f.nombreCompleto || '—' }),
+          crearElemento('span', { clase: 'imp-estado', texto: ESTADO_FILA[f.estado] })
+        ]),
+        crearElemento('div', { clase: 'imp-datos', texto: `Fila ${f.linea} · ${datos.join(' · ')}` }),
+        f.avisos.length ? crearElemento('div', { clase: 'imp-avisos', texto: f.avisos.join('; ') }) : null
       ]));
     }
-    vista.append(crearElemento('div', { clase: 'tabla-desplazable' }, [
-      crearElemento('table', { clase: 'tabla' }, [
-        crearElemento('thead', {}, [crearElemento('tr', {},
-          ['Fila', 'Nombre', 'Documento', 'Grupo', 'Tipo', 'Estado']
-            .map((t) => crearElemento('th', { texto: t })))]),
-        cuerpo
-      ])
-    ]));
-    if (r.filas.length > 50) {
-      vista.append(crearElemento('p', { clase: 'pista', texto: `… y ${cuantos(r.filas.length - 50, 'fila')} más.` }));
+    vista.append(lista);
+    if (visibles.length > 50) {
+      vista.append(crearElemento('p', { clase: 'pista', texto: `… y ${cuantos(visibles.length - 50, 'persona')} más.` }));
     }
 
     btnConfirmar.hidden = entran.length === 0;

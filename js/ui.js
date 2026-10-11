@@ -329,8 +329,11 @@ const TEXTO_NIVEL = {
  * Franja de aviso. Solo se ve con la aplicación abierta: no hay notificaciones
  * con la app cerrada y la franja lo dice (AGENTS.md §10).
  */
-export function bannerAlerta(alerta, { mostrarEnlace = true } = {}) {
+export function bannerAlerta(alerta, { mostrarEnlace = true, pedirConfigurar = true } = {}) {
   if (!alerta) return null;
+  // «Todavía no has indicado cuándo entregas» va solo donde importa (el B-1):
+  // en Asistencia y Padrón empujaba la lista hacia abajo en el celular.
+  if (!alerta.configurado && !pedirConfigurar) return null;
   const nivel = alerta.nivel || 'lejana';
   const caja = crearElemento('div', { clase: `banner-alerta ${nivel}`, role: 'status' });
 

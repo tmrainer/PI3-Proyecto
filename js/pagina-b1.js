@@ -378,30 +378,27 @@ function fichaEgreso(fila, indice) {
       campo('Fecha de la compra', fFecha),
       campo('Descripción de la compra', fDesc)
     ]),
-    crearElemento('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
-      crearElemento('div', { clase: 'campo' }, [
-        crearElemento('label', { for: fCant.id, texto: 'Cantidad' }),
-        fCant,
-        crearElemento('label', { clase: 'opcion' }, [chkCant, 'La boleta dice «varios»'])
+    crearElemento('div', { clase: 'rejilla dos', style: 'margin-top:10px' }, [
+      crearElemento('div', { clase: 'rejilla par' }, [
+        campo('Cantidad', fCant),
+        campo('Unidad de medida', fUnidad),
+        // A lo ancho: en media columna, la casilla se partía en tres renglones.
+        crearElemento('label', { clase: 'opcion a-lo-ancho' }, [chkCant, 'La boleta dice «varios» en la cantidad'])
       ]),
-      campo('Unidad de medida', fUnidad),
       campo('Origen del dinero', fOrigen, 'No va al formato.')
     ]),
     crearElemento('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
       campo('RUC del proveedor', fRuc),
       campo('Nombre del proveedor', fProv, 'No va al formato.'),
-      crearElemento('div', { clase: 'rejilla dos' }, [
+      crearElemento('div', { clase: 'rejilla par' }, [
         campo('Serie', fSerie),
         campo('Correlativo', fCorr)
       ])
     ]),
-    crearElemento('div', { clase: 'rejilla dos', style: 'margin-top:10px' }, [
-      crearElemento('div', { clase: 'campo' }, [
-        crearElemento('label', { for: fPrecio.id, texto: 'Precio unitario (S/)' }),
-        fPrecio,
-        crearElemento('label', { clase: 'opcion' }, [chkPrecio, 'La boleta dice «varios»'])
-      ]),
-      campo('Monto total de la boleta (S/)', fMonto, 'Este es el número que suma.')
+    crearElemento('div', { clase: 'rejilla par', style: 'margin-top:10px' }, [
+      campo('Precio unitario (S/)', fPrecio),
+      campo('Monto total (S/)', fMonto),
+      crearElemento('label', { clase: 'opcion a-lo-ancho' }, [chkPrecio, 'La boleta dice «varios» en el precio'])
     ])
   ]);
   // Abierta mientras le falte lo básico: una ficha nueva se abre para llenarla.

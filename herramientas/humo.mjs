@@ -491,13 +491,13 @@ async function correr(base, cdp) {
       const dt = new DataTransfer(); dt.items.add(archivo);
       const entrada = document.getElementById('archivoPadron');
       entrada.files = dt.files; entrada.dispatchEvent(new Event('change'));
-      for (let i = 0; i < 40 && !document.querySelector('#vista-importacion table'); i++) await new Promise((o) => setTimeout(o, 50));
+      for (let i = 0; i < 40 && !document.querySelector('#vista-importacion .imp-lista'); i++) await new Promise((o) => setTimeout(o, 50));
       return { texto: document.getElementById('pegarPadron').value,
         vista: document.getElementById('vista-importacion').innerText.replace(/\\s+/g, ' ') };
     })()`);
     comprobar('Excel (.xlsx): se lee directo, con título arriba, textos y fecha',
       r.texto.startsWith('PADRÓN 2026\n\n') && r.texto.includes('40123456\t1990-01-01\tHabitual') &&
-      /Se agregarán: 1/.test(r.vista) && /\b4 Quispe Rosa "Chabuca" 40123456/.test(r.vista),
+      /Se agregarán: 1/.test(r.vista) && /Quispe Rosa "Chabuca" Se agrega Fila 4 · DNI 40123456 · Adulto\/a · Habitual/.test(r.vista),
       JSON.stringify(r).slice(0, 300));
     comprobar('Excel (.xlsx): sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
     await p.cerrar();

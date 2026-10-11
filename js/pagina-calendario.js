@@ -43,10 +43,8 @@ function cambio() {
 function pintarBanner() {
   const caja = buscar('#banner');
   caja.textContent = '';
-  const alerta = alertaProximaEntrega(calendario, hoyIso());
   // «Todavía no has indicado cuándo entregas» sobra en la página donde se indica.
-  if (!alerta || !alerta.configurado) return;
-  const b = bannerAlerta(alerta, { mostrarEnlace: false });
+  const b = bannerAlerta(alertaProximaEntrega(calendario, hoyIso()), { mostrarEnlace: false, pedirConfigurar: false });
   if (b) caja.append(b);
 }
 

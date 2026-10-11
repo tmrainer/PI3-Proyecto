@@ -72,7 +72,7 @@ buscar('#barra-datos').append(barraDatos({ antesDeRecargar: descartarPendiente }
 ctx.conteo = buscar('#conteo-afiliados');
 ctx.estadoTexto = buscar('#estado-guardado');
 
-const b = bannerAlerta(alertaProximaEntrega(estado.calendario, hoyIso()));
+const b = bannerAlerta(alertaProximaEntrega(estado.calendario, hoyIso()), { pedirConfigurar: false });
 if (b) buscar('#banner').append(b);
 
 const fRef = buscar('#fechaRef');

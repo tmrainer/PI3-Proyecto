@@ -89,7 +89,8 @@
 
     <div id="sugerencia-periodo"></div>
 
-    <div class="rejilla tres" style="margin-top:12px">
+    <div class="rejilla dos" style="margin-top:12px">
+      <div class="rejilla par">
       <div class="campo" data-campo="periodo.inicio">
         <label for="periodoInicio">Inicio del periodo</label>
         <input id="periodoInicio" required aria-required="true" name="periodoInicio" type="date">
@@ -97,6 +98,7 @@
       <div class="campo" data-campo="periodo.fin">
         <label for="periodoFin">Fin del periodo</label>
         <input id="periodoFin" required aria-required="true" name="periodoFin" type="date">
+      </div>
       </div>
       <div class="campo" data-campo="periodo.etiqueta">
         <label for="periodoEtiqueta">Texto para «Mes de rendición»</label>
@@ -107,7 +109,7 @@
 
   <section class="bloque">
     <h2>Ingresos</h2>
-    <div class="rejilla dos">
+    <div class="rejilla par">
       <div class="campo" data-campo="montoSubsidio">
         <label for="montoSubsidio">Monto del subsidio (S/)</label>
         <input id="montoSubsidio" required aria-required="true" name="montoSubsidio" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off">

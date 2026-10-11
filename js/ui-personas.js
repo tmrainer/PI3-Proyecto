@@ -320,32 +320,51 @@ function pasaFiltro(a, ctx, indice) {
   }
 }
 
+// Filas pintadas, por persona, con el filtro actual. Buscar solo las muestra u
+// oculta: rehacer cientos de filas por tecla se notaba en un celular.
+let filasPintadas = new Map();
+let incompletasPintadas = 0;
+
 export function pintarListaPersonas(lista, ctx) {
   lista.textContent = '';
   const indice = indicePadron(estado.padron);
-  const visibles = estado.padron.afiliados
-    .filter((a) => pasaFiltro(a, ctx, indice) && coincideBusqueda(a, ctx))
+  const conFiltro = estado.padron.afiliados
+    .filter((a) => pasaFiltro(a, ctx, indice))
     .sort((a, b) => nombreCompleto(a).localeCompare(nombreCompleto(b), 'es'));
-
-  const incompletas = estado.padron.afiliados
+  incompletasPintadas = estado.padron.afiliados
     .filter((a) => a.activo && validarAfiliado(a, estado.padron, indice).some((x) => x.severidad === 'error')).length;
+
+  filasPintadas = new Map();
+  for (const a of conFiltro) {
+    const fila = filaAfiliado(a, ctx, indice);
+    filasPintadas.set(a, fila);
+    lista.append(fila);
+  }
+  lista.append(crearElemento('p', { clase: 'vacio-mensaje lista-vacia', hidden: true }));
+  aplicarBusqueda(lista, ctx);
+}
+
+function aplicarBusqueda(lista, ctx) {
+  let visibles = 0;
+  for (const [a, fila] of filasPintadas) {
+    const ve = coincideBusqueda(a, ctx);
+    fila.hidden = !ve;
+    if (ve) visibles += 1;
+  }
   // Las activas ya se cuentan arriba; aquí, solo lo que no se ve de otro modo.
   const total = estado.padron.afiliados.length;
   if (ctx.conteo) ctx.conteo.textContent = [
-    visibles.length < total ? `Se ven ${visibles.length} de ${total}.` : '',
-    incompletas ? `${cuantos(incompletas, 'persona')} con datos incompletos.` : ''
+    visibles < total ? `Se ven ${visibles} de ${total}.` : '',
+    incompletasPintadas ? `${cuantos(incompletasPintadas, 'persona')} con datos incompletos.` : ''
   ].filter(Boolean).join(' ');
 
-  if (visibles.length === 0) {
-    lista.append(crearElemento('p', {
-      clase: 'vacio-mensaje',
-      texto: estado.padron.afiliados.length === 0
-        ? 'Todavía no hay nadie en el padrón. Usa el formulario de arriba.'
-        : 'Nadie coincide con la búsqueda o el filtro.'
-    }));
-    return;
+  const vacio = lista.querySelector('.lista-vacia');
+  if (vacio) {
+    vacio.hidden = visibles > 0;
+    vacio.textContent = total === 0
+      ? 'Todavía no hay nadie en el padrón. Usa el formulario de arriba.'
+      : 'Nadie coincide con la búsqueda o el filtro.';
   }
-  for (const a of visibles) lista.append(filaAfiliado(a, ctx, indice));
 }
 
 // ------------------------------------------- resumen por grupos y filtros
@@ -374,7 +393,7 @@ export function montarFiltrosPersonas(lista, ctx) {
   const fBuscar = buscar('#buscarAfiliado');
   fBuscar.addEventListener('input', debounce(() => {
     ctx.busqueda = fBuscar.value;
-    pintarListaPersonas(lista, ctx);
+    aplicarBusqueda(lista, ctx);
   }, 150));
 
   const fFiltro = buscar('#filtroAfiliado');

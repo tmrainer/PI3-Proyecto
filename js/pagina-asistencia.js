@@ -96,7 +96,7 @@ buscar('#barra-datos').append(barraDatos({ antesDeRecargar: descartarPendiente }
 
 ctx.titulo = buscar('#titulo-hoy');
 
-const b = bannerAlerta(alertaProximaEntrega(estado.calendario, hoyIso()));
+const b = bannerAlerta(alertaProximaEntrega(estado.calendario, hoyIso()), { pedirConfigurar: false });
 if (b) buscar('#banner').append(b);
 
 const fIni = buscar('#periodoInicio');
