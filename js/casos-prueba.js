@@ -22,7 +22,8 @@ import {
 } from './alertas.js';
 import {
   detectarSeparador, parsearTabla, detectarColumnas, parsearFechaFlexible,
-  parsearGrupoEtario, parsearTipoAfiliado, prepararImportacion, filasImportables
+  parsearGrupoEtario, parsearTipoAfiliado, prepararImportacion, filasImportables,
+  celdaParaHoja, desarmarCelda
 } from './importar.js';
 import { parsearCadenaDni, CAMPOS } from './escaneo-dni.js';
 import { sugerirRucProveedor, sugerenciasEncabezado } from './sugerencias.js';
@@ -1165,6 +1166,35 @@ export const casos = [
       igual(a.numeroDocumento, '00000009');
       igual(a.grupoEtarioManual, 'nino');
       igual(a.tipoAfiliado, 'caso_social');
+    }
+  },
+  {
+    grupo: 'Importar',
+    nombre: 'El documento conserva sus ceros en Excel y vuelve igual al importar',
+    fn: () => {
+      igual(celdaParaHoja('01234567', ',', { comoTexto: true }), '"=""01234567"""');
+      igual(celdaParaHoja('01234567', '\t', { comoTexto: true }), '="01234567"');
+      igual(celdaParaHoja('', ',', { comoTexto: true }), '');
+      const cab = 'N°,Apellido paterno,Apellido materno,Nombres,Tipo de documento,' +
+        'Número de documento,Grupo de edad,Edad,Tipo,Días asistidos';
+      const fila = '1,Álvarez,Rojas,Rosa,DNI,' +
+        celdaParaHoja('01234567', ',', { comoTexto: true }) + ',Niño/a,,Ayuda social,3';
+      const r = prepararImportacion(cab + '\n' + fila, padronVacio());
+      igual(r.filas[0].afiliado.numeroDocumento, '01234567');
+    }
+  },
+  {
+    grupo: 'Importar',
+    nombre: 'Un texto que empieza como fórmula se exporta como texto',
+    fn: () => {
+      igual(celdaParaHoja('=HIPERVINCULO("x")', ','), `"'=HIPERVINCULO(""x"")"`);
+      igual(celdaParaHoja('+51 999', '\t'), "'+51 999");
+      igual(celdaParaHoja('@Rosa', ','), "'@Rosa");
+      igual(celdaParaHoja('Rosa, María', ','), '"Rosa, María"');
+      igual(celdaParaHoja('Rosa', ','), 'Rosa');
+      igual(desarmarCelda("'=SUMA(1)"), '=SUMA(1)');
+      igual(desarmarCelda('="00012"'), '00012');
+      igual(desarmarCelda("O'Brien"), "O'Brien");
     }
   },
 

@@ -6,6 +6,7 @@ import {
   filasPadron, asistenciaPorAfiliado, afiliadosSinAsistencia, TRAMOS_ETARIOS
 } from './calculos.js';
 import { estado } from './estado.js';
+import { celdaParaHoja } from './importar.js';
 import { buscar, crearElemento, chip } from './ui.js';
 
 // ctx: { fechaRef, inicio, fin }
@@ -89,13 +90,14 @@ export function filasComoTexto(ctx, separador) {
   for (const f of filas) {
     const as = asistencias.get(f.afiliadoId);
     lineas.push([
-      f.n, f.apellidoPaterno, f.apellidoMaterno, f.nombres, f.tipoDocumento,
-      f.numeroDocumento, f.grupoEtarioEtiqueta, f.edad === null ? '' : f.edad,
-      f.tipoAfiliadoEtiqueta, as ? as.dias : 0
-    ].map((v) => {
-      const s = String(v === null || v === undefined ? '' : v);
-      return separador === ',' && /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-    }).join(separador));
+      celdaParaHoja(f.n, separador), celdaParaHoja(f.apellidoPaterno, separador),
+      celdaParaHoja(f.apellidoMaterno, separador), celdaParaHoja(f.nombres, separador),
+      celdaParaHoja(f.tipoDocumento, separador),
+      celdaParaHoja(f.numeroDocumento, separador, { comoTexto: true }),
+      celdaParaHoja(f.grupoEtarioEtiqueta, separador),
+      celdaParaHoja(f.edad === null ? '' : f.edad, separador),
+      celdaParaHoja(f.tipoAfiliadoEtiqueta, separador), celdaParaHoja(as ? as.dias : 0, separador)
+    ].join(separador));
   }
   return lineas.join('\n');
 }

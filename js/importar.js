@@ -48,8 +48,41 @@ export function parsearTabla(texto, separador) {
   filas.push(fila);
 
   return filas
-    .map((f) => f.map((c) => c.trim()))
+    .map((f) => f.map((c) => desarmarCelda(c.trim())))
     .filter((f) => f.some((c) => c !== ''));
+}
+
+// ------------------------------------------- celdas hacia una hoja de cálculo
+
+/**
+ * Prepara un valor para una celda de CSV o de texto pegado en una hoja.
+ * - `comoTexto`: los números de documento van como ="01234567". Si no, Excel
+ *   los toma por números y se come los ceros de adelante (01234567 → 1234567).
+ * - Un texto que empieza con = + - @ (o tabulador o retorno) se abre como
+ *   fórmula en Excel: se le antepone ' para que quede como texto.
+ * - Con separador ',', lo que lleva comas, comillas o saltos va entre comillas.
+ * desarmarCelda() hace el camino de vuelta al importar.
+ * @param {*} valor
+ * @param {string} separador  ',' (CSV) o '\t' (pegar)
+ * @param {{ comoTexto?: boolean }} [opciones]
+ * @returns {string}
+ */
+export function celdaParaHoja(valor, separador, { comoTexto = false } = {}) {
+  let s = String(valor === null || valor === undefined ? '' : valor);
+  if (comoTexto && s !== '') s = `="${s.replace(/"/g, '""')}"`;
+  else if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  if (separador === ',' && /[",\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+  if (separador === '\t') s = s.replace(/[\t\n]/g, ' ');
+  return s;
+}
+
+/** Deshace lo que celdaParaHoja() agrega: ="0123" → 0123, '=algo → =algo. */
+export function desarmarCelda(texto) {
+  const t = String(texto || '');
+  const formula = t.match(/^="(.*)"$/);
+  if (formula) return formula[1].replace(/""/g, '"');
+  if (/^'[=+\-@]/.test(t)) return t.slice(1);
+  return t;
 }
 
 // ------------------------------------------------- reconocimiento de columnas
