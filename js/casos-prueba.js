@@ -470,6 +470,25 @@ export const casos = [
   },
   {
     grupo: 'Raciones',
+    nombre: 'Quienes comen sin estar inscritos suman raciones y recaudación',
+    fn: () => {
+      const at = Object.assign(nuevaAtencion({ precioMenuNormalCent: 300, precioMenuAyudaSocialCent: 100 }), {
+        asistencias: [{ afiliadoId: 'a', tipoMenu: 'normal' }],
+        sinInscribir: { normal: 2, ayudaSocial: 1 }
+      });
+      const d = desgloseDelDia(at);
+      igual(d.normal, 3);
+      igual(d.ayudaSocial, 1);
+      igual(d.total, 4);
+      igual(d.sinInscribir, 3);
+      igual(recaudacionDelDiaCent(at), 1000, '3 x 3.00 + 1 x 1.00');
+      // Valores raros no suman: el contador nunca baja de cero.
+      at.sinInscribir = { normal: -2, ayudaSocial: 1.5 };
+      igual(desgloseDelDia(at).total, 1);
+    }
+  },
+  {
+    grupo: 'Raciones',
     nombre: 'Un día sin nadie marcado cuenta cero raciones',
     fn: () => {
       const at = nuevaAtencion(null);

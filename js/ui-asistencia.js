@@ -4,10 +4,10 @@
 // (habitual -> normal, ayuda social -> menú de ayuda social) y solo hace falta
 // tocarlo cuando ese día come otro. Sin desplegables. Ver AGENTS.md §6.5.
 
-import { nuevaAtencion, nombreCompleto, aDdMmAa, hoyIso, aCentimos, formatearSoles } from './modelo.js';
+import { nuevaAtencion, nombreCompleto, aDdMmAa, hoyIso, aCentimos, formatearSoles, cuantos } from './modelo.js';
 import {
   afiliadosActivos, grupoEtario, etiquetaGrupoEtario, menuPorDefecto,
-  desgloseDelDia, recaudacionDelDiaCent, asistio, menuDe, asistenciasConTodos
+  desgloseDelDia, recaudacionDelDiaCent, asistio, menuDe, asistenciasConTodos, sinInscribirDelDia
 } from './calculos.js';
 import { estado, preciosActuales } from './estado.js';
 import { crearElemento, campo, icono, vigilarAltoFijo, chip } from './ui.js';
@@ -88,6 +88,42 @@ export function filaToque(at, persona, ctx, alCambiar) {
   });
 
   return fila;
+}
+
+// --------------------------------------------- quienes comen sin estar inscritos
+//
+// Alguien de paso, un familiar: no está en el padrón y no hace falta
+// inscribirlo para que su ración cuente. Solo se suma, por tipo de menú.
+
+function contadorSinInscribir(at, alCambiar) {
+  const caja = crearElemento('div', { clase: 'sin-inscribir' }, [
+    crearElemento('p', { clase: 'sin-inscribir-titulo', texto: 'Comieron sin estar en el padrón' })
+  ]);
+  for (const [clave, nombre] of [['normal', 'Menú normal'], ['ayudaSocial', 'Ayuda social']]) {
+    const valor = crearElemento('output', { clase: 'sin-inscribir-valor' });
+    const pintar = () => { valor.textContent = String(sinInscribirDelDia(at)[clave]); };
+    const cambiar = (delta) => {
+      const actual = sinInscribirDelDia(at);
+      at.sinInscribir = { normal: actual.normal, ayudaSocial: actual.ayudaSocial };
+      at.sinInscribir[clave] = Math.max(0, actual[clave] + delta);
+      pintar();
+      alCambiar();
+    };
+    caja.append(crearElemento('div', { clase: 'sin-inscribir-fila' }, [
+      crearElemento('span', { clase: 'sin-inscribir-nombre', texto: nombre }),
+      crearElemento('button', {
+        type: 'button', clase: 'boton secundario paso', 'aria-label': `Uno menos, ${nombre.toLowerCase()}`,
+        texto: '−', onclick: () => cambiar(-1)
+      }),
+      valor,
+      crearElemento('button', {
+        type: 'button', clase: 'boton secundario paso', 'aria-label': `Uno más, ${nombre.toLowerCase()}`,
+        texto: '+', onclick: () => cambiar(1)
+      })
+    ]));
+    pintar();
+  }
+  return caja;
 }
 
 // ------------------------------------------------- asistencia por día (checklist)
@@ -235,6 +271,7 @@ function fichaAtencion(at, ctx) {
         crearElemento('label', { for: buscador.id, texto: 'Buscar persona' }), buscador
       ]),
       listaAsistencia,
+      contadorSinInscribir(at, () => { refrescarTodo(); ctx.onCambio(); ctx.onResumen(); }),
       crearElemento('details', { clase: 'asistencia', style: 'margin-top:10px' }, [
         crearElemento('summary', { texto: 'Precio del menú de este día' }),
         crearElemento('p', {
@@ -314,8 +351,10 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
 
   function refrescar() {
     const d = desgloseDelDia(at);
-    cuenta.textContent = `${d.total} de ${activos.length}`;
-    resumenVivo.textContent = `${d.total} de ${activos.length} personas marcadas.`;
+    const inscritos = d.total - d.sinInscribir;
+    cuenta.textContent = `${inscritos} de ${activos.length}`;
+    resumenVivo.textContent = `${inscritos} de ${activos.length} personas marcadas` +
+      (d.sinInscribir ? `, y ${cuantos(d.sinInscribir, 'ración', 'raciones')} sin inscribir.` : '.');
     if (d.total === 0) {
       detalle.textContent = activos.length === 0
         ? 'No hay nadie en el padrón todavía.'
@@ -324,6 +363,7 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
     }
     const rec = recaudacionDelDiaCent(at);
     detalle.textContent = '';
+    if (d.sinInscribir) detalle.append(crearElemento('span', { texto: `+${d.sinInscribir} sin inscribir` }));
     detalle.append(crearElemento('span', { texto: `${d.normal} con menú normal` }));
     if (d.ayudaSocial) detalle.append(crearElemento('span', { texto: `${d.ayudaSocial} de ayuda social` }));
     detalle.append(rec === null
@@ -453,6 +493,13 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
 
   // Sin nadie en el padrón, el contador, los botones de marcar y el buscador no
   // pueden hacer nada: ofrecerlos es ruido en la primera pantalla que se ve.
+  const sinInscribir = contadorSinInscribir(at, () => {
+    asegurarHoyGuardado();
+    refrescar();
+    ctx.onCambio();
+    ctx.onResumen();
+  });
+
   if (activos.length === 0) {
     caja.append(lista);
     pintarLista();
@@ -476,6 +523,7 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
     resumenVivo,
     fija,
     lista,
+    sinInscribir,
     // Al final: se usan una vez por día, y arriba empujaban la lista fuera de
     // la primera pantalla del celular.
     crearElemento('div', { clase: 'acciones hoy-acciones' }, [

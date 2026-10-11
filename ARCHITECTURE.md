@@ -51,7 +51,7 @@ formatos anteriores, y `guardar()` no escribe si el texto no cambió.
 se avisa.
 
 Las **raciones no se guardan**: se cuentan de `asistencias`
-(`desgloseDelDia()`, `calculos.js:232-242`). La excepción son los días migrados
+(`desgloseDelDia()`, `calculos.js:247-258`). La excepción son los días migrados
 desde la v2, que conservan sus cifras escritas a mano en `legado`
 (`migrarPadron()`, `modelo.js:277-321`).
 
@@ -81,7 +81,7 @@ En memoria, cada página comparte un único objeto `estado`
 
 **Leen**: todo pasa por `asistenciasDelDia(at)` (`calculos.js:191-193`), que
 devuelve `[]` si el campo falta. La usan `asistio()`, `menuDe()`,
-`desgloseDelDia()`, `asistenciasConTodos()`, `asistenciaPorAfiliado()` (`calculos.js:202-368`) y
+`desgloseDelDia()`, `asistenciasConTodos()`, `asistenciaPorAfiliado()` (`calculos.js:202-384`) y
 `validarAtencion()` (`validaciones.js:387`).
 
 **Lo que falta no es un error.** Cada hallazgo lleva `falta: true` cuando el
@@ -95,6 +95,19 @@ un formulario recién abierto. Sin hallazgos, el panel no se muestra.
 cifras (marca `ceroAgregado`, lo cuenta en `resumen.conCero` y lo dice en la
 fila). Es la única corrección que hace la importación; un DNI de otro largo no
 se toca y queda incompleto. Así también se reconoce a quien ya estaba con el 0.
+
+**B-1 por meses.** `rendiciones[0]` es el B-1 en curso y los demás son los de
+meses anteriores, del más nuevo al más viejo (`pagina-b1.js`). «Empezar el B-1
+del mes siguiente» agrega uno vacío adelante (solo copia cada cuánto se
+entrega: el centro lo vuelve a proponer la sugerencia del encabezado). Uno
+anterior se abre con `formato-b1.html?ver=<id>`; editarlo no cambia las
+sugerencias (`config.ultimoCentro` sale solo del B-1 en curso). Entregas muestra
+cómo va el B-1 en curso (`pintarEstadoB1()` en `pagina-calendario.js`).
+
+**Quien come sin estar inscrito.** `atencion.sinInscribir = { normal,
+ayudaSocial }` (opcional) se suma en `desgloseDelDia()` a las raciones, la
+recaudación y el promedio; `sinInscribirDelDia()` lo lee. Se cuenta con los
+botones −/+ de «Comieron sin estar en el padrón», hoy y en los días anteriores.
 
 **Instalar y letra grande** (`ui.js`, desde `montarCabecera()`). Si el navegador
 dispara `beforeinstallprompt` (Chrome y Edge), la app ofrece su propio botón
@@ -112,17 +125,17 @@ tardaba segundos en un celular modesto; `humo.mjs` (6c) lo vigila.
 En el **reporte del padrón**, la lectura es:
 `pintarReportePadron()` → `asistenciaPorAfiliado(estado.padron, ctx.inicio, ctx.fin)`
 (`ui-reportes.js:17-18`) → `atencionesDelPeriodo()` + `asistenciasDelDia(at)`
-(`calculos.js:358-359`). Lo mismo hace `filasComoTexto()` para exportar
+(`calculos.js:374-375`). Lo mismo hace `filasComoTexto()` para exportar
 (`ui-reportes.js:83-84`).
 
 ### `padron.atenciones`
 
 - **Escriben**: `asegurarHoyGuardado()` agrega el día de hoy recién cuando se
-  marca a la primera persona (`ui-asistencia.js:285-290`, llamada en L371 y
+  marca a la primera persona (`ui-asistencia.js:322-327`, llamada en L371 y
   L441); el botón «agregar día» (`pagina-asistencia.js:119-121`); la migración
   (`modelo.js:290-319`).
 - **Leen**: `atencionesDelPeriodo()` (`calculos.js:174-178`), `pintarOtrosDias()`
-  (`ui-asistencia.js:262`), `pintarAsistenciaDeHoy()` (`ui-asistencia.js:301`).
+  (`ui-asistencia.js:299`), `pintarAsistenciaDeHoy()` (`ui-asistencia.js:338`).
 
 ### `padron.afiliados`
 
@@ -150,7 +163,7 @@ calendario, el evento `storage` las recarga y repinta; así no guardan después
 su copia vieja encima. El repintado pasa por `repintarConservandoVista()`
 (`ui.js:919-949`), que vuelve a abrir las fichas abiertas y devuelve el foco y
 el cursor. El B-1 relee la config justo antes de guardarla, y si otra pestaña
-guarda la rendición, se recarga entera (`pagina-b1.js:64-68`). Límite: si dos
+guarda la rendición, se recarga entera (`pagina-b1.js:71-75`). Límite: si dos
 pestañas cambian algo dentro de los mismos 400 ms, gana la que guardó la otra.
 Lo comprueba `herramientas/humo.mjs`.
 
@@ -176,7 +189,7 @@ sistema para guardarlo en un celular y lo descarga en la computadora.
 
 ```
 index.html (pagina-asistencia.js)
-  pintarAsistenciaDeHoy()            ui-asistencia.js:292
+  pintarAsistenciaDeHoy()            ui-asistencia.js:329
     busca la atención de hoy o crea una nueva sin guardarla   L306-310
     filaToque() por persona activa                            L414
       clic → at.asistencias.push / filter                     L66-73
@@ -208,7 +221,7 @@ Dos detalles que conviene saber:
   `ctx.fechaRef`, igual que la tabla (`ui-reportes.js:71`): son exactamente las
   filas con 0 días. Fuera del reporte, `afiliadosSinAsistencia()` sigue mirando
   las activas al cierre del periodo si no se le pasa la fecha
-  (`calculos.js:377-381`).
+  (`calculos.js:393-397`).
 
 ---
 
@@ -219,7 +232,7 @@ Dos detalles que conviene saber:
 | Asistencia (hoy y días pasados) | la fecha del día de atención, `at.fecha`; si falta, `ctx.fechaRef` = hoy | `ui-asistencia.js:26`, `pagina-asistencia.js:25` |
 | Padrón: lista de personas | `ctx.fechaRef`, editable en el campo `#fechaRef`; por defecto hoy | `ui-personas.js:256-257`, `pagina-padron.js:30`, L78-80 |
 | Padrón: resumen por grupos | `ctx.fechaRef` | `ui-personas.js:362` |
-| Padrón: reporte y CSV | `ctx.fechaRef` (no el periodo `inicio`/`fin`) | `ui-reportes.js:16`, L81 → `calculos.js:406-416` |
+| Padrón: reporte y CSV | `ctx.fechaRef` (no el periodo `inicio`/`fin`) | `ui-reportes.js:16`, L81 → `calculos.js:422-432` |
 | Alta de afiliados | hoy (`hoyIso()`), tanto en la pista como en la validación | `ui-personas.js:39`, L73; `validaciones.js:317` |
 | Importación | **ninguna**. Con fecha de nacimiento, se guarda la fecha y el grupo se calcula después en cada pantalla. Con solo una columna «edad», el grupo se calcula con `grupoPorEdad(edad)` y se **guarda fijo** en `grupoEtarioManual`: no cambia cuando la persona cumple años. La revisión de la importación lo avisa en esa fila | `importar.js:259-272`, `calculos.js:122-126` |
 
@@ -288,6 +301,8 @@ las páginas en un Chromium sin ventana (ver README, «Pruebas»).
 - **Vista previa de impresión e impresión sobre la plantilla oficial del B-1.**
 - **Columnas del formato municipal de padrón**: el reporte usa columnas propias
   hasta conseguir el formato oficial.
-- **Quien come sin estar inscrito** no tiene dónde anotarse, y por eso suma cero
-  raciones.
-- **Fórmula de «gastos con el subsidio»** sin verificar (`calculos.js:17-28`).
+- **Fórmula de «gastos con el subsidio»** sin verificar. La RM D000064-2026-MIDIS
+  (12-03-2026) dice que el subsidio es «exclusivamente» para comprar alimentos y
+  que la rendición va a la municipalidad, pero no publica el formato: el B-1 y
+  sus totales los define la Municipalidad de Villa María del Triunfo. Hay que
+  confirmarlo con su PCA (`calculos.js:17-28`).

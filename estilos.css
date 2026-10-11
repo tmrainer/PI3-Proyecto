@@ -468,6 +468,30 @@ table.tabla td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .asistencia-resumen { font-size: .82rem; color: var(--tinta-suave); margin-top: 8px; }
 
 .imp-resumen { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.estado-b1 {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px;
+  padding: 10px 12px; border-radius: var(--radio); border-left: 4px solid var(--aviso); background: var(--aviso-fondo);
+}
+.estado-b1.listo { border-left-color: var(--ok); background: var(--ok-fondo); }
+.estado-b1 > span { flex: 1 1 14em; }
+.sin-inscribir {
+  margin-top: 12px; padding: 10px 12px; border: 1px dashed var(--borde-fuerte);
+  border-radius: var(--radio); background: var(--papel);
+}
+.sin-inscribir-titulo { margin: 0 0 6px; font-weight: 600; color: var(--verde-900); font-size: .92rem; }
+.sin-inscribir-fila { display: flex; align-items: center; gap: 10px; padding: 3px 0; }
+.sin-inscribir-nombre { flex: 1 1 auto; }
+.sin-inscribir-valor { min-width: 2ch; text-align: center; font-weight: 700; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.boton.paso { min-width: 44px; min-height: 44px; padding: 0; font-size: 1.3rem; line-height: 1; }
+.meses-lista { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
+.mes-item {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+  background: var(--papel); border: 1px solid var(--borde); border-radius: var(--radio); padding: 8px 11px;
+}
+.mes-item.abierto { border-color: var(--verde-500); background: var(--verde-050); }
+.mes-nombre { font-weight: 600; color: var(--verde-900); flex: 1 1 8em; }
+.mes-total { font-variant-numeric: tabular-nums; color: var(--tinta-suave); }
+.mes-abierto { font-size: .8rem; font-weight: 600; color: var(--verde-700); }
 .imp-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .imp-item {
   background: var(--papel); border: 1px solid var(--borde); border-left: 4px solid var(--ok);

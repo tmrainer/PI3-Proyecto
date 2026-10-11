@@ -225,20 +225,36 @@ export function menuDe(at, afiliadoId) {
 }
 
 /**
- * Raciones de un día, por tipo de menú.
- * `origen` dice de dónde salen: contadas de la asistencia, o heredadas de un día
- * registrado con la versión anterior, que guardaba cuentas escritas a mano.
+ * Quienes comieron ese día sin estar en el padrón (de paso, un familiar): solo
+ * se cuentan, por tipo de menú. Sin esto sumaban cero raciones y cero soles.
+ * `at.sinInscribir` puede faltar (días anteriores a este campo): vale 0 y 0.
+ * @returns {{ normal: number, ayudaSocial: number, total: number }}
+ */
+export function sinInscribirDelDia(at) {
+  const s = (at && at.sinInscribir) || {};
+  const n = (v) => (Number.isInteger(v) && v > 0 ? v : 0);
+  const normal = n(s.normal);
+  const ayudaSocial = n(s.ayudaSocial);
+  return { normal, ayudaSocial, total: normal + ayudaSocial };
+}
+
+/**
+ * Raciones de un día, por tipo de menú: las de la asistencia (o las anotadas a
+ * mano en la versión anterior) más las de quienes comieron sin estar inscritos.
+ * `origen` dice de dónde salen las primeras; `sinInscribir`, cuántas son de
+ * gente fuera del padrón.
  */
 export function desgloseDelDia(at) {
   const asistencias = asistenciasDelDia(at);
+  const fuera = sinInscribirDelDia(at);
   if (asistencias.length === 0 && at && at.legado) {
-    const n = Number.isFinite(at.legado.racionesNormales) ? at.legado.racionesNormales : 0;
-    const a = Number.isFinite(at.legado.racionesAyudaSocial) ? at.legado.racionesAyudaSocial : 0;
-    return { normal: n, ayudaSocial: a, total: n + a, origen: 'legado' };
+    const n = (Number.isFinite(at.legado.racionesNormales) ? at.legado.racionesNormales : 0) + fuera.normal;
+    const a = (Number.isFinite(at.legado.racionesAyudaSocial) ? at.legado.racionesAyudaSocial : 0) + fuera.ayudaSocial;
+    return { normal: n, ayudaSocial: a, total: n + a, origen: 'legado', sinInscribir: fuera.total };
   }
-  const normal = asistencias.filter((x) => x.tipoMenu !== 'ayuda_social').length;
-  const ayudaSocial = asistencias.filter((x) => x.tipoMenu === 'ayuda_social').length;
-  return { normal, ayudaSocial, total: normal + ayudaSocial, origen: 'asistencia' };
+  const normal = asistencias.filter((x) => x.tipoMenu !== 'ayuda_social').length + fuera.normal;
+  const ayudaSocial = asistencias.filter((x) => x.tipoMenu === 'ayuda_social').length + fuera.ayudaSocial;
+  return { normal, ayudaSocial, total: normal + ayudaSocial, origen: 'asistencia', sinInscribir: fuera.total };
 }
 
 export function racionesDelDia(at) {

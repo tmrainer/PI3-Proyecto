@@ -566,6 +566,53 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
+  // 1l. Quienes comen sin estar inscritos: el contador suma raciones y se guarda.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar?padron=1`);
+    await p.ir(`${base}/index.html`);
+    await p.actuar(`(() => { const b = [...document.querySelectorAll('#hoy .sin-inscribir button')];
+      b[1].click(); b[1].click(); b[3].click(); })()`);
+    await pausa(600);
+    const cuenta = await p.eval(TEXTO('#hoy .hoy-detalle'));
+    const guardado = await p.eval(`(async () => (${PADRON_GUARDADO}).atenciones.find((a) => a.fecha === '${hoyLocal()}').sinInscribir)()`);
+    comprobar('sin inscribir: el contador suma y se guarda',
+      /\+3 sin inscribir/.test(cuenta) && guardado && guardado.normal === 2 && guardado.ayudaSocial === 1,
+      cuenta + ' ' + JSON.stringify(guardado));
+    comprobar('sin inscribir: sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
+    await p.cerrar();
+  }
+
+  // 1m. B-1: empezar el mes siguiente guarda el anterior, que se puede abrir; y
+  // Entregas dice cómo va el B-1.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar`);
+    await p.ir(`${base}/formato-b1.html`);
+    await p.actuar(ESCRIBIR('#nombreCentro', 'Olla de Prueba'));
+    await p.actuar(ESCRIBIR('#periodoEtiqueta', 'Septiembre'));
+    await pausa(600);
+    await p.actuar(`window.confirm = () => true; [...document.querySelectorAll('#meses-b1 button')]
+      .find((b) => /mes siguiente/.test(b.textContent)).click()`);
+    await pausa(1500);
+    const nuevo = await p.eval(`({ centro: document.getElementById('nombreCentro').value,
+      meses: [...document.querySelectorAll('.mes-item')].map((x) => x.innerText.replace(/\\s+/g, ' ')),
+      cuantos: JSON.parse(localStorage.getItem('b1.rendiciones.v1')).length })`);
+    comprobar('B-1: empezar el mes siguiente deja el anterior en «Meses anteriores»',
+      nuevo.centro === '' && nuevo.cuantos === 2 && /Septiembre/.test(nuevo.meses.join()), JSON.stringify(nuevo));
+    await p.actuar(`document.querySelector('.mes-item a').click()`);
+    await pausa(1500);
+    const viejo = await p.eval(`({ centro: document.getElementById('nombreCentro').value,
+      aviso: (document.querySelector('#avisos-sistema').innerText || '') })`);
+    comprobar('B-1: un mes anterior se abre con sus datos y lo dice',
+      viejo.centro === 'Olla de Prueba' && /mes anterior: Septiembre/.test(viejo.aviso), JSON.stringify(viejo));
+    await p.ir(`${base}/calendario.html`);
+    const estadoB1 = await p.eval(TEXTO('#estado-b1'));
+    comprobar('Entregas: dice cuánto le falta al B-1 del mes', /Al Formato B-1 le faltan \d+ datos/.test(estadoB1), estadoB1);
+    comprobar('B-1 por meses: sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
+    await p.cerrar();
+  }
+
   // 2. Marcar a alguien y salir enseguida, antes de los 400 ms: no se pierde.
   {
     const p = await pestana(cdp);

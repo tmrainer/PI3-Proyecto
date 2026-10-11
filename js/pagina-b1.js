@@ -17,10 +17,16 @@ import {
 
 // ------------------------------------------------------------------- estado
 
+// rendiciones[0] es el B-1 en curso; los demás, los de meses anteriores, del
+// más nuevo al más viejo. Antes había uno solo: empezar el mes siguiente era
+// escribir encima del anterior y perderlo. Uno anterior se abre con
+// ?ver=<id> (el formulario se monta una sola vez por carga de página).
 let rendiciones = leer(CLAVES.rendiciones, []);
 let config = leer(CLAVES.config, configVacia());
-let rendicion = rendiciones[0] || nuevaRendicion();
-if (!rendiciones.length) rendiciones = [rendicion];
+if (!rendiciones.length) rendiciones = [nuevaRendicion()];
+const idPedido = new URLSearchParams(location.search).get('ver');
+let indice = Math.max(0, rendiciones.findIndex((r) => r && r.id === idPedido));
+let rendicion = rendiciones[indice];
 if (!Array.isArray(rendicion.egresos) || rendicion.egresos.length === 0) {
   rendicion.egresos = [nuevoEgreso()];
 }
@@ -34,14 +40,15 @@ let pendiente = false;
 function escribir() {
   pendiente = false;
   rendicion.actualizadoEn = new Date().toISOString();
-  rendiciones[0] = rendicion;
+  rendiciones[indice] = rendicion;
   const rendicionesOk = guardar(CLAVES.rendiciones, rendiciones);
   // La config la comparte con la página de asistencia, que puede estar abierta
   // en otra pestaña y cambiar el precio del menú. Se relee lo guardado y solo
   // se toca el campo que administra esta página; guardar la copia leída al
   // abrir devolvería el precio viejo.
+  // Las sugerencias del encabezado salen del B-1 en curso, no de uno viejo.
   config = Object.assign(configVacia(), leer(CLAVES.config, {}),
-    { ultimoCentro: instantaneaCentro(rendicion) });
+    indice === 0 ? { ultimoCentro: instantaneaCentro(rendicion) } : {});
   const configOk = guardar(CLAVES.config, config);
   if (!rendicionesOk || !configOk) mostrarGuardado(false);
   return rendicionesOk && configOk;
@@ -160,7 +167,7 @@ function montarSugerenciasEncabezado() {
 
   caja.append(crearElemento('p', {
     clase: 'pista',
-    texto: 'Tienes datos de una rendición anterior. Puedes usarlos o escribirlos de nuevo.'
+    texto: `Tienes los datos del centro ${pendientes[0][1].procedencia}. Puedes usarlos o escribirlos de nuevo.`
   }));
   caja.append(crearElemento('div', { clase: 'acciones' }, [
     crearElemento('button', {
@@ -180,10 +187,6 @@ function montarSugerenciasEncabezado() {
         cambio();
         montarSugerenciasEncabezado();
       }
-    }),
-    crearElemento('span', {
-      clase: 'sugerencia-proc',
-      texto: pendientes[0][1].procedencia
     })
   ]));
 }
@@ -385,7 +388,8 @@ function fichaEgreso(fila, indice) {
         // A lo ancho: en media columna, la casilla se partía en tres renglones.
         crearElemento('label', { clase: 'opcion a-lo-ancho' }, [chkCant, 'La boleta dice «varios» en la cantidad'])
       ]),
-      campo('Origen del dinero', fOrigen, 'No va al formato.')
+      // RM D000064-2026-MIDIS: el subsidio es exclusivamente para comprar alimentos.
+      campo('Origen del dinero', fOrigen, 'No va al formato. El subsidio municipal es solo para alimentos.')
     ]),
     crearElemento('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
       campo('RUC del proveedor', fRuc),
@@ -484,6 +488,79 @@ function irACampo(campo) {
   if (control && !control.disabled) control.focus({ preventScroll: true });
 }
 
+// ----------------------------------------------------- meses anteriores
+
+/** «Octubre», o las fechas del periodo, o «sin periodo». Solo para mostrar. */
+function nombreDelMes(r) {
+  const p = (r && r.periodo) || {};
+  if ((p.etiqueta || '').trim()) return p.etiqueta.trim();
+  if (p.inicio || p.fin) return `${aDdMmAa(p.inicio) || '…'} a ${aDdMmAa(p.fin) || '…'}`;
+  return 'sin periodo';
+}
+
+function pintarMeses() {
+  const caja = buscar('#meses-b1');
+  caja.textContent = '';
+  const anteriores = rendiciones.slice(1);
+
+  if (indice > 0) {
+    // Abierto uno anterior: se dice arriba, para no confundirlo con el del mes.
+    buscar('#avisos-sistema').prepend(crearElemento('div', { clase: 'recordatorio-respaldo', role: 'status' }, [
+      crearElemento('span', { texto: `Estás viendo el B-1 de un mes anterior: ${nombreDelMes(rendicion)}.` }),
+      crearElemento('a', { clase: 'boton diminuto', href: './formato-b1.html', texto: 'Volver al B-1 del mes' })
+    ]));
+  } else {
+    caja.append(
+      crearElemento('p', {
+        clase: 'pista',
+        texto: 'Cuando entregues este B-1, empieza el del mes siguiente. Este queda guardado aquí abajo.'
+      }),
+      crearElemento('button', {
+        type: 'button', clase: 'boton secundario', texto: 'Empezar el B-1 del mes siguiente',
+        onclick: empezarMesSiguiente
+      })
+    );
+  }
+
+  if (anteriores.length === 0) return;
+  const lista = crearElemento('ul', { clase: 'meses-lista' });
+  rendiciones.forEach((r, i) => {
+    if (i === 0) return;
+    const t = totales(r);
+    lista.append(crearElemento('li', { clase: i === indice ? 'mes-item abierto' : 'mes-item' }, [
+      crearElemento('span', { clase: 'mes-nombre', texto: nombreDelMes(r) }),
+      crearElemento('span', {
+        clase: 'mes-total',
+        texto: t.total === null ? 'sin subsidio' : `S/ ${formatearSoles(t.total)}`
+      }),
+      i === indice
+        ? crearElemento('span', { clase: 'mes-abierto', texto: 'abierto' })
+        : crearElemento('a', { clase: 'boton diminuto secundario', href: `./formato-b1.html?ver=${encodeURIComponent(r.id)}`, texto: 'Abrir' })
+    ]));
+  });
+  caja.append(lista);
+}
+
+function empezarMesSiguiente() {
+  if (!confirm(`El B-1 de ${nombreDelMes(rendicion)} queda guardado en «Meses anteriores».\n\n` +
+    '¿Empezar el B-1 del mes siguiente?')) return;
+  if (pendiente) escribir();
+  const nueva = nuevaRendicion();
+  // Solo cada cuánto se entrega: lo demás lo propone la app desde el mes
+  // anterior y la persona acepta (sugerencias del encabezado, AGENTS.md §2.4).
+  nueva.periodo.tipo = (rendicion.periodo && rendicion.periodo.tipo) || nueva.periodo.tipo;
+  rendiciones.unshift(nueva);
+  // Directo, sin escribir(): este B-1 vacío no debe borrar las sugerencias
+  // del centro que dejó el anterior.
+  if (!guardar(CLAVES.rendiciones, rendiciones)) {
+    rendiciones.shift();
+    mostrarGuardado(false);
+    return;
+  }
+  pendiente = false;
+  location.href = './formato-b1.html';
+}
+
 // ------------------------------------------------------------------- arranque
 
 montarCabecera('b1', 'Ollas comunes y comedores de Villa María del Triunfo');
@@ -510,6 +587,7 @@ buscar('#agregar-egreso').addEventListener('click', () => {
 
 montarEncabezado();
 montarPeriodo();
+pintarMeses();
 pintarEgresos();
 refrescarTotales();
 refrescarValidacion();

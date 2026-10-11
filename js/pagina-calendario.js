@@ -4,7 +4,7 @@ import {
   CLAVES, leer, guardar, calendarioVacio, nuevaEntrega, aDdMmAa, hoyIso, debounce, esIso, cuantos
 } from './modelo.js';
 import { alertaProximaEntrega, agendaEntregas, PERIODICIDADES } from './alertas.js';
-import { validarCalendario } from './validaciones.js';
+import { validarCalendario, validarRendicion } from './validaciones.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
   marcarCampo, bannerAlerta, pintarAvisosAlmacenamiento, avisarAlSalirDelCampo, mostrarGuardado
@@ -62,6 +62,32 @@ function registroDe(fechaLimite) {
     calendario.entregas.push(reg);
   }
   return reg;
+}
+
+/**
+ * Cómo va el B-1 que hay que entregar: lo que falta, o que ya está listo. Lo
+ * que se entrega es el B-1, así que la cuenta regresiva sola no basta.
+ */
+function pintarEstadoB1() {
+  const caja = buscar('#estado-b1');
+  caja.textContent = '';
+  const r = leer(CLAVES.rendiciones, [])[0];
+  if (!r) return;
+  const hallazgos = validarRendicion(r);
+  const faltan = hallazgos.filter((x) => x.severidad === 'error' && x.falta).length;
+  const mal = hallazgos.filter((x) => x.severidad === 'error' && !x.falta).length;
+  const listo = faltan === 0 && mal === 0;
+  const p = r.periodo || {};
+  const nombre = (p.etiqueta || '').trim() ? ` de ${p.etiqueta.trim()}` : '';
+  const partes = [];
+  if (faltan) partes.push(faltan === 1 ? 'falta 1 dato' : `faltan ${faltan} datos`);
+  if (mal) partes.push(`${mal} por corregir`);
+  caja.append(crearElemento('div', { clase: `estado-b1 ${listo ? 'listo' : 'pendiente'}` }, [
+    crearElemento('span', {
+      texto: listo ? `El Formato B-1${nombre} está listo para entregar.` : `Al Formato B-1${nombre} le ${partes.join(' y ')}.`
+    }),
+    crearElemento('a', { clase: 'boton diminuto secundario', href: './formato-b1.html', texto: listo ? 'Ver el B-1' : 'Completar el B-1' })
+  ]));
 }
 
 function pintarAgenda() {
@@ -163,6 +189,7 @@ for (const [clave, , detalle] of PERIODICIDADES) {
 }
 
 pintarBanner();
+pintarEstadoB1();
 pintarAgenda();
 refrescarValidacion();
 
