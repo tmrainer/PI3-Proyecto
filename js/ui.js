@@ -6,6 +6,7 @@ import {
   cifrarRespaldo, descifrarRespaldo, esRespaldoCifrado, revisarRespaldo, restaurarRespaldo,
   usoAlmacenamiento
 } from './modelo.js';
+import { esAppNativa, reprogramarAvisos, abrirEntregasAlTocarAviso } from './avisos-nativos.js';
 
 /**
  * El primer elemento que coincide con un selector CSS (querySelector).
@@ -187,9 +188,17 @@ export function montarCabecera(claveActiva, subtitulo) {
   }
   vigilarAltoFijo(document.getElementById('panel'));
   vigilarAltoFijo(nav, '--alto-nav-abajo', 'fixed');
-  registrarTrabajador();
+  if (esAppNativa()) {
+    // Dentro del APK los archivos vienen en la app: no hace falta el service
+    // worker ni ofrecer instalarla. Sí, los avisos con la app cerrada.
+    document.documentElement.classList.add('app-nativa');
+    reprogramarAvisos(leer(CLAVES.calendario, null));
+    abrirEntregasAlTocarAviso();
+  } else {
+    registrarTrabajador();
+    ofrecerInstalar();
+  }
   pedirAlmacenPersistente();
-  ofrecerInstalar();
 }
 
 // ------------------------------------------------------------ letra grande
@@ -459,7 +468,9 @@ export function bloquePrivacidad() {
       texto: 'Tus datos se guardan solo en este equipo, no en internet. Funciona sin señal.'
     }),
     crearElemento('p', {
-      texto: 'Si borras los datos del navegador o cambias de teléfono, se pierden. ' +
+      texto: (esAppNativa()
+        ? 'Si desinstalas la aplicación o cambias de teléfono, se pierden. '
+        : 'Si borras los datos del navegador o cambias de teléfono, se pierden. ') +
         'Guarda una copia cada dos semanas.'
     }),
     estadoProteccion,
@@ -475,7 +486,7 @@ export function bloquePrivacidad() {
 
 /** Qué tan protegidos están los datos contra el borrado automático del navegador. */
 function textoProteccion() {
-  if (almacenPersistente === true || esAppInstalada()) return '';
+  if (almacenPersistente === true || esAppInstalada() || esAppNativa()) return '';
   if (pedidoInstalar) return 'Para que el teléfono no borre tus datos, instala la aplicación.';
   return 'Para que el teléfono no borre tus datos: menú del navegador → «Agregar a pantalla de inicio».';
 }

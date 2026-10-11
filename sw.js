@@ -23,7 +23,7 @@ const ARCHIVOS = [
   './estilos.css', './manifest.webmanifest',
   './icono.svg', './icono-maskable.svg', './icono-180.png', './icono-192.png',
   './icono-512.png', './icono-maskable-512.png',
-  './js/alertas.js', './js/calculos.js', './js/errores.js', './js/escaneo-dni.js', './js/estado.js',
+  './js/alertas.js', './js/avisos-nativos.js', './js/calculos.js', './js/errores.js', './js/escaneo-dni.js', './js/estado.js',
   './js/importar.js', './js/modelo.js', './js/pagina-asistencia.js',
   './js/pagina-b1.js', './js/pagina-calendario.js', './js/pagina-padron.js',
   './js/sugerencias.js', './js/ui-asistencia.js',

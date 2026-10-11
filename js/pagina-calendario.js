@@ -5,6 +5,7 @@ import {
 } from './modelo.js';
 import { alertaProximaEntrega, agendaEntregas, PERIODICIDADES } from './alertas.js';
 import { validarCalendario, validarRendicion } from './validaciones.js';
+import { hayAvisosNativos, permisoDeAvisos, pedirPermisoDeAvisos, reprogramarAvisos } from './avisos-nativos.js';
 import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, pintarPanel,
   marcarCampo, bannerAlerta, pintarAvisosAlmacenamiento, avisarAlSalirDelCampo, mostrarGuardado
@@ -21,7 +22,41 @@ function escribir() {
   pendiente = false;
   const ok = guardar(CLAVES.calendario, calendario);
   mostrarGuardado(ok);
+  if (ok) reprogramarAvisos(calendario).then(pintarAvisosTelefono);
   return ok;
+}
+
+/**
+ * Solo en el APK: los avisos llegan con la app cerrada, si se dio el permiso.
+ * En el navegador no se muestra nada (ahí no hay cómo).
+ */
+async function pintarAvisosTelefono(programados) {
+  const caja = buscar('#avisos-telefono');
+  if (!hayAvisosNativos()) return;
+  const permiso = await permisoDeAvisos();
+  caja.textContent = '';
+  if (permiso === 'granted') {
+    buscar('#nota-avisos').textContent = 'El teléfono te avisa a las 9 de la mañana, aunque la aplicación esté cerrada.';
+    if (programados === 0 && esIso(calendario.fechaLimiteBase)) {
+      caja.append(crearElemento('p', { clase: 'pista', texto: 'No hay avisos pendientes.' }));
+    }
+    return;
+  }
+  buscar('#nota-avisos').textContent = 'Por ahora, el aviso se ve solo al abrir la aplicación.';
+  caja.append(crearElemento('div', { clase: 'estado-b1 pendiente' }, [
+    crearElemento('span', {
+      texto: permiso === 'denied'
+        ? 'Los avisos del teléfono están apagados. Actívalos en Ajustes → Aplicaciones → Sistema de Asistencia → Notificaciones.'
+        : 'Activa los avisos para que el teléfono te recuerde la entrega aunque la aplicación esté cerrada.'
+    }),
+    permiso === 'denied' ? null : crearElemento('button', {
+      type: 'button', clase: 'boton diminuto', texto: 'Activar los avisos',
+      onclick: async () => {
+        await pedirPermisoDeAvisos();
+        pintarAvisosTelefono(await reprogramarAvisos(calendario));
+      }
+    })
+  ]));
 }
 
 const guardarDiferido = debounce(() => { if (pendiente) escribir(); }, 400);
@@ -191,6 +226,7 @@ for (const [clave, , detalle] of PERIODICIDADES) {
 pintarBanner();
 pintarEstadoB1();
 pintarAgenda();
+pintarAvisosTelefono();
 refrescarValidacion();
 
 avisarAlSalirDelCampo(refrescarValidacion);

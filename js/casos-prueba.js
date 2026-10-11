@@ -19,7 +19,7 @@ import {
   validarRendicion, validarAfiliado, validarAtencion, validarCalendario, contar
 } from './validaciones.js';
 import {
-  avanzarPeriodo, fechasDeEntrega, alertaProximaEntrega, agendaEntregas, nivelPorDias
+  avanzarPeriodo, fechasDeEntrega, alertaProximaEntrega, agendaEntregas, nivelPorDias, programaDeAvisos
 } from './alertas.js';
 import {
   detectarSeparador, parsearTabla, detectarColumnas, parsearFechaFlexible,
@@ -1348,6 +1348,26 @@ export const casos = [
       igual(cuantos(1, 'persona'), '1 persona');
       igual(cuantos(3, 'persona'), '3 personas');
       igual(cuantos(0, 'ración', 'raciones'), '0 raciones');
+    }
+  },
+
+  {
+    grupo: 'Entregas',
+    nombre: 'Los avisos del teléfono: días de anticipación y el mismo día, sin las ya entregadas',
+    fn: () => {
+      const c = { periodicidad: 'mensual', fechaLimiteBase: '2026-11-05', diasDeAviso: [7, 3, 1],
+        entregas: [{ fechaLimite: '2026-11-05', estado: 'entregada' }] };
+      const avisos = programaDeAvisos(c, '2026-10-11', 2);
+      igual(avisos.map((a) => a.fecha).join(','), '2026-11-28,2026-12-02,2026-12-04,2026-12-05',
+        'la del 05-11 ya se entregó: solo las de la siguiente');
+      igual(avisos[3].texto, 'Hoy vence la entrega del 05-12-26.');
+      igual(avisos[2].texto, 'Falta 1 día para la entrega del 05-12-26.');
+      igual(new Set(avisos.map((a) => a.id)).size, 4, 'ids distintos');
+      ok(avisos.every((a) => Number.isInteger(a.id) && a.id < 2 ** 31), 'ids que Android acepta');
+      igual(programaDeAvisos({ periodicidad: 'mensual', fechaLimiteBase: '' }, '2026-10-11').length, 0,
+        'sin fecha de entrega no hay avisos');
+      // Lo de hoy o antes no se programa: lo dice la franja al abrir.
+      ok(programaDeAvisos(c, '2026-12-03', 1).every((a) => a.fecha > '2026-12-03'));
     }
   },
 

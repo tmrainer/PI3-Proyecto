@@ -164,3 +164,46 @@ export function agendaEntregas(calendario, hoyRef, cuantas = 6) {
   }
   return lista;
 }
+
+/**
+ * Los avisos que el teléfono muestra solo, con la app cerrada (versión APK):
+ * uno por cada día de aviso antes de cada una de las próximas entregas, y uno
+ * el mismo día. Solo los que caen después de hoy y de entregas no marcadas
+ * como entregadas. Sin red: el teléfono se los programa a sí mismo.
+ *
+ * `id` es un entero estable (fecha de entrega + días de anticipación): volver a
+ * programar reemplaza el mismo aviso en vez de duplicarlo.
+ * @param {Object} calendario  b1.calendario.v1
+ * @param {string} [hoyRef]  'AAAA-MM-DD'; por defecto, hoy
+ * @param {number} [cuantas=6]  cuántas entregas hacia adelante
+ * @returns {Array<{id: number, fecha: string, fechaEntrega: string, dias: number,
+ *   titulo: string, texto: string}>}  ordenados por fecha
+ */
+export function programaDeAvisos(calendario, hoyRef, cuantas = 6) {
+  const hoy = esIso(hoyRef) ? hoyRef : hoyIso();
+  if (!calendario || !esIso(calendario.fechaLimiteBase)) return [];
+  const validos = (Array.isArray(calendario.diasDeAviso) ? calendario.diasDeAviso : [])
+    .filter((d) => Number.isInteger(d) && d > 0 && d < 400);
+  const anticipacion = [...new Set([...(validos.length ? validos : [7, 3, 1]), 0])];
+  const avisos = [];
+  for (const entrega of fechasDeEntrega(calendario, hoy, cuantas)) {
+    if (estadoRegistrado(calendario, entrega) === 'entregada') continue;
+    for (const dias of anticipacion) {
+      const f = aFecha(entrega);
+      f.setDate(f.getDate() - dias);
+      const fecha = aIso(f);
+      if (fecha <= hoy) continue;      // lo de hoy ya lo dice la franja al abrir
+      avisos.push({
+        id: Number(entrega.replace(/-/g, '').slice(2)) * 1000 + dias,
+        fecha,
+        fechaEntrega: entrega,
+        dias,
+        titulo: 'Entrega del Formato B-1',
+        texto: dias === 0
+          ? `Hoy vence la entrega del ${aDdMmAa(entrega)}.`
+          : `${dias === 1 ? 'Falta 1 día' : `Faltan ${dias} días`} para la entrega del ${aDdMmAa(entrega)}.`
+      });
+    }
+  }
+  return avisos.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
+}
