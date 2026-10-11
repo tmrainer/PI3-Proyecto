@@ -272,6 +272,26 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
+  // 2b. Filtrar reutiliza las filas: marcar con «los que faltan» puesto y
+  // quitar el filtro deja la fila marcada, no una copia vieja.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar?padron=1`);
+    await p.ir(`${base}/index.html`);
+    const FALTAN = `[...document.querySelectorAll('#hoy button')].find((b) => /que faltan/.test(b.textContent)).click()`;
+    await p.actuar(FALTAN);
+    await p.actuar(TOCAR('Gama'));
+    const conFiltro = await p.eval(`document.querySelectorAll('#hoy .toque').length`);
+    await p.actuar(FALTAN);
+    const r = await p.eval(`(() => {
+      const b = [...document.querySelectorAll('#hoy .toque-nombre')].find((x) => x.textContent.includes('Gama'));
+      return { filas: document.querySelectorAll('#hoy .toque').length, gama: b && b.getAttribute('aria-pressed') };
+    })()`);
+    comprobar('filtrar y volver: la fila marcada sigue marcada',
+      conFiltro === 1 && r.filas === 3 && r.gama === 'true', JSON.stringify({ conFiltro, ...r }));
+    await p.cerrar();
+  }
+
   // 3. Dos pestañas: la asistencia marcada en una no la borra la otra.
   {
     const a = await pestana(cdp);

@@ -336,6 +336,9 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   });
   buscador.value = filtroHoy;
   const lista = crearElemento('div', { clase: 'lista-toque' });
+  // Cada fila se arma una vez y se reutiliza: buscar o filtrar solo cambia
+  // cuáles se muestran, en vez de rehacer cientos de botones por tecla.
+  const filas = new Map();
 
   // Cerrar la lista es buscar a los pocos que faltan entre decenas de filas ya
   // marcadas. Con el filtro puesto, cada toque los va quitando de en medio y la
@@ -406,7 +409,14 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
       refrescarBotonFaltan();
       return;
     }
-    for (const persona of visibles) lista.append(filaToque(at, persona, ctx, alCambiar));
+    for (const persona of visibles) {
+      let fila = filas.get(persona.id);
+      if (!fila) {
+        fila = filaToque(at, persona, ctx, alCambiar);
+        filas.set(persona.id, fila);
+      }
+      lista.append(fila);
+    }
     refrescarBotonFaltan();
 
     if (i >= 0) {
@@ -429,6 +439,7 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
       at.asistencias = [];
     }
     asegurarHoyGuardado();
+    filas.clear();                 // todas cambiaron: se vuelven a armar
     pintarLista();
     refrescar();
     ctx.onCambio();
