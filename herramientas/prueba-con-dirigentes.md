@@ -25,7 +25,7 @@ ver dónde se traban, no enseñarles: no expliques nada mientras hacen las tarea
 - ¿La terminó? ¿Sola, con una pista, o no pudo?
 - ¿Dónde se detuvo más de 5 segundos? ¿Qué tocó primero?
 - Lo que dijo en voz alta (pídele que piense en voz alta).
-- En la 1: ¿entendió el aviso del 0 de adelante y tocó «Agregar el 0»?
+- En la 1: ¿notó que la app agregó el 0 a dos DNI? ¿Le pareció bien?
 - En la 5: ¿sabe dónde quedó el archivo?
 
 ## Después

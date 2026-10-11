@@ -518,27 +518,20 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
-  // 1j. DNI sin el 0 de adelante (Excel lo quita): se avisa, y el 0 se
-  // agrega solo cuando la persona toca el botón.
+  // 1j. DNI sin el 0 de adelante (Excel lo quita): vuelve a tener 8 cifras al
+  // importar, y la tarjeta lo dice.
   {
     const p = await pestana(cdp);
     await p.ir(`${base}/__sembrar`);
     await p.ir(`${base}/padron.html`);
-    const r = await p.actuar(`(async () => {
+    const vista = await p.actuar(`(async () => {
       const area = document.getElementById('pegarPadron');
       area.value = 'Apellido paterno\\tNombres\\tDNI\\tGrupo de edad\\tTipo\\nQuispe\\tRosa\\t4567891\\tAdulto\\tHabitual';
-      area.dispatchEvent(new Event('input'));
       document.getElementById('revisar-importacion').click();
-      const antes = document.getElementById('vista-importacion').innerText.replace(/\\s+/g, ' ');
-      const boton = [...document.querySelectorAll('.imp-ceros button')][0];
-      if (!boton) return { antes };
-      boton.click();
-      return { antes, despues: document.getElementById('vista-importacion').innerText.replace(/\\s+/g, ' ') };
+      return document.getElementById('vista-importacion').innerText.replace(/\\s+/g, ' ');
     })()`);
-    comprobar('importar: un DNI de 7 cifras se avisa y no se rellena solo',
-      /quitó el 0/.test(r.antes) && /DNI 4567891/.test(r.antes), r.antes && r.antes.slice(0, 200));
-    comprobar('importar: «Agregar el 0» lo completa a 8 cifras',
-      /DNI 04567891/.test(r.despues || '') && !/imp-ceros/.test(r.despues || ''), (r.despues || '').slice(0, 200));
+    comprobar('importar: un DNI de 7 cifras vuelve con su 0 y se avisa',
+      /DNI con el 0 agregado: 1/.test(vista) && /DNI 04567891/.test(vista) && /se agregó el 0/.test(vista), vista.slice(0, 220));
     await p.cerrar();
   }
 
@@ -595,7 +588,7 @@ async function correr(base, cdp) {
     const p = await pestana(cdp);
     await p.ir(`${base}/__sembrar?padron=1`);
     await p.ir(`${base}/index.html`);
-    const FALTAN = `[...document.querySelectorAll('#hoy button')].find((b) => /que faltan/.test(b.textContent)).click()`;
+    const FALTAN = `[...document.querySelectorAll('#hoy button')].find((b) => /falta|vinieron todos/.test(b.textContent)).click()`;
     await p.actuar(FALTAN);
     await p.actuar(TOCAR('Gama'));
     const conFiltro = await p.eval(`document.querySelectorAll('#hoy .toque').length`);

@@ -361,9 +361,14 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
 
   function refrescarBotonFaltan() {
     const n = sinMarcar();
-    botonFaltan.textContent = soloSinMarcar
-      ? `Viendo los ${n} que faltan`
-      : `Ver los ${n} que faltan`;
+    // Con todos marcados, «Ver los 0 que faltan» parecía un botón roto.
+    if (n === 0) {
+      botonFaltan.textContent = soloSinMarcar ? 'Ya vinieron todos: ver la lista' : 'Ya vinieron todos';
+    } else if (soloSinMarcar) {
+      botonFaltan.textContent = n === 1 ? 'Viendo a quien falta' : `Viendo los ${n} que faltan`;
+    } else {
+      botonFaltan.textContent = n === 1 ? 'Ver a quien falta' : `Ver los ${n} que faltan`;
+    }
     botonFaltan.disabled = n === 0 && !soloSinMarcar;
   }
 

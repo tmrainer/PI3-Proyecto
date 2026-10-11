@@ -1130,25 +1130,25 @@ export const casos = [
   },
   {
     grupo: 'Importar',
-    nombre: 'Un DNI al que Excel le quitó el 0 se avisa, y el 0 se agrega solo si se pide',
+    nombre: 'Un DNI al que Excel le quitó el 0 vuelve a tener 8 cifras, y se dice',
     fn: () => {
       const p = padronVacio();
       p.afiliados.push(Object.assign(nuevoAfiliado(), { id: 'ya', apellidoPaterno: 'Rojas', nombres: 'Ana', numeroDocumento: '01234567', activo: true }));
       const texto = 'Apellido paterno\tNombres\tDNI\tGrupo de edad\tTipo\n' +
         'Quispe\tRosa\t4567891\tAdulto\tHabitual\n' +
         'Rojas\tAna\t1234567\tAdulto\tHabitual\n' +
-        'Luna\tSol\t123456789\tAdulto\tHabitual';
+        'Luna\tSol\t123456789\tAdulto\tHabitual\n' +
+        'Paz\tLuz\t98765432\tAdulto\tHabitual';
       const r = prepararImportacion(texto, p);
-      const [sinCero, yaEsta, largo] = r.filas;
-      igual(sinCero.estado, 'incompleta');
-      igual(sinCero.afiliado.numeroDocumento, '4567891', 'no se rellena solo');
-      ok(sinCero.avisos.some((x) => /quitó el 0/.test(x)), sinCero.avisos.join());
-      igual(r.resumen.sinCero, 1, 'la que ya está no cuenta');
-      igual(yaEsta.estado, 'duplicada', 'se reconoce con el 0 puesto');
-      igual(largo.estado, 'incompleta', 'un DNI de 9 cifras tampoco pasa como listo');
-      const conCero = prepararImportacion(texto, p, { completarCeros: true }).filas[0];
+      const [conCero, yaEsta, largo, normal] = r.filas;
       igual(conCero.afiliado.numeroDocumento, '04567891');
       igual(conCero.estado, 'lista');
+      ok(conCero.avisos.some((x) => /se agregó el 0/.test(x)), conCero.avisos.join());
+      igual(yaEsta.estado, 'duplicada', 'con el 0 puesto, se reconoce a quien ya está');
+      igual(largo.estado, 'incompleta', 'un DNI de 9 cifras no se toca y no pasa como listo');
+      igual(largo.afiliado.numeroDocumento, '123456789');
+      igual(normal.avisos.length, 0, 'un DNI de 8 cifras no se toca');
+      igual(r.resumen.conCero, 1, 'la duplicada no cuenta');
     }
   },
   {

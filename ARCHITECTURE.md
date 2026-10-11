@@ -91,10 +91,10 @@ cuenta aparte y en verde, «Faltan 12 datos», en vez de «12 errores» en rojo 
 un formulario recién abierto. Sin hallazgos, el panel no se muestra.
 
 **DNI sin el 0 de adelante.** Excel guarda `01234567` como el número
-`1234567`. `prepararImportacion()` marca `ceroPerdido` en los DNI de 5 a 7
-cifras, los cuenta en `resumen.sinCero` y reconoce como duplicado a quien ya
-está con el 0 puesto; solo con `{ completarCeros: true }` (el botón «Agregar el
-0», en `ui-importar.js`) les antepone los ceros.
+`1234567`. `prepararImportacion()` completa con ceros adelante los DNI de 5 a 7
+cifras (marca `ceroAgregado`, lo cuenta en `resumen.conCero` y lo dice en la
+fila). Es la única corrección que hace la importación; un DNI de otro largo no
+se toca y queda incompleto. Así también se reconoce a quien ya estaba con el 0.
 
 **Instalar y letra grande** (`ui.js`, desde `montarCabecera()`). Si el navegador
 dispara `beforeinstallprompt` (Chrome y Edge), la app ofrece su propio botón

@@ -195,12 +195,13 @@ function partirApellidos(texto) {
  *         'duplicada'  — ya existe ese documento activo; no se importa
  *         'vacia'      — sin nombre utilizable; no se importa
  *
- * ceroPerdido: un DNI de 5 a 7 cifras es casi siempre uno que empezaba con 0 y
- * que Excel guardó como número (01234567 → 1234567). Se avisa y se cuenta en
- * `resumen.sinCero`; solo con `completarCeros` (la usuaria tocó «Agregar el 0»)
- * se le anteponen los ceros. Nunca se hace solo.
+ * ceroAgregado: un DNI de 5 a 7 cifras es uno que empezaba con 0 y que Excel
+ * guardó como número (01234567 → 1234567). Se completa con ceros adelante y se
+ * dice en la fila; `resumen.conCero` los cuenta. Es la única corrección que
+ * hace la importación (decisión del equipo): pedírsela a la usuaria fila por
+ * fila era un paso más que casi siempre se respondía igual.
  */
-export function prepararImportacion(texto, padron, { completarCeros = false } = {}) {
+export function prepararImportacion(texto, padron) {
   const tabla = parsearTabla(texto);
   if (tabla.length === 0) {
     return { columnas: {}, sinReconocer: [], filas: [], error: 'No se encontró ninguna fila.' };
@@ -249,10 +250,9 @@ export function prepararImportacion(texto, padron, { completarCeros = false } = 
     a.numeroDocumento = val('numeroDocumento').replace(/\s/g, '');
     a.tipoDocumento = mapa.tipoDocumento === undefined ? 'dni' : parsearTipoDocumento(val('tipoDocumento'));
     const esDni = a.tipoDocumento === 'dni';
-    const ceroPerdido = esDni && /^\d{5,7}$/.test(a.numeroDocumento);
-    const conCeros = ceroPerdido ? a.numeroDocumento.padStart(8, '0') : a.numeroDocumento;
-    if (ceroPerdido && completarCeros) {
-      a.numeroDocumento = conCeros;
+    const ceroAgregado = esDni && /^\d{5,7}$/.test(a.numeroDocumento);
+    if (ceroAgregado) {
+      a.numeroDocumento = a.numeroDocumento.padStart(8, '0');
       avisos.push('se agregó el 0 de adelante que Excel había quitado');
     }
 
@@ -284,9 +284,6 @@ export function prepararImportacion(texto, padron, { completarCeros = false } = 
     } else if (a.numeroDocumento && docsExistentes.has(a.numeroDocumento)) {
       estado = 'duplicada';
       avisos.push('ese documento ya está en el padrón');
-    } else if (ceroPerdido && docsExistentes.has(conCeros)) {
-      estado = 'duplicada';
-      avisos.push(`ya está en el padrón como ${conCeros} (Excel le quitó el 0 de adelante)`);
     } else if (a.numeroDocumento && docsEnElArchivo.has(a.numeroDocumento)) {
       estado = 'duplicada';
       avisos.push('ese documento se repite dentro del propio archivo');
@@ -294,9 +291,7 @@ export function prepararImportacion(texto, padron, { completarCeros = false } = 
       if (a.numeroDocumento) docsEnElArchivo.add(a.numeroDocumento);
       const falta = [];
       if (!a.numeroDocumento) falta.push('documento');
-      else if (ceroPerdido && !completarCeros) {
-        avisos.push(`el DNI tiene ${a.numeroDocumento.length} cifras: parece que Excel quitó el 0 de adelante`);
-      } else if (esDni && !/^\d{8}$/.test(a.numeroDocumento)) {
+      else if (esDni && !/^\d{8}$/.test(a.numeroDocumento)) {
         avisos.push('el DNI no tiene 8 dígitos');
       }
       if (!fnac && !a.grupoEtarioManual) falta.push('grupo de edad');
@@ -312,14 +307,14 @@ export function prepararImportacion(texto, padron, { completarCeros = false } = 
 
     return {
       linea: celdas.linea || fila0 + i + 2, afiliado: a, nombreCompleto, estado, avisos,
-      ceroPerdido: ceroPerdido && !completarCeros && estado !== 'duplicada' && estado !== 'vacia'
+      ceroAgregado: ceroAgregado && estado !== 'vacia'
     };
   });
 
-  const resumen = { lista: 0, incompleta: 0, duplicada: 0, vacia: 0, sinCero: 0 };
+  const resumen = { lista: 0, incompleta: 0, duplicada: 0, vacia: 0, conCero: 0 };
   for (const f of filas) {
     resumen[f.estado] += 1;
-    if (f.ceroPerdido) resumen.sinCero += 1;
+    if (f.ceroAgregado && f.estado !== 'duplicada') resumen.conCero += 1;
   }
 
   return { columnas: mapa, sinReconocer, filas, resumen, error: null };
