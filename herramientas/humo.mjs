@@ -235,7 +235,36 @@ const TOCAR = (apellido) => `[...document.querySelectorAll('#hoy .toque-nombre')
 const ESCRIBIR = (sel, valor) => `(() => { const el = document.querySelector(${JSON.stringify(sel)});
   el.value = ${JSON.stringify(valor)}; el.dispatchEvent(new Event('input', { bubbles: true })); })()`;
 
+// 0. La lista del service worker coincide con los archivos de la app. Un
+// archivo que falte ahí no abre sin internet; uno que ya no exista hace fallar
+// la instalación entera, sin que nadie se entere.
+function revisarListaDelServiceWorker() {
+  const sw = fs.readFileSync(path.join(RAIZ, 'sw.js'), 'utf8');
+  const bloque = sw.match(/const ARCHIVOS = \[([\s\S]*?)\];/)[1];
+  const lista = [...bloque.matchAll(/'([^']+)'/g)].map((m) => m[1])
+    .filter((f) => f !== './').map((f) => f.replace(/^\.\//, ''));
+  const soloPruebas = new Set(['js/casos-prueba.js', 'js/pagina-pruebas.js']);
+  const esperados = new Set(['estilos.css', 'manifest.webmanifest']);
+  for (const f of fs.readdirSync(path.join(RAIZ, 'js'))) {
+    if (f.endsWith('.js') && !soloPruebas.has(`js/${f}`)) esperados.add(`js/${f}`);
+  }
+  for (const pagina of PAGINAS.filter((x) => x !== 'pruebas')) {
+    esperados.add(`${pagina}.html`);
+    const html = fs.readFileSync(path.join(RAIZ, `${pagina}.html`), 'utf8');
+    for (const m of html.matchAll(/(?:href|src)="\.\/([^"#?]+)"/g)) {
+      if (!m[1].endsWith('/')) esperados.add(m[1]);
+    }
+  }
+  const manifest = JSON.parse(fs.readFileSync(path.join(RAIZ, 'manifest.webmanifest'), 'utf8'));
+  for (const i of manifest.icons) esperados.add(i.src.replace(/^\.\//, ''));
+  const faltan = [...esperados].filter((f) => !lista.includes(f));
+  const noExisten = lista.filter((f) => !fs.existsSync(path.join(RAIZ, f)));
+  comprobar('sw.js: su lista tiene todos los archivos de la app', faltan.length === 0, 'faltan: ' + faltan.join(', '));
+  comprobar('sw.js: todo lo de su lista existe', noExisten.length === 0, 'no existen: ' + noExisten.join(', '));
+}
+
 async function correr(base, cdp) {
+  revisarListaDelServiceWorker();
   // 1. Cada página, sin datos y con datos: carga sin errores.
   for (const sembrado of [false, true]) {
     for (const nombre of PAGINAS) {
