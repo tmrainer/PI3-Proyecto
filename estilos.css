@@ -700,3 +700,10 @@ details.bloque.desplegable[open] > summary + * { margin-top: 14px; }
   .recordatorio-respaldo { padding: 6px 10px; font-size: .82rem; }
   .recordatorio-respaldo > span { flex-basis: 9em; }
 }
+
+/* Detalle técnico del aviso de error (js/errores.js): para sacarle una foto. */
+.detalle-error {
+  white-space: pre-wrap; overflow-wrap: anywhere; font-size: .78rem;
+  max-height: 12em; overflow: auto; margin: 6px 0 0;
+}
+.aviso-sistema > .boton { margin: 4px 0 8px; }

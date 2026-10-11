@@ -316,6 +316,19 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
+  // 1c. Un error en la página no la deja en blanco: aparece el aviso.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/index.html`);
+    const antes = await p.eval(`!!document.querySelector('#avisos-sistema [role="alert"]')`);
+    await p.eval(`setTimeout(() => { throw new Error('error de prueba'); }); 1`);
+    await pausa(200);
+    const r = await p.eval(TEXTO('#avisos-sistema [role="alert"]'));
+    comprobar('error en la página: aparece el aviso con el detalle',
+      !antes && r.includes('Algo falló') && r.includes('error de prueba'), r.slice(0, 80));
+    await p.cerrar();
+  }
+
   // 2. Marcar a alguien y salir enseguida, antes de los 400 ms: no se pierde.
   {
     const p = await pestana(cdp);
