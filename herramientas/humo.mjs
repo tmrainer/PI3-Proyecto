@@ -329,6 +329,53 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
+  // 1d. Respaldo con contraseña: no deja ver nada adentro, la contraseña
+  // equivocada no lo abre y la correcta lo importa por la interfaz.
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar?padron=1`);
+    await p.ir(`${base}/padron.html`);
+    const r1 = await p.eval(`(async () => {
+      const m = await import('./js/modelo.js');
+      const ui = await import('./js/ui.js');
+      const sobre = await m.cifrarRespaldo(ui.armarRespaldo(), 'clave de prueba');
+      const texto = JSON.stringify(sobre);
+      let malaFalla = false;
+      try { await m.descifrarRespaldo(sobre, 'otra clave'); } catch (e) { malaFalla = true; }
+      const vuelta = await m.descifrarRespaldo(sobre, 'clave de prueba');
+      sessionStorage.setItem('sobre', texto);
+      localStorage.setItem('b1.padron.v1', JSON.stringify({ version: 3, afiliados: [], atenciones: [] }));
+      return { oculto: !texto.includes('Alfa') && !texto.includes('00000001'), malaFalla,
+        vuelta: vuelta.padron.afiliados.length };
+    })()`);
+    comprobar('respaldo con contraseña: cifrado, y la equivocada no lo abre',
+      r1.oculto && r1.malaFalla && r1.vuelta === 3, JSON.stringify(r1));
+
+    await p.ir(`${base}/padron.html`);       // ya con el padrón vacío
+    const ABRIR_CON = (clave) => `(async () => {
+      document.getElementById('clave-importar').value = ${JSON.stringify(clave)};
+      [...document.querySelectorAll('.respaldo-clave button')].find((b) => b.textContent === 'Abrir respaldo').click();
+      await new Promise((ok) => setTimeout(ok, 1500));
+      return (document.querySelector('.respaldo-clave .campo-error') || {}).textContent || '';
+    })()`;
+    const mala = await p.actuar(`(async () => {
+      window.confirm = () => true;
+      const dt = new DataTransfer();
+      dt.items.add(new File([sessionStorage.getItem('sobre')], 'respaldo.json', { type: 'application/json' }));
+      const entrada = document.getElementById('importar-archivo');
+      entrada.files = dt.files;
+      entrada.dispatchEvent(new Event('change'));
+      await new Promise((ok) => setTimeout(ok, 300));
+      return 1;
+    })()`).then(() => p.eval(ABRIR_CON('clave mala')));
+    await p.eval(ABRIR_CON('clave de prueba')).catch(() => {});   // recarga la página
+    await pausa(800);
+    const n = await p.eval(`JSON.parse(localStorage.getItem('b1.padron.v1')).afiliados.length`);
+    comprobar('respaldo con contraseña: se importa por la interfaz',
+      /no abre/.test(mala) && n === 3, JSON.stringify({ mala, n }));
+    await p.cerrar();
+  }
+
   // 2. Marcar a alguien y salir enseguida, antes de los 400 ms: no se pierde.
   {
     const p = await pestana(cdp);

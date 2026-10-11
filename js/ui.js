@@ -2,7 +2,8 @@
 // Ver AGENTS.md §3. Ninguna lógica de cálculo ni de validación vive aquí.
 
 import {
-  CLAVES, leer, guardar, borrarTodo, descargarJson, avisosAlmacenamiento, hoyIso
+  CLAVES, leer, guardar, borrarTodo, descargarJson, avisosAlmacenamiento, hoyIso,
+  cifrarRespaldo, descifrarRespaldo, esRespaldoCifrado
 } from './modelo.js';
 
 /**
@@ -376,7 +377,8 @@ export function bloquePrivacidad() {
       crearElemento('p', {
         texto: 'El archivo de respaldo contiene nombres, números de documento y el ' +
           'registro de asistencia de personas reales. Guárdalo en tu teléfono o en ' +
-          'tu Drive; no lo mandes por WhatsApp ni por correo sin cifrar.'
+          'tu Drive. Si tiene que viajar por WhatsApp o por correo, usa «Exportar ' +
+          'con contraseña» y pasa la contraseña por otro lado.'
       })
     ])
   ]);
@@ -401,51 +403,125 @@ export function barraDatos({ alImportar, alBorrar }) {
   const entrada = crearElemento('input', {
     type: 'file', accept: 'application/json', clase: 'oculto-visual', id: 'importar-archivo'
   });
+  // Un respaldo con contraseña pide la contraseña aquí mismo, antes de importar.
+  const abrirCifrado = crearElemento('div', { clase: 'respaldo-clave', hidden: true });
+
   entrada.addEventListener('change', async () => {
     const archivo = entrada.files && entrada.files[0];
+    entrada.value = '';
     if (!archivo) return;
+    let datos;
     try {
-      const texto = await archivo.text();
-      const datos = JSON.parse(texto);
-      alImportar(datos);
+      datos = JSON.parse(await archivo.text());
     } catch (e) {
       alert('No se pudo leer el archivo. ¿Es un respaldo exportado por esta misma aplicación?');
+      return;
     }
-    entrada.value = '';
+    if (esRespaldoCifrado(datos)) pedirContrasena(datos);
+    else alImportar(datos);
   });
 
-  return crearElemento('div', { clase: 'barra-datos' }, [
-    crearElemento('button', {
-      type: 'button', clase: 'boton secundario',
-      onclick: () => exportarTodo(), texto: 'Exportar respaldo'
-    }),
-    crearElemento('label', { clase: 'boton secundario', for: 'importar-archivo', texto: 'Importar respaldo' }),
-    entrada,
-    crearElemento('button', {
-      type: 'button', clase: 'boton peligro',
-      texto: 'Borrar todo',
-      onclick: () => {
-        const confirmado = confirm(
-          'Se borrarán de este navegador: la rendición en curso, el padrón de ' +
-          'personas afiliadas, el registro de raciones y asistencia, y el ' +
-          'calendario de entregas.\n\n' +
-          'Esto no se puede deshacer. ¿Exportaste un respaldo?\n\n' +
-          'Aceptar para borrar todo.');
-        if (!confirmado) return;
-        borrarTodo();
-        if (alBorrar) alBorrar();
+  function pedirContrasena(sobre) {
+    const clave = crearElemento('input', {
+      type: 'password', id: 'clave-importar', autocomplete: 'current-password'
+    });
+    const msg = crearElemento('p', { clase: 'campo-error', role: 'status' });
+    const abrir = async () => {
+      msg.textContent = 'Abriendo…';
+      try {
+        const datos = await descifrarRespaldo(sobre, clave.value);
+        abrirCifrado.hidden = true;
+        alImportar(datos);
+      } catch (e) {
+        msg.textContent = 'Esa contraseña no abre este respaldo. Revisa mayúsculas y vuelve a intentar.';
+        msg.classList.add('es-error');
+        clave.focus();
       }
-    })
+    };
+    clave.addEventListener('keydown', (e) => { if (e.key === 'Enter') abrir(); });
+    abrirCifrado.textContent = '';
+    abrirCifrado.append(
+      crearElemento('div', { clase: 'campo' }, [
+        crearElemento('label', { for: clave.id, texto: 'Este respaldo tiene contraseña. Escríbela para abrirlo' }),
+        clave
+      ]),
+      crearElemento('div', { clase: 'acciones' }, [
+        crearElemento('button', { type: 'button', clase: 'boton', texto: 'Abrir respaldo', onclick: abrir }),
+        crearElemento('button', {
+          type: 'button', clase: 'boton secundario', texto: 'Cancelar',
+          onclick: () => { abrirCifrado.hidden = true; }
+        })
+      ]),
+      msg
+    );
+    abrirCifrado.hidden = false;
+    clave.focus();
+  }
+
+  return crearElemento('div', {}, [
+    crearElemento('div', { clase: 'barra-datos' }, [
+      crearElemento('button', {
+        type: 'button', clase: 'boton secundario',
+        onclick: () => exportarTodo(), texto: 'Exportar respaldo'
+      }),
+      crearElemento('label', { clase: 'boton secundario', for: 'importar-archivo', texto: 'Importar respaldo' }),
+      entrada,
+      crearElemento('button', {
+        type: 'button', clase: 'boton peligro',
+        texto: 'Borrar todo',
+        onclick: () => {
+          const confirmado = confirm(
+            'Se borrarán de este navegador: la rendición en curso, el padrón de ' +
+            'personas afiliadas, el registro de raciones y asistencia, y el ' +
+            'calendario de entregas.\n\n' +
+            'Esto no se puede deshacer. ¿Exportaste un respaldo?\n\n' +
+            'Aceptar para borrar todo.');
+          if (!confirmado) return;
+          borrarTodo();
+          if (alBorrar) alBorrar();
+        }
+      })
+    ]),
+    abrirCifrado,
+    exportarConContrasena()
   ]);
 }
 
-/**
- * Arma el respaldo y lo entrega. En el celular abre el menú del sistema para
- * guardarlo (Archivos, Drive) en vez de dejarlo perdido en Descargas; donde no
- * se puede, lo descarga. Anota la fecha para el recordatorio de respaldo.
- */
-export async function exportarTodo() {
-  const datos = {
+/** «Exportar con contraseña»: plegado, con la contraseña dos veces. */
+function exportarConContrasena() {
+  const c1 = crearElemento('input', { type: 'password', id: 'clave-exportar', autocomplete: 'new-password', minlength: '8' });
+  const c2 = crearElemento('input', { type: 'password', id: 'clave-exportar-2', autocomplete: 'new-password' });
+  const msg = crearElemento('p', { clase: 'campo-error', role: 'status' });
+  const exportar = async () => {
+    msg.classList.add('es-error');
+    if (c1.value.length < 8) { msg.textContent = 'Usa una contraseña de 8 caracteres o más.'; c1.focus(); return; }
+    if (c1.value !== c2.value) { msg.textContent = 'Las dos contraseñas no coinciden. Escríbelas otra vez.'; c2.focus(); return; }
+    msg.classList.remove('es-error');
+    msg.textContent = 'Cifrando…';
+    await exportarTodo(c1.value);
+    c1.value = ''; c2.value = '';
+    msg.textContent = 'Respaldo protegido listo. Guarda la contraseña en un lugar aparte.';
+  };
+  return crearElemento('details', { clase: 'respaldo-clave' }, [
+    crearElemento('summary', { texto: 'Exportar con contraseña' }),
+    crearElemento('p', {
+      clase: 'pista',
+      texto: 'Nadie podrá abrir el archivo sin la contraseña, tampoco tú si la olvidas: no hay forma de recuperarla.'
+    }),
+    crearElemento('div', { clase: 'rejilla dos' }, [
+      crearElemento('div', { clase: 'campo' }, [crearElemento('label', { for: c1.id, texto: 'Contraseña (8 o más caracteres)' }), c1]),
+      crearElemento('div', { clase: 'campo' }, [crearElemento('label', { for: c2.id, texto: 'Repite la contraseña' }), c2])
+    ]),
+    crearElemento('div', { clase: 'acciones', style: 'margin-top:10px' }, [
+      crearElemento('button', { type: 'button', clase: 'boton secundario', texto: 'Exportar respaldo protegido', onclick: exportar })
+    ]),
+    msg
+  ]);
+}
+
+/** El respaldo completo: todo lo que la app guarda, en un solo objeto. */
+export function armarRespaldo() {
+  return {
     exportadoEn: new Date().toISOString(),
     aplicacion: 'rendicion-b1',
     rendiciones: leer(CLAVES.rendiciones, []),
@@ -453,7 +529,22 @@ export async function exportarTodo() {
     calendario: leer(CLAVES.calendario, null),
     config: leer(CLAVES.config, null)
   };
-  const nombre = `respaldo-b1-${hoyIso()}.json`;
+}
+
+/**
+ * Arma el respaldo y lo entrega. En el celular abre el menú del sistema para
+ * guardarlo (Archivos, Drive) en vez de dejarlo perdido en Descargas; donde no
+ * se puede, lo descarga. Con contraseña, lo cifra antes. Anota la fecha para el
+ * recordatorio de respaldo.
+ * @param {string} [contrasena]
+ */
+export async function exportarTodo(contrasena) {
+  let datos = armarRespaldo();
+  let nombre = `respaldo-b1-${hoyIso()}.json`;
+  if (contrasena) {
+    datos = await cifrarRespaldo(datos, contrasena);
+    nombre = `respaldo-b1-${hoyIso()}-protegido.json`;
+  }
   let entregado = false;
   if (esPantallaTactil() && typeof File !== 'undefined' && navigator.canShare) {
     const archivo = new File([JSON.stringify(datos, null, 2)], nombre, { type: 'application/json' });

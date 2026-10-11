@@ -707,3 +707,8 @@ details.bloque.desplegable[open] > summary + * { margin-top: 14px; }
   max-height: 12em; overflow: auto; margin: 6px 0 0;
 }
 .aviso-sistema > .boton { margin: 4px 0 8px; }
+
+/* Respaldo con contraseña: exportar (plegado) y abrir uno cifrado. */
+.respaldo-clave { margin-top: 12px; }
+.respaldo-clave > summary { cursor: pointer; font-weight: 600; color: var(--verde-700); }
+.respaldo-clave .campo, .respaldo-clave .acciones { margin-top: 8px; }

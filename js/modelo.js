@@ -397,6 +397,76 @@ export function descargarTexto(nombreArchivo, texto, tipo = 'text/csv;charset=ut
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// --------------------------------------------------- respaldo con contraseña
+
+// El respaldo lleva nombres, documentos y asistencia de personas reales. Con
+// contraseña se cifra con AES-GCM (Web Crypto del navegador: sin librerías) y
+// una clave derivada con PBKDF2. Sin la contraseña no hay forma de abrirlo:
+// tampoco para quien la olvidó.
+
+const ITERACIONES_PBKDF2 = 310000;   // recomendación OWASP para PBKDF2-SHA256
+
+// Por partes: pasar un respaldo de 1 MB de una vez a fromCharCode(...) supera
+// el máximo de argumentos y revienta.
+function aBase64(bytes) {
+  const b = new Uint8Array(bytes);
+  let texto = '';
+  for (let i = 0; i < b.length; i += 0x8000) texto += String.fromCharCode(...b.subarray(i, i + 0x8000));
+  return btoa(texto);
+}
+const deBase64 = (texto) => Uint8Array.from(atob(texto), (c) => c.charCodeAt(0));
+
+async function claveDesdeContrasena(contrasena, sal, iteraciones) {
+  const base = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(contrasena), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', hash: 'SHA-256', salt: sal, iterations: iteraciones },
+    base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+
+/**
+ * Cifra un respaldo. Devuelve el «sobre» que se guarda como .json: dice cómo
+ * se cifró (para poder abrirlo) pero no deja ver nada de adentro.
+ * @param {Object} datos  el respaldo completo
+ * @param {string} contrasena
+ * @returns {Promise<Object>}
+ */
+export async function cifrarRespaldo(datos, contrasena) {
+  const sal = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const clave = await claveDesdeContrasena(contrasena, sal, ITERACIONES_PBKDF2);
+  const cifrado = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv }, clave, new TextEncoder().encode(JSON.stringify(datos)));
+  return {
+    aplicacion: 'rendicion-b1',
+    cifrado: {
+      algoritmo: 'AES-GCM', derivacion: 'PBKDF2-SHA256',
+      iteraciones: ITERACIONES_PBKDF2, sal: aBase64(sal), iv: aBase64(iv)
+    },
+    datos: aBase64(cifrado)
+  };
+}
+
+/** ¿Es un respaldo cifrado por cifrarRespaldo()? */
+export function esRespaldoCifrado(objeto) {
+  return !!(objeto && objeto.cifrado && typeof objeto.datos === 'string');
+}
+
+/**
+ * Abre un respaldo cifrado. Con la contraseña equivocada (o el archivo
+ * alterado) AES-GCM no descifra: lanza un error, nunca devuelve basura.
+ * @param {Object} sobre
+ * @param {string} contrasena
+ * @returns {Promise<Object>}
+ */
+export async function descifrarRespaldo(sobre, contrasena) {
+  const c = sobre.cifrado;
+  const clave = await claveDesdeContrasena(contrasena, deBase64(c.sal), c.iteraciones);
+  const plano = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: deBase64(c.iv) }, clave, deBase64(sobre.datos));
+  return JSON.parse(new TextDecoder().decode(plano));
+}
+
 /** Descarga local de un objeto como .json. No sube nada a ninguna parte. */
 export function descargarJson(nombreArchivo, datos) {
   const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
