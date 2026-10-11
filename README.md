@@ -87,8 +87,11 @@ la copia mientras programas: DevTools → Application → Service workers →
   Abre las cinco páginas en un Chromium sin ventana, vacías y con un padrón
   ficticio, y falla si hay errores de consola. También comprueba que no se
   pierda lo último marcado al salir de la página, que dos pestañas abiertas
-  no se pisen los datos, que en un celular la lista se vea al abrir y que la
-  app abra con el servidor apagado. Usa un perfil temporal: no toca tus datos. Si no
+  no se pisen los datos, que en un celular la lista se vea al abrir, que la
+  app abra con el servidor apagado y tome una versión nueva entera, que con el
+  almacenamiento lleno avise en vez de decir «Guardado», que un respaldo con
+  contraseña no se abra con otra y que la política de contenido (CSP) bloquee
+  scripts inyectados. Usa un perfil temporal: no toca tus datos. Si no
   encuentra Chromium, indícale la ruta con `CHROME=/ruta/a/chrome`.
 
   GitHub la corre sola en cada push y en cada pull request

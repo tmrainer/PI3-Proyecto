@@ -20,10 +20,10 @@ Claves de almacenamiento (`js/modelo.js:4-11`):
 | `b1.calendario.v1`  | periodicidad y fechas de entrega                | `calendarioVacio()` `modelo.js:231` |
 | `b1.rendiciones.v1` | lista de Formatos B-1                           | `nuevaRendicion()` `modelo.js:152` |
 | `b1.insumos.v1`     | reservada para el catálogo de insumos (fase 6); hoy **sin uso** | —                |
-| `b1.respaldo.v1`    | `{ ultimoEn }`: fecha del último respaldo exportado, para el recordatorio | `exportarTodo()` `ui.js:389` |
+| `b1.respaldo.v1`    | `{ ultimoEn }`: fecha del último respaldo exportado, para el recordatorio | `exportarTodo()` `ui.js:572` |
 
 Si una clave no se puede leer, `leer()` copia lo ilegible a `<clave>.respaldo` y
-arranca vacío (`modelo.js:340-363`).
+arranca vacío (`modelo.js:440-463`).
 
 **Afiliado** (`nuevoAfiliado()`, `modelo.js:175-195`): `id`, `apellidoPaterno`,
 `apellidoMaterno`, `nombres`, `tipoDocumento` (`dni`|`ce`), `numeroDocumento`,
@@ -38,6 +38,12 @@ nacimiento), `sexo`, `tipoAfiliado` (`habitual`|`caso_social`), `activo`,
 
 **Asistencia** = un elemento de `atencion.asistencias`:
 `{ afiliadoId, tipoMenu: 'normal' | 'ayuda_social' }` (`modelo.js:218`).
+Esa es la forma en memoria, en los cálculos y en los respaldos. En
+`localStorage` se guarda compacta (`empacarPadron()`, `modelo.js:381`): cada día
+lleva `marcas: { ids, social }` y cada UUID ocupa 23 caracteres en vez de 36.
+`leer()` y `guardar()` traducen solos y `leer()` entiende el formato anterior.
+`usoAlmacenamiento()` (`modelo.js:429`) mide lo que ocupa la app; desde el 70 %
+se avisa.
 
 Las **raciones no se guardan**: se cuentan de `asistencias`
 (`desgloseDelDia()`, `calculos.js:229-239`). La excepción son los días migrados
@@ -75,18 +81,18 @@ devuelve `[]` si el campo falta. La usan `asistio()`, `menuDe()`,
 
 En el **reporte del padrón**, la lectura es:
 `pintarReportePadron()` → `asistenciaPorAfiliado(estado.padron, ctx.inicio, ctx.fin)`
-(`ui-reportes.js:16-17`) → `atencionesDelPeriodo()` + `asistenciasDelDia(at)`
+(`ui-reportes.js:17-18`) → `atencionesDelPeriodo()` + `asistenciasDelDia(at)`
 (`calculos.js:355-356`). Lo mismo hace `filasComoTexto()` para exportar
-(`ui-reportes.js:82-83`).
+(`ui-reportes.js:83-84`).
 
 ### `padron.atenciones`
 
 - **Escriben**: `asegurarHoyGuardado()` agrega el día de hoy recién cuando se
-  marca a la primera persona (`ui-asistencia.js:290-295`, llamada en L373 y
-  L436); el botón «agregar día» (`pagina-asistencia.js:118-120`); la migración
+  marca a la primera persona (`ui-asistencia.js:285-290`, llamada en L371 y
+  L441); el botón «agregar día» (`pagina-asistencia.js:109-111`); la migración
   (`modelo.js:279-308`).
 - **Leen**: `atencionesDelPeriodo()` (`calculos.js:171-175`), `pintarOtrosDias()`
-  (`ui-asistencia.js:267`), `pintarAsistenciaDeHoy()` (`ui-asistencia.js:306`).
+  (`ui-asistencia.js:262`), `pintarAsistenciaDeHoy()` (`ui-asistencia.js:301`).
 
 ### `padron.afiliados`
 
@@ -99,21 +105,22 @@ En el **reporte del padrón**, la lectura es:
 
 | Quién                     | Qué guarda                                | Dónde |
 |---------------------------|-------------------------------------------|-------|
-| `guardarPronto()`         | `padron` y `config`, 400 ms después (debounce); marca que hay algo pendiente | `estado.js:37-61` |
-| `guardarYa()`             | `padron` y `config`, de inmediato          | `estado.js:72` |
-| `vigilarPestanas()`       | lo pendiente, al ocultarse o cerrarse la página | `estado.js:99-114` |
-| `pagina-calendario.js`    | `calendario` (no usa `estado.js`)          | L18 |
+| `guardarPronto()`         | `padron` y `config`, 400 ms después (debounce); marca que hay algo pendiente | `estado.js:37-64` |
+| `guardarYa()`             | `padron` y `config`, de inmediato; devuelve si se pudo | `estado.js:76` |
+| `vigilarPestanas()`       | lo pendiente, al ocultarse o cerrarse la página | `estado.js:103-118` |
+| `pagina-calendario.js`    | `calendario` (no usa `estado.js`), 400 ms después; lo pendiente, al ocultarse | L22 |
 | `pagina-b1.js`            | `rendiciones`, y de `config` solo `ultimoCentro`: relee lo guardado antes de escribir. También escribe lo pendiente al ocultarse | L30-65 |
-| Restaurar un respaldo     | reemplaza claves, descarta lo pendiente (`descartarPendiente()`, `estado.js:80`) y recarga la página | `pagina-asistencia.js:88`, `pagina-padron.js:78`, `pagina-calendario.js:119`, `pagina-b1.js:504` |
+| Restaurar un respaldo     | revisa qué trae (`revisarRespaldo()`, `modelo.js:511`), escribe **todas** las partes que trae (`restaurarRespaldo()`, `modelo.js:561`), descarta lo pendiente de la página y recarga. Igual desde cualquier página | `barraDatos()` `ui.js:414` |
+| Fallo al guardar          | `guardar()` devuelve false; la página muestra «NO SE GUARDÓ» y un aviso con «Exportar respaldo» | `mostrarGuardado()` `ui.js:755` |
 
 **Varias pestañas.** Las páginas que usan `estado.js` (asistencia y padrón)
-llaman a `vigilarPestanas()` al arrancar (`pagina-asistencia.js:128`,
-`pagina-padron.js:107`). Cuando otra pestaña guarda el padrón, la config o el
+llaman a `vigilarPestanas()` al arrancar (`pagina-asistencia.js:119`,
+`pagina-padron.js:93`). Cuando otra pestaña guarda el padrón, la config o el
 calendario, el evento `storage` las recarga y repinta; así no guardan después
 su copia vieja encima. El repintado pasa por `repintarConservandoVista()`
-(`ui.js:607-637`), que vuelve a abrir las fichas abiertas y devuelve el foco y
+(`ui.js:834-864`), que vuelve a abrir las fichas abiertas y devuelve el foco y
 el cursor. El B-1 relee la config justo antes de guardarla, y si otra pestaña
-guarda la rendición, se recarga entera (`pagina-b1.js:61-65`). Límite: si dos
+guarda la rendición, se recarga entera (`pagina-b1.js:64-68`). Límite: si dos
 pestañas cambian algo dentro de los mismos 400 ms, gana la que guardó la otra.
 Lo comprueba `herramientas/humo.mjs`.
 
@@ -123,14 +130,14 @@ Storage y la sirve siempre desde ahí, con o sin señal. Las novedades se
 revalidan aparte (ETag, cada 30 min como mucho) y solo si llegaron todas se
 arma una copia nueva y se reemplaza la vieja de una vez: nunca se mezcla un
 HTML nuevo con un JS viejo. La página avisa «Hay una versión nueva». Los datos
-no pasan por él: siguen en `localStorage`. Lo registra `montarCabecera()` (`ui.js:219`), que también pide
-`navigator.storage.persist()` (`ui.js:232`) para que el navegador no borre los
+no pasan por él: siguen en `localStorage`. Lo registra `montarCabecera()` (`ui.js:229`), que también pide
+`navigator.storage.persist()` (`ui.js:266`) para que el navegador no borre los
 datos por su cuenta (Safari los borra tras 7 días sin abrir el sitio, salvo que
 la app esté instalada). Al agregar un archivo a la app hay que sumarlo a
 `ARCHIVOS` en `sw.js`, o no abrirá sin conexión.
 
 **Recordatorio de respaldo.** Con datos y sin respaldo en 14 días, una franja
-arriba lo pide (`ui.js:574`). `exportarTodo()` (`ui.js:389`) abre el menú del
+arriba lo pide (`ui.js:801`). `exportarTodo()` (`ui.js:572`) abre el menú del
 sistema para guardarlo en un celular y lo descarga en la computadora.
 
 ---
@@ -139,26 +146,26 @@ sistema para guardarlo en un celular y lo descarga en la computadora.
 
 ```
 index.html (pagina-asistencia.js)
-  pintarAsistenciaDeHoy()            ui-asistencia.js:297
+  pintarAsistenciaDeHoy()            ui-asistencia.js:292
     busca la atención de hoy o crea una nueva sin guardarla   L306-310
     filaToque() por persona activa                            L414
       clic → at.asistencias.push / filter                     L66-73
       alCambiar() → asegurarHoyGuardado()                     L372-373
       ctx.onCambio() → guardarPronto()                        pagina-asistencia.js:27
         ↓ 400 ms (o antes, si la página se oculta)
-  guardar('b1.padron.v1', estado.padron)                      estado.js:41
+  guardar('b1.padron.v1', estado.padron)  (compacta)         estado.js:42
         ↓
   localStorage
         ↓  (otra página, otra carga)
 padron.html (pagina-padron.js)
   cargar()                                                    estado.js:20
   refrescar() → pintarReportePadron(caja, ctx)                pagina-padron.js:56
-    filasPadron(padron, ctx.fechaRef)       activos + edad + grupo    ui-reportes.js:15
-    asistenciaPorAfiliado(padron, ctx.inicio, ctx.fin)  días asistidos  ui-reportes.js:17
-    afiliadosSinAsistencia(padron, ctx.inicio, ctx.fin, ctx.fechaRef) ui-reportes.js:70
+    filasPadron(padron, ctx.fechaRef)       activos + edad + grupo    ui-reportes.js:16
+    asistenciaPorAfiliado(padron, ctx.inicio, ctx.fin)  días asistidos  ui-reportes.js:18
+    afiliadosSinAsistencia(padron, ctx.inicio, ctx.fin, ctx.fechaRef) ui-reportes.js:71
         ↓
-  «Descargar CSV»  → filasComoTexto(ctx, ',')  → descargarTexto()   ui-reportes.js:115-116
-  «Copiar»         → filasComoTexto(ctx, '\t') → portapapeles       ui-reportes.js:119-121
+  «Descargar CSV»  → filasComoTexto(ctx, ',')  → descargarTexto()   ui-reportes.js:118
+  «Copiar»         → filasComoTexto(ctx, '\t') → portapapeles       ui-reportes.js:122-124
 ```
 
 Dos detalles que conviene saber:
@@ -166,9 +173,9 @@ Dos detalles que conviene saber:
 - La asistencia y el reporte usan **dos rangos distintos**: las filas son los
   activos a `ctx.fechaRef`, y los días asistidos se cuentan entre `ctx.inicio`
   y `ctx.fin` (por defecto, el mes en curso: `periodoPorDefecto()`,
-  `estado.js:125-128`).
+  `estado.js:129-132`).
 - La lista de «personas sin ninguna asistencia» toma las activas a
-  `ctx.fechaRef`, igual que la tabla (`ui-reportes.js:70`): son exactamente las
+  `ctx.fechaRef`, igual que la tabla (`ui-reportes.js:71`): son exactamente las
   filas con 0 días. Fuera del reporte, `afiliadosSinAsistencia()` sigue mirando
   las activas al cierre del periodo si no se le pasa la fecha
   (`calculos.js:374-378`).
@@ -180,11 +187,11 @@ Dos detalles que conviene saber:
 | Pantalla | Fecha usada | Dónde |
 |----------|-------------|-------|
 | Asistencia (hoy y días pasados) | la fecha del día de atención, `at.fecha`; si falta, `ctx.fechaRef` = hoy | `ui-asistencia.js:26`, `pagina-asistencia.js:25` |
-| Padrón: lista de personas | `ctx.fechaRef`, editable en el campo `#fechaRef`; por defecto hoy | `ui-personas.js:256-257`, `pagina-padron.js:30`, L92-94 |
+| Padrón: lista de personas | `ctx.fechaRef`, editable en el campo `#fechaRef`; por defecto hoy | `ui-personas.js:256-257`, `pagina-padron.js:30`, L78-80 |
 | Padrón: resumen por grupos | `ctx.fechaRef` | `ui-personas.js:360` |
-| Padrón: reporte y CSV | `ctx.fechaRef` (no el periodo `inicio`/`fin`) | `ui-reportes.js:15`, L81 → `calculos.js:403-413` |
+| Padrón: reporte y CSV | `ctx.fechaRef` (no el periodo `inicio`/`fin`) | `ui-reportes.js:16`, L81 → `calculos.js:403-413` |
 | Alta de afiliados | hoy (`hoyIso()`), tanto en la pista como en la validación | `ui-personas.js:39`, L73; `validaciones.js:288` |
-| Importación | **ninguna**. Con fecha de nacimiento, se guarda la fecha y el grupo se calcula después en cada pantalla. Con solo una columna «edad», el grupo se calcula con `grupoPorEdad(edad)` y se **guarda fijo** en `grupoEtarioManual`: no cambia cuando la persona cumple años. La revisión de la importación lo avisa en esa fila | `importar.js:207-220`, `calculos.js:119-123` |
+| Importación | **ninguna**. Con fecha de nacimiento, se guarda la fecha y el grupo se calcula después en cada pantalla. Con solo una columna «edad», el grupo se calcula con `grupoPorEdad(edad)` y se **guarda fijo** en `grupoEtarioManual`: no cambia cuando la persona cumple años. La revisión de la importación lo avisa en esa fila | `importar.js:240-253`, `calculos.js:119-123` |
 
 Si no se pasa una fecha válida, `grupoEtario()`, `afiliadosActivos()` y
 `filasPadron()` usan hoy por defecto (`calculos.js:80`, L133, L403).
@@ -210,7 +217,7 @@ importar.js      lectura de Excel/CSV                    ← modelo, calculos
    ↑
 ui-asistencia.js                                          ← modelo, calculos, estado, ui
 ui-personas.js                                            ← modelo, calculos, validaciones, estado, ui
-ui-reportes.js                                            ← modelo, calculos, estado, ui
+ui-reportes.js                                            ← modelo, calculos, importar, estado, ui
 ui-importar.js                                            ← calculos, importar, estado, ui
 ui-escaneo.js    aviso del lector de DNI                 ← escaneo-dni, ui
    ↑
@@ -227,6 +234,9 @@ casos-prueba.js       (pruebas.html)     ← modelo, calculos, validaciones, ale
 claves directamente.
 
 `sw.js` (raíz) no importa nada: solo conoce la lista de archivos de la app.
+`js/errores.js` es un script clásico, no un módulo, y carga antes que todos: si
+un módulo falla, ninguno corre, y su aviso igual aparece.
+`js/pagina-pruebas.js` pinta `pruebas.html` (fuera del HTML por la CSP).
 
 `herramientas/humo.mjs` no es parte de la app: es la prueba de humo que abre
 las páginas en un Chromium sin ventana (ver README, «Pruebas»).
