@@ -4,7 +4,7 @@
 import {
   aCentimos, formatearSoles, aNumero, aDdMmAa, esIso, normalizarNombre,
   nuevaRendicion, nuevoEgreso, nuevoAfiliado, nuevaAtencion, padronVacio,
-  nombreCompleto, migrarPadron, calendarioVacio, VERSION_PADRON
+  nombreCompleto, migrarPadron, calendarioVacio, VERSION_PADRON, revisarRespaldo
 } from './modelo.js';
 import {
   totales, totalRendicionGastos, gastosConSubsidio, aporteCentroAtencion,
@@ -1195,6 +1195,29 @@ export const casos = [
       igual(desarmarCelda("'=SUMA(1)"), '=SUMA(1)');
       igual(desarmarCelda('="00012"'), '00012');
       igual(desarmarCelda("O'Brien"), "O'Brien");
+    }
+  },
+
+  {
+    grupo: 'Respaldos',
+    nombre: 'Revisar un respaldo dice qué trae y rechaza lo dañado',
+    fn: () => {
+      const r = revisarRespaldo({
+        padron: { afiliados: [{}, {}], atenciones: [{}] },
+        rendiciones: [nuevaRendicion()], calendario: calendarioVacio(), config: {}
+      });
+      igual(r.error, null);
+      igual(r.partes.join(','), 'padron,rendiciones,calendario,config');
+      ok(r.resumen.startsWith('2 persona(s) en el padrón y 1 día(s)'), r.resumen);
+      // Lo que no trae (null o ausente) no se toca.
+      igual(revisarRespaldo({ padron: null, calendario: calendarioVacio() }).partes.join(','), 'calendario');
+      // Un B-1 vacío no se cuenta como algo que restaurar.
+      igual(revisarRespaldo({ rendiciones: [], calendario: {} }).partes.join(','), 'calendario');
+      ok(revisarRespaldo({ padron: { afiliados: 'x' } }).error.includes('dañado'));
+      ok(revisarRespaldo({ rendiciones: {} }).error.includes('dañado'));
+      ok(revisarRespaldo({}).error.includes('no trae'));
+      ok(revisarRespaldo(null).error);
+      ok(revisarRespaldo([1]).error);
     }
   },
 

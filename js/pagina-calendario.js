@@ -109,18 +109,7 @@ function irACampo(campo) {
 montarCabecera('calendario', 'Ollas comunes y comedores de Villa María del Triunfo');
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
 buscar('#privacidad').append(bloquePrivacidad());
-buscar('#barra-datos').append(barraDatos({
-  alImportar: (datos) => {
-    if (!datos || !datos.calendario) {
-      alert('El archivo no contiene un calendario. No se cambió nada.');
-      return;
-    }
-    if (!confirm('Importar reemplazará el calendario que tienes ahora. ¿Continuar?')) return;
-    guardar(CLAVES.calendario, datos.calendario);
-    location.reload();
-  },
-  alBorrar: () => location.reload()
-}));
+buscar('#barra-datos').append(barraDatos());
 
 const selPer = buscar('#periodicidad');
 selPer.value = calendario.periodicidad || 'mensual';

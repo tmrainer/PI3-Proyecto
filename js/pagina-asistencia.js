@@ -1,7 +1,7 @@
 // pagina-asistencia.js — controlador de index.html (la raíz del sitio).
 // Solo cablea: la interfaz vive en ui-asistencia.js, los cálculos en calculos.js.
 
-import { CLAVES, guardar, hoyIso, aCentimos, formatearSoles, nuevaAtencion } from './modelo.js';
+import { hoyIso, aCentimos, formatearSoles, nuevaAtencion } from './modelo.js';
 import { resumenEconomicoRaciones } from './calculos.js';
 import { validarPadron, validarPreciosMenu } from './validaciones.js';
 import { alertaProximaEntrega } from './alertas.js';
@@ -82,17 +82,7 @@ montarCabecera('asistencia', 'Ollas comunes y comedores de Villa María del Triu
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
 pantallaEncendidaMientrasSeUsa();
 buscar('#privacidad').append(bloquePrivacidad());
-buscar('#barra-datos').append(barraDatos({
-  alImportar: (datos) => {
-    if (!datos || !datos.padron) { alert('El archivo no contiene un padrón.'); return; }
-    if (!confirm('Importar reemplazará el padrón que tienes ahora. ¿Continuar?')) return;
-    guardar(CLAVES.padron, datos.padron);
-    if (datos.config) guardar(CLAVES.config, datos.config);
-    descartarPendiente();
-    location.reload();
-  },
-  alBorrar: () => { descartarPendiente(); location.reload(); }
-}));
+buscar('#barra-datos').append(barraDatos({ antesDeRecargar: descartarPendiente }));
 
 ctx.titulo = buscar('#titulo-hoy');
 

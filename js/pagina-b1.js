@@ -493,21 +493,9 @@ pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
 const bannerB1 = bannerAlerta(alertaProximaEntrega(leer(CLAVES.calendario, calendarioVacio()), hoyIso()));
 if (bannerB1) buscar('#banner').append(bannerB1);
 buscar('#privacidad').append(bloquePrivacidad());
-buscar('#barra-datos').append(barraDatos({
-  alImportar: (datos) => {
-    if (!datos || !Array.isArray(datos.rendiciones)) {
-      alert('El archivo no contiene rendiciones. No se cambió nada.');
-      return;
-    }
-    if (!confirm('Importar reemplazará la rendición que tienes en pantalla. ¿Continuar?')) return;
-    rendiciones = datos.rendiciones;
-    guardar(CLAVES.rendiciones, rendiciones);
-    if (datos.config) guardar(CLAVES.config, datos.config);
-    pendiente = false;   // si no, el pagehide de la recarga escribiría la copia vieja
-    location.reload();
-  },
-  alBorrar: () => { pendiente = false; location.reload(); }
-}));
+// Antes de recargar se descarta lo pendiente: si no, el pagehide de la recarga
+// escribiría encima la copia vieja.
+buscar('#barra-datos').append(barraDatos({ antesDeRecargar: () => { pendiente = false; } }));
 
 buscar('#agregar-egreso').addEventListener('click', () => {
   rendicion.egresos.push(nuevoEgreso());

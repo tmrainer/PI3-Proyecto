@@ -3,7 +3,7 @@
 
 import {
   CLAVES, leer, guardar, borrarTodo, descargarJson, avisosAlmacenamiento, hoyIso,
-  cifrarRespaldo, descifrarRespaldo, esRespaldoCifrado
+  cifrarRespaldo, descifrarRespaldo, esRespaldoCifrado, revisarRespaldo, restaurarRespaldo
 } from './modelo.js';
 
 /**
@@ -399,7 +399,33 @@ function textoProteccion() {
 
 // -------------------------------------------------- barra de datos (respaldos)
 
-export function barraDatos({ alImportar, alBorrar }) {
+/**
+ * Barra de respaldos: exportar, importar (con o sin contraseña) y borrar todo.
+ * Importar restaura TODO lo que trae el respaldo desde cualquier página.
+ * @param {{ antesDeRecargar?: () => void }} opciones  lo que la página debe
+ *   hacer antes de recargarse (descartar lo pendiente, para que el pagehide no
+ *   escriba encima la copia vieja)
+ */
+export function barraDatos({ antesDeRecargar } = {}) {
+  const recargar = () => {
+    if (antesDeRecargar) antesDeRecargar();
+    location.reload();
+  };
+
+  function alImportar(datos) {
+    const r = revisarRespaldo(datos);
+    if (r.error) { alert(r.error); return; }
+    if (!confirm(`El respaldo trae: ${r.resumen}.\n\n` +
+      'Eso reemplazará lo que tienes en este dispositivo. Lo que el respaldo no ' +
+      'trae se queda como está.\n\n¿Continuar?')) return;
+    if (antesDeRecargar) antesDeRecargar();
+    if (!restaurarRespaldo(datos)) {
+      alert('No se pudo guardar todo el respaldo en este dispositivo: puede que el ' +
+        'almacenamiento esté lleno. Revisa qué quedó y vuelve a intentar.');
+    }
+    location.reload();
+  }
+
   const entrada = crearElemento('input', {
     type: 'file', accept: 'application/json', clase: 'oculto-visual', id: 'importar-archivo'
   });
@@ -478,7 +504,7 @@ export function barraDatos({ alImportar, alBorrar }) {
             'Aceptar para borrar todo.');
           if (!confirmado) return;
           borrarTodo();
-          if (alBorrar) alBorrar();
+          recargar();
         }
       })
     ]),

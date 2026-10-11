@@ -397,6 +397,78 @@ export function descargarTexto(nombreArchivo, texto, tipo = 'text/csv;charset=ut
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// ------------------------------------------------------ restaurar un respaldo
+
+/**
+ * Revisa un respaldo antes de restaurarlo: qué trae y si tiene la forma que
+ * espera la aplicación. No escribe nada.
+ *
+ * Solo cuentan las partes que el archivo trae de verdad: si no trae el
+ * calendario, el de este dispositivo se queda como está.
+ * @param {*} datos  el objeto leído del .json (ya descifrado)
+ * @returns {{ error: ?string, partes: string[], resumen: string }}
+ */
+export function revisarRespaldo(datos) {
+  const sinNada = { partes: [], resumen: '' };
+  if (!datos || typeof datos !== 'object' || Array.isArray(datos)) {
+    return { error: 'El archivo no es un respaldo de esta aplicación.', ...sinNada };
+  }
+  const partes = [];
+  const textos = [];
+  const errores = [];
+  if (datos.padron !== undefined && datos.padron !== null) {
+    if (typeof datos.padron !== 'object' || !Array.isArray(datos.padron.afiliados)) {
+      errores.push('el padrón no tiene la lista de personas');
+    } else {
+      partes.push('padron');
+      const n = datos.padron.afiliados.length;
+      const dias = Array.isArray(datos.padron.atenciones) ? datos.padron.atenciones.length : 0;
+      textos.push(`${n} persona(s) en el padrón y ${dias} día(s) de asistencia`);
+    }
+  }
+  if (datos.rendiciones !== undefined && datos.rendiciones !== null) {
+    if (!Array.isArray(datos.rendiciones)) errores.push('las rendiciones no son una lista');
+    else if (datos.rendiciones.length) {
+      partes.push('rendiciones');
+      textos.push(`${datos.rendiciones.length} Formato(s) B-1`);
+    }
+  }
+  if (datos.calendario !== undefined && datos.calendario !== null) {
+    if (typeof datos.calendario !== 'object' || Array.isArray(datos.calendario)) errores.push('el calendario está dañado');
+    else { partes.push('calendario'); textos.push('el calendario de entregas'); }
+  }
+  if (datos.config !== undefined && datos.config !== null) {
+    if (typeof datos.config !== 'object' || Array.isArray(datos.config)) errores.push('la configuración está dañada');
+    else { partes.push('config'); textos.push('los precios del menú y datos del centro'); }
+  }
+  if (errores.length) {
+    return { error: `El respaldo está dañado: ${errores.join('; ')}. No se cambió nada.`, ...sinNada };
+  }
+  if (!partes.length) {
+    return { error: 'El archivo no trae datos para restaurar. No se cambió nada.', ...sinNada };
+  }
+  return { error: null, partes, resumen: textos.join(', ') };
+}
+
+/**
+ * Escribe en este dispositivo TODAS las partes que trae el respaldo (padrón,
+ * rendiciones, calendario y config), sea cual sea la página desde donde se
+ * importe. Antes, cada página restauraba solo lo suyo y el resto se perdía sin
+ * aviso. Si una escritura falla, lo dice: devuelve false.
+ * @param {Object} datos  respaldo ya revisado con revisarRespaldo()
+ * @returns {boolean}
+ */
+export function restaurarRespaldo(datos) {
+  const { error, partes } = revisarRespaldo(datos);
+  if (error) return false;
+  let ok = true;
+  if (partes.includes('padron')) ok = guardar(CLAVES.padron, migrarPadron(datos.padron)) && ok;
+  if (partes.includes('rendiciones')) ok = guardar(CLAVES.rendiciones, datos.rendiciones) && ok;
+  if (partes.includes('calendario')) ok = guardar(CLAVES.calendario, datos.calendario) && ok;
+  if (partes.includes('config')) ok = guardar(CLAVES.config, datos.config) && ok;
+  return ok;
+}
+
 // --------------------------------------------------- respaldo con contraseña
 
 // El respaldo lleva nombres, documentos y asistencia de personas reales. Con

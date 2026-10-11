@@ -376,6 +376,42 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
+  // 1e. Importar desde cualquier página restaura TODO lo que trae el respaldo
+  // (antes, Asistencia solo restauraba el padrón y el resto se perdía).
+  {
+    const p = await pestana(cdp);
+    await p.ir(`${base}/__sembrar?padron=1`);
+    await p.ir(`${base}/index.html`);
+    await p.eval(`(async () => {
+      const ui = await import('./js/ui.js');
+      const r = ui.armarRespaldo();
+      r.calendario = { periodicidad: 'quincenal', fechaLimiteBase: '2026-10-15', diasAviso: [3], entregas: [] };
+      r.rendiciones = [{ nombreCentro: 'Comedor del respaldo', egresos: [] }];
+      sessionStorage.setItem('respaldo', JSON.stringify(r));
+      localStorage.clear();
+      return 1;
+    })()`);
+    await p.ir(`${base}/index.html`);
+    await p.actuar(`(async () => {
+      window.confirm = () => true;
+      const dt = new DataTransfer();
+      dt.items.add(new File([sessionStorage.getItem('respaldo')], 'r.json', { type: 'application/json' }));
+      const entrada = document.getElementById('importar-archivo');
+      entrada.files = dt.files;
+      entrada.dispatchEvent(new Event('change'));
+      return 1;
+    })()`);
+    await pausa(1000);
+    const r = await p.eval(`({
+      personas: JSON.parse(localStorage.getItem('b1.padron.v1')).afiliados.length,
+      calendario: (JSON.parse(localStorage.getItem('b1.calendario.v1')) || {}).periodicidad,
+      centro: ((JSON.parse(localStorage.getItem('b1.rendiciones.v1')) || [])[0] || {}).nombreCentro
+    })`);
+    comprobar('importar desde Asistencia restaura padrón, calendario y B-1',
+      r.personas === 3 && r.calendario === 'quincenal' && r.centro === 'Comedor del respaldo', JSON.stringify(r));
+    await p.cerrar();
+  }
+
   // 2. Marcar a alguien y salir enseguida, antes de los 400 ms: no se pierde.
   {
     const p = await pestana(cdp);
