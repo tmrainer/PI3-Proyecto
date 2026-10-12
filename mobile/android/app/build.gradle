@@ -17,7 +17,7 @@ android {
         }
     }
     // Firma de la versión final: la clave vive FUERA del repositorio. Si existe
-    // app-android/firma.properties (ver LEEME.md), el APK final sale firmado;
+    // mobile/firma.properties (ver LEEME.md), el APK final sale firmado;
     // si no, solo se puede armar el de prueba (assembleDebug).
     def firma = new Properties()
     def archivoFirma = rootProject.file('../firma.properties')

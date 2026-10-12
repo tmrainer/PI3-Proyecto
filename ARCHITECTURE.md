@@ -7,6 +7,10 @@ Las páginas no se llaman entre sí: **se comunican solo a través de lo guardad
 Las referencias `archivo:línea` corresponden al estado del código en el momento
 de escribir este documento.
 
+La app está en `web/` y las rutas de este documento (`js/…`, `sw.js`, las
+páginas) son relativas a esa carpeta. El APK está en `mobile/` y las pruebas
+de interfaz en `herramientas/`.
+
 ---
 
 ## a) Modelo de datos
@@ -171,7 +175,7 @@ cuando el teléfono queda libre. En el APK, el fondo de la ventana y del
 WebView es el de la app (`res/values*/fondo.xml`, `MainActivity`), sin el
 cuadro negro entre la pantalla de inicio y la primera pantalla.
 
-**App Android y avisos con la app cerrada.** `app-android/` empaqueta la app
+**App Android y avisos con la app cerrada.** `mobile/` empaqueta la app
 web con Capacitor (ver su `LEEME.md`); `copiar-web.mjs` copia los archivos de
 `ARCHIVOS` de `sw.js`. Dentro del APK, `js/avisos-nativos.js` le pasa a Android
 los avisos que calcula `programaDeAvisos()` (`alertas.js`, pura): uno por cada
@@ -342,7 +346,7 @@ casos-prueba.js       (pruebas.html)     ← modelo, calculos, validaciones, ale
 `pagina-b1.js` y `pagina-calendario.js` no usan `estado.js`: leen y guardan sus
 claves directamente.
 
-`sw.js` (raíz) no importa nada: solo conoce la lista de archivos de la app.
+`sw.js` (raíz de `web/`) no importa nada: solo conoce la lista de archivos de la app.
 `js/errores.js` es un script clásico, no un módulo, y carga antes que todos: si
 un módulo falla, ninguno corre, y su aviso igual aparece.
 `js/pagina-pruebas.js` pinta `pruebas.html` (fuera del HTML por la CSP).

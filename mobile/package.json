@@ -1,7 +1,7 @@
 {
   "name": "sistema-de-asistencia-android",
   "private": true,
-  "description": "APK de la app web (la de la raíz del repositorio), con avisos de entrega con la app cerrada.",
+  "description": "APK de la app web (la de web/), con avisos de entrega con la app cerrada.",
   "scripts": {
     "web": "node copiar-web.mjs",
     "sync": "npm run web && cap sync android",

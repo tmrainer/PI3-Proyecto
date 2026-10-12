@@ -1,17 +1,17 @@
 # App Android (APK)
 
-La misma aplicación web de la raíz del repositorio, empaquetada con
+La misma aplicación web de `web/`, empaquetada con
 [Capacitor](https://capacitorjs.com) para instalarla como app. Lo único que
 suma es **avisar de la próxima entrega aunque la app esté cerrada**: el teléfono
 se programa los avisos a sí mismo, sin internet y sin servidor.
 
 - El código de la app **no se duplica**: `copiar-web.mjs` copia a `www/` los
-  archivos que lista `ARCHIVOS` en `../sw.js` (la misma lista que ya comprueba
+  archivos que lista `ARCHIVOS` en `../web/sw.js` (la misma lista que ya comprueba
   `herramientas/humo.mjs`).
 - La app web sigue sin librerías. Capacitor y sus complementos (avisos y voz)
   viven solo aquí (`package.json`). Dentro del APK, la app los encuentra en
-  `window.Capacitor`; ver `../js/avisos-nativos.js` y `decir()` en
-  `../js/ui.js`. En el navegador no hacen nada.
+  `window.Capacitor`; ver `../web/js/avisos-nativos.js` y `decir()` en
+  `../web/js/ui.js`. En el navegador no hacen nada.
 - Leer en voz alta: el WebView de Android no trae `speechSynthesis`, así que en
   el APK la voz es la del teléfono, con `@capacitor-community/text-to-speech`.
 - Los datos del APK **no son los de Chrome**: cada uno guarda por separado.
@@ -32,7 +32,7 @@ export ANDROID_HOME=$HOME/Android/Sdk
 ## Armar el APK de prueba
 
 ```bash
-cd app-android
+cd mobile
 npm install          # la primera vez
 npm run apk          # copia la app web, sincroniza y compila
 # → android/app/build/outputs/apk/debug/app-debug.apk
@@ -61,7 +61,7 @@ repartir. Para la versión final:
      -keyalg RSA -keysize 4096 -validity 10000
    ```
 
-2. Crear `app-android/firma.properties` (está en `.gitignore`):
+2. Crear `mobile/firma.properties` (está en `.gitignore`):
 
    ```properties
    archivo=/home/<usuario>/claves/asistencia.jks

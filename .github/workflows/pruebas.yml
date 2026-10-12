@@ -1,4 +1,5 @@
-# Corre la prueba de humo en cada push y en cada pull request.
+# Corre la prueba de humo en cada push y en cada pull request. En main la
+# corre pages.yml, antes de publicar.
 # herramientas/humo.mjs abre las cinco páginas en Chrome sin ventana, falla
 # ante cualquier error de consola y también verifica que las aserciones de
 # pruebas.html pasen todas. No instala dependencias.
@@ -7,6 +8,7 @@ name: Pruebas
 
 on:
   push:
+    branches-ignore: [main]
   pull_request:
 
 jobs:

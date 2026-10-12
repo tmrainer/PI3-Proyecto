@@ -6,7 +6,7 @@
 
 # Respaldos exportados por la app: contienen datos personales.
 *.json
-!js/*.json
+!web/js/*.json
 
 # Especificación interna del proyecto: se mantiene en local, no se publica.
 AGENTS.md

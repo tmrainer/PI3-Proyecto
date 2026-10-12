@@ -11,7 +11,7 @@
 //
 //   node herramientas/humo.mjs
 //   CHROME=/ruta/a/chrome node herramientas/humo.mjs
-//   node herramientas/humo.mjs /otra/copia/del/proyecto
+//   node herramientas/humo.mjs /otra/copia/de/web
 //
 // Usa un perfil temporal: no lee ni toca los datos de tu navegador. Los
 // nombres y documentos son ficticios.
@@ -23,7 +23,7 @@ import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const RAIZ = path.resolve(process.argv[2] || path.join(path.dirname(fileURLToPath(import.meta.url)), '..'));
+const RAIZ = path.resolve(process.argv[2] || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web'));
 const PAGINAS = ['index', 'asistencia', 'padron', 'formato-b1', 'calendario', 'ajustes', 'pruebas'];
 
 // ------------------------------------------------------------ padrón de prueba

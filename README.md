@@ -6,9 +6,21 @@ del Triunfo.
 
 ---
 
+## Qué hay en cada carpeta
+
+| Carpeta         | Qué es |
+|-----------------|--------|
+| `web/`          | La app: páginas, estilos, `js/`, letra, íconos y el *service worker*. Es lo que se publica en GitHub Pages. |
+| `mobile/`       | La misma app empaquetada como APK de Android (Capacitor). No copia código: lo toma de `web/` al armar. |
+| `herramientas/` | Prueba de humo y material para probar la app con dirigentes. |
+| `.github/`      | Pruebas automáticas y publicación en GitHub Pages. |
+
+---
+
 ## En línea
 
-Ya está desplegada en GitHub Pages:
+Ya está desplegada en GitHub Pages (se publica sola la carpeta `web/` en cada
+push a `main`, si pasa la prueba de humo: `.github/workflows/pages.yml`):
 
 **<https://tmrainer.github.io/PI3-Proyecto/>**
 
@@ -23,7 +35,7 @@ a pantalla de inicio**. Queda un ícono como el de
 cualquier app, y desde entonces:
 
 - **Abre sin internet.** La primera vez hace falta conexión; después, la app
-  guarda sus archivos (`sw.js`) y abre al instante aunque no haya señal. Con
+  guarda sus archivos (`web/sw.js`) y abre al instante aunque no haya señal. Con
   señal, baja las novedades aparte y avisa «Hay una versión nueva».
 - **No se borran los datos.** Safari borra lo guardado por un sitio que no se
   abre en 7 días si no está instalado en la pantalla de inicio.
@@ -40,7 +52,7 @@ compilación, ni base de datos.
 
 ```bash
 git clone git@github.com:tmrainer/PI3-Proyecto.git
-cd PI3-Proyecto
+cd PI3-Proyecto/web
 python3 -m http.server 8000
 ```
 
@@ -49,16 +61,16 @@ Abre **<http://localhost:8000>**. `Ctrl-C` para detenerlo.
 ### Otras formas
 
 ```bash
-npx serve .             # Node.js
-php -S localhost:8000   # PHP
+npx serve web           # Node.js, desde la raíz del repositorio
+php -S localhost:8000   # PHP, dentro de web/
 ```
 
 En VS Code también sirve la extensión **Live Server**: clic derecho sobre
-`index.html` (el Inicio) → *Open with Live Server*.
+`web/index.html` (el Inicio) → *Open with Live Server*.
 
 ### No abras los archivos con doble clic
 
-Abrir `index.html` directamente (`file:///…`) **no funciona**. La aplicación
+Abrir `web/index.html` directamente (`file:///…`) **no funciona**. La aplicación
 usa módulos ES, que el navegador bloquea por política de mismo origen cuando la
 página viene de `file://`. La pantalla saldrá en blanco o a medias.
 
@@ -66,7 +78,7 @@ Siempre a través de `http://localhost`, aunque el servidor sea tu propia máqui
 
 ### Ver tus cambios
 
-La app se sirve desde la copia que guarda su *service worker* (`sw.js`), para
+La app se sirve desde la copia que guarda su *service worker* (`web/sw.js`), para
 abrir sin internet. Al editar un archivo, la primera recarga todavía muestra la
 copia anterior y aparece «Hay una versión nueva»: recarga otra vez, o pulsa
 «Usar la versión nueva». En `localhost` se revisa en cada carga. Para saltarte
@@ -77,9 +89,9 @@ la copia mientras programas: DevTools → Application → Service workers →
 
 ## App Android (APK)
 
-En `app-android/` está la misma app empaquetada como APK con Capacitor. Suma
+En `mobile/` está la misma app empaquetada como APK con Capacitor. Suma
 **avisos de entrega con la app cerrada**, que en el navegador no se pueden dar
-sin un servidor. Cómo armarla, instalarla y firmarla: `app-android/LEEME.md`.
+sin un servidor. Cómo armarla, instalarla y firmarla: `mobile/LEEME.md`.
 
 ---
 
@@ -104,7 +116,7 @@ sin un servidor. Cómo armarla, instalarla y firmarla: `app-android/LEEME.md`.
   encuentra Chromium, indícale la ruta con `CHROME=/ruta/a/chrome`.
 
   GitHub la corre sola en cada push y en cada pull request
-  (`.github/workflows/pruebas.yml`).
+  (`.github/workflows/pruebas.yml`; en `main`, `pages.yml` antes de publicar).
 
 - **Prueba con dirigentes**: `herramientas/prueba-con-dirigentes.md` trae seis
   tareas para observar a quien usará la app, y `padron-de-ejemplo.xlsx` (datos
@@ -125,7 +137,7 @@ sin un servidor. Cómo armarla, instalarla y firmarla: `app-android/LEEME.md`.
 - [ ] **Averiguar el formato del código de barras (PDF417) del DNI**, con
       muestras reales, antes de escribir el lector.
       **PENDIENTE, aún no implementado**: el lector no existe todavía.
-      `js/escaneo-dni.js` es solo un esqueleto que devuelve los campos vacíos, y
+      `web/js/escaneo-dni.js` es solo un esqueleto que devuelve los campos vacíos, y
       la inscripción se hace a mano.
 
 ### Por preguntar

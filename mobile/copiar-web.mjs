@@ -1,7 +1,7 @@
-// copiar-web.mjs — copia la app web (la de la raíz del repositorio) a www/,
+// copiar-web.mjs — copia la app web (la de ../web) a www/,
 // que es lo que Capacitor mete dentro del APK.
 //
-// La lista de archivos sale de ARCHIVOS en ../sw.js: es la misma que el
+// La lista de archivos sale de ARCHIVOS en ../web/sw.js: es la misma que el
 // service worker guarda para abrir sin internet, y humo.mjs ya comprueba que
 // esté completa. Así el APK nunca lleva un archivo de menos ni uno de prueba.
 
@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
-const RAIZ = path.join(AQUI, '..');
+const RAIZ = path.join(AQUI, '..', 'web');
 const DESTINO = path.join(AQUI, 'www');
 
 const sw = fs.readFileSync(path.join(RAIZ, 'sw.js'), 'utf8');
