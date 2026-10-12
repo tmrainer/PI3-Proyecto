@@ -13,6 +13,7 @@ import {
   desgloseDelDia, recaudacionDelDiaCent, asistio, asistenciasDelDia, menuDe, asistenciasConTodos, sinInscribirDelDia
 } from './calculos.js';
 import { estado, preciosActuales } from './estado.js';
+import { lectoresDni, abrirCamaraDni } from './camara-dni.js';
 import { crearElemento, campo, icono, vigilarAltoFijo, chip, avatarPersona, avisoAbajo, vibrar, estadoVacio } from './ui.js';
 
 // ctx: { fechaRef, titulo, onCambio(), onRepintar(), onResumen() }
@@ -435,6 +436,29 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   }
   botonFaltan.addEventListener('click', alternarFaltan);
 
+  // Pasar lista mostrando el DNI: solo en el APK, que lee la zona de texto
+  // del reverso (el número lleva dígito de control). Marca a quien está en el
+  // padrón; no inscribe ni guarda nada más del DNI.
+  const botonDni = crearElemento('button', {
+    type: 'button', clase: 'boton secundario leer-dni', hidden: true,
+    onclick: () => abrirCamaraDni({ modo: 'asistencia', alLeer: (r) => marcarPorDni(r.mrz.campos.numeroDocumento) })
+  }, [icono('camara', { tam: 22 }), 'Pasar lista leyendo el DNI']);
+  lectoresDni().then((l) => { botonDni.hidden = !l.texto; }).catch(() => {});
+
+  /** Marca a la persona de ese DNI y devuelve qué pasó, para el visor. */
+  function marcarPorDni(dni) {
+    const persona = activos.find((p) => String(p.numeroDocumento || '').trim() === dni);
+    if (!persona) {
+      const deBaja = (estado.padron.afiliados || []).some((p) => String(p.numeroDocumento || '').trim() === dni);
+      return deBaja ? 'Ese DNI está de baja en el padrón.' : 'Ese DNI no está en el padrón. Puedes inscribir a la persona en Padrón.';
+    }
+    const nombre = nombreCompleto(persona);
+    if (asistio(at, persona.id)) return `Ya estaba en la lista de hoy: ${nombre}.`;
+    if (filas.size !== ordenados.length) armarFilas();
+    filas.get(persona.id).querySelector('.toque-nombre').click();
+    return `✓ Marcaste a ${nombre}`;
+  }
+
   // Quiénes ya están marcados, de una vez: preguntarlo persona por persona
   // recorría la lista del día por cada fila y se notaba con cientos.
   function marcados() {
@@ -586,6 +610,9 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   ]);
   caja.append(
     resumenVivo,
+    // Fuera de la parte que se queda pegada arriba: en la fila del buscador
+    // no cabía en un celular angosto ni con letra grande.
+    botonDni,
     fija,
     lista,
     sinInscribir,

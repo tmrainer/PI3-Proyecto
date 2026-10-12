@@ -18,6 +18,7 @@ import { crearElemento, icono } from './ui.js';
 import { buscarMrzTd1, unirFilasOcr, combinarMrzYAnverso } from './escaneo-dni.js';
 
 const PISTA_REVERSO = 'Pon el reverso del DNI dentro del recuadro, con buena luz, y mantén el teléfono quieto.';
+const PISTA_ASISTENCIA = 'Muestra el reverso del DNI (el lado de las tres líneas con «<»). Puedes pasar uno tras otro.';
 const PISTA_ANVERSO = 'Ahora voltea el DNI: el lado de la foto, dentro del recuadro. De ahí salen las tildes, la ñ y el segundo apellido.';
 
 function lectorDeTexto() {
@@ -38,13 +39,21 @@ export async function lectoresDni() {
 
 /**
  * Abre el visor y busca el DNI.
+ *
+ * modo «asistencia»: solo el reverso y solo la zona de texto (el número del
+ * DNI ahí tiene dígito de control; el del código de barras está sin
+ * verificar). Es continuo: tras cada DNI sigue buscando el siguiente, y
+ * `alLeer` devuelve el mensaje que se muestra («Marcaste a…»).
  * @param {{ alLeer: (r: {tipo: 'pdf417', cadena: string} |
  *   {tipo: 'mrz', mrz: object, anverso: ?object}) => void,
- *           alCerrar?: () => void }} opciones
+ *           alCerrar?: () => void, modo?: 'completo' | 'asistencia' }} opciones
  * @returns {Promise<void>}
  */
-export async function abrirCamaraDni({ alLeer, alCerrar = () => {} }) {
-  const { codigo, texto } = await lectoresDni();
+export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'completo' }) {
+  const enAsistencia = modo === 'asistencia';
+  const lectores = await lectoresDni();
+  const codigo = lectores.codigo && !enAsistencia;
+  const texto = lectores.texto;
   const video = crearElemento('video', { clase: 'camara-video', playsinline: '', muted: '', autoplay: '' });
   video.muted = true;
   const estado = crearElemento('p', { clase: 'camara-estado', role: 'status', 'aria-live': 'polite' });
@@ -60,8 +69,8 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {} }) {
     onclick: () => entregar({ tipo: 'mrz', mrz: mrzLeida, anverso: null })
   });
   const dialogo = crearElemento('dialog', { clase: 'camara-dni', 'aria-labelledby': 'camara-titulo' }, [
-    crearElemento('h2', { id: 'camara-titulo', texto: 'Leer el DNI' }),
-    crearElemento('p', { clase: 'camara-pista', texto: PISTA_REVERSO }),
+    crearElemento('h2', { id: 'camara-titulo', texto: enAsistencia ? 'Pasar lista con el DNI' : 'Leer el DNI' }),
+    crearElemento('p', { clase: 'camara-pista', texto: enAsistencia ? PISTA_ASISTENCIA : PISTA_REVERSO }),
     crearElemento('div', { clase: 'camara-visor' }, [
       video,
       crearElemento('div', { clase: 'camara-marco', 'aria-hidden': 'true' }),
@@ -69,7 +78,9 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {} }) {
     ]),
     estado,
     crearElemento('div', { clase: 'acciones' }, [omitir,
-      crearElemento('button', { type: 'button', clase: 'boton secundario', texto: 'Cancelar', onclick: () => cerrar() })])
+      crearElemento('button', {
+        type: 'button', clase: 'boton secundario', texto: enAsistencia ? 'Terminar' : 'Cancelar', onclick: () => cerrar()
+      })])
   ]);
   const pista = dialogo.querySelector('.camara-pista');
   document.body.append(dialogo);
@@ -127,6 +138,8 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {} }) {
   let mrzLeida = null;
   let anterior = '';                         // la lectura previa, para exigir dos iguales
   let lecturasAnverso = 0;
+  let ultimoDni = '';
+  let ultimoEn = 0;
 
   // Solo el recuadro del DNI, y ampliado: más píxeles por letra, menos
   // confusiones (B por S, O por 0). El visor recorta el video (object-fit:
@@ -173,8 +186,20 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {} }) {
           if (fase === 'reverso') {
             const mrz = buscarMrzTd1(filas);
             const clave = mrz ? mrz.lineas.join('') : '';
-            if (mrz && clave === anterior) pasarAlAnverso(mrz);
-            else anterior = clave;
+            if (mrz && clave === anterior) {
+              if (!enAsistencia) pasarAlAnverso(mrz);
+              else {
+                // El mismo DNI sigue frente a la cámara: no se vuelve a marcar.
+                const dni = mrz.campos.numeroDocumento;
+                if (dni !== ultimoDni || Date.now() - ultimoEn > 5000) {
+                  if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) { /* sin vibración */ } }
+                  estado.textContent = alLeer({ tipo: 'mrz', mrz }) || '';
+                }
+                ultimoDni = dni;
+                ultimoEn = Date.now();
+                anterior = '';
+              }
+            } else anterior = clave;
           } else {
             const anverso = combinarMrzYAnverso(mrzLeida.campos, filas);
             const clave = anverso ? JSON.stringify(anverso) : '';

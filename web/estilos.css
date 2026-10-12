@@ -1002,3 +1002,4 @@ pre.plantilla {
   margin: var(--e2) 0 var(--e3); padding: var(--e3); border-radius: var(--r-s); background: var(--superficie-2);
   white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; max-height: 14em; overflow-y: auto;
 }
+.leer-dni { width: 100%; margin-bottom: var(--e3); }

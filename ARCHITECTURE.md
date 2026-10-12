@@ -183,7 +183,11 @@ del DNI azul. `camara-dni.js` abre la cámara y busca a la vez el PDF417
 (`BarcodeDetector`, del navegador) y, en el APK, la MRZ (complemento nativo
 `LectorTexto`, ML Kit). `probar-dni.html` es solo para el equipo: muestra lo
 leído y copia una plantilla anónima. La inscripción todavía no escanea: falta
-verificar el formato con muestras (AGENTS.md §7.5).
+verificar el formato con muestras (AGENTS.md §7.5). Asistencia sí: «Pasar
+lista leyendo el DNI» (solo en el APK) abre la cámara en modo continuo
+(`modo: 'asistencia'`), lee solo el reverso y marca a quien tenga ese número
+en el padrón; usa solo el número, que lleva dígito de control y se exige igual
+en dos lecturas.
 
 **App Android y avisos con la app cerrada.** `mobile/` empaqueta la app
 web con Capacitor (ver su `LEEME.md`); `copiar-web.mjs` copia los archivos de
