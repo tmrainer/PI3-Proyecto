@@ -24,7 +24,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = path.resolve(process.argv[2] || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web'));
-const PAGINAS = ['index', 'asistencia', 'padron', 'formato-b1', 'calendario', 'ajustes', 'pruebas'];
+const PAGINAS = ['index', 'asistencia', 'padron', 'formato-b1', 'calendario', 'ajustes', 'probar-dni', 'pruebas'];
 
 // ------------------------------------------------------------ padrón de prueba
 

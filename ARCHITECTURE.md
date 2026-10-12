@@ -177,6 +177,14 @@ cuando el teléfono queda libre. En el APK, el fondo de la ventana y del
 WebView es el de la app (`res/values*/fondo.xml`, `MainActivity`), sin el
 cuadro negro entre la pantalla de inicio y la primera pantalla.
 
+**Lector de DNI (en fase de muestras).** `escaneo-dni.js` (puro) lee la zona
+de lectura mecánica TD1 con sus dígitos de control y, sin verificar, el PDF417
+del DNI azul. `camara-dni.js` abre la cámara y busca a la vez el PDF417
+(`BarcodeDetector`, del navegador) y, en el APK, la MRZ (complemento nativo
+`LectorTexto`, ML Kit). `probar-dni.html` es solo para el equipo: muestra lo
+leído y copia una plantilla anónima. La inscripción todavía no escanea: falta
+verificar el formato con muestras (AGENTS.md §7.5).
+
 **App Android y avisos con la app cerrada.** `mobile/` empaqueta la app
 web con Capacitor (ver su `LEEME.md`); `copiar-web.mjs` copia los archivos de
 `ARCHIVOS` de `sw.js`. Dentro del APK, `js/avisos-nativos.js` le pasa a Android

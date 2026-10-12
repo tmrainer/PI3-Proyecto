@@ -57,6 +57,10 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    // Leer la zona de texto (MRZ) del DNI: ML Kit a través de los servicios
+    // de Google Play. El modelo lo instala el propio teléfono una vez (ver
+    // AndroidManifest.xml); el incluido en el APK lo hacía pesar 45 MB más.
+    implementation "com.google.android.gms:play-services-mlkit-text-recognition:19.0.1"
 }
 
 apply from: 'capacitor.build.gradle'

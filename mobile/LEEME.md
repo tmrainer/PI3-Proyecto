@@ -12,6 +12,11 @@ se programa los avisos a sí mismo, sin internet y sin servidor.
   viven solo aquí (`package.json`). Dentro del APK, la app los encuentra en
   `window.Capacitor`; ver `../web/js/avisos-nativos.js` y `decir()` en
   `../web/js/ui.js`. En el navegador no hacen nada.
+- Leer el DNI: la cámara la abre la app web (`getUserMedia`, permiso
+  `CAMERA`) y el código de barras lo lee el propio WebView. La zona de texto
+  (MRZ) la lee `LectorTextoPlugin.java`, un complemento propio registrado en
+  `MainActivity`, con ML Kit de los servicios de Google Play: el modelo lo
+  instala el teléfono una vez (`com.google.mlkit.vision.DEPENDENCIES`).
 - Leer en voz alta: el WebView de Android no trae `speechSynthesis`, así que en
   el APK la voz es la del teléfono, con `@capacitor-community/text-to-speech`.
 - Los datos del APK **no son los de Chrome**: cada uno guarda por separado.

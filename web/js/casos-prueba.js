@@ -26,8 +26,18 @@ import {
   parsearGrupoEtario, parsearTipoAfiliado, prepararImportacion, filasImportables,
   celdaParaHoja, desarmarCelda
 } from './importar.js';
-import { parsearCadenaDni, CAMPOS } from './escaneo-dni.js';
+import {
+  parsearCadenaDni, CAMPOS, digitoControlIcao, leerMrzTd1, buscarMrzTd1, unirFilasOcr, leerPdf417DniAzul,
+  plantillaAnonima
+} from './escaneo-dni.js';
 import { sugerirRucProveedor, sugerenciasEncabezado } from './sugerencias.js';
+
+// Ejemplo de MRZ TD1 de la norma ICAO 9303-5 (persona y país inventados).
+const MRZ_ICAO = [
+  'I<UTOD231458907<<<<<<<<<<<<<<<',
+  '7408122F1204159UTO<<<<<<<<<<<6',
+  'ERIKSSON<<ANNA<MARIA<<<<<<<<<<'
+];
 
 // ------------------------------------------------------------------- utilería
 
@@ -982,6 +992,103 @@ export const casos = [
       igual(r.nombres, '');
       igual(r.fechaNacimiento, '');
       igual(r.camposNoLeidos.length, CAMPOS.length, 'todos los campos quedan sin leer');
+    }
+  },
+
+  // La MRZ de ejemplo de la norma ICAO 9303-5 (TD1): una persona inventada
+  // por la propia norma, del país ficticio «UTO».
+  {
+    grupo: 'Escaneo DNI',
+    nombre: 'Dígito de control ICAO: los ejemplos de la norma',
+    fn: () => {
+      igual(digitoControlIcao('L898902C3'), 6);
+      igual(digitoControlIcao('740812'), 2);
+      igual(digitoControlIcao('120415'), 9);
+      igual(digitoControlIcao('<<<'), 0);
+      igual(digitoControlIcao('ñ'), -1, 'un carácter que no vale en una MRZ');
+    }
+  },
+  {
+    grupo: 'Escaneo DNI',
+    nombre: 'MRZ TD1: lee el ejemplo de la norma y pasan sus cuatro controles',
+    fn: () => {
+      const r = leerMrzTd1(MRZ_ICAO, '2026-10-11');
+      ok(r.estructura);
+      ok(Object.values(r.controles).every(Boolean), JSON.stringify(r.controles));
+      igual(r.campos.numeroDocumento, 'D23145890');
+      igual(r.campos.fechaNacimiento, '1974-08-12');
+      igual(r.campos.sexo, 'F');
+      igual(r.campos.vencimiento, '2012-04-15');
+      igual(r.campos.apellidos.join(' '), 'ERIKSSON');
+      igual(r.campos.nombres, 'ANNA MARIA');
+    }
+  },
+  {
+    grupo: 'Escaneo DNI',
+    nombre: 'MRZ TD1: un dato con el control equivocado queda vacío',
+    fn: () => {
+      const r = leerMrzTd1([MRZ_ICAO[0], '7408123F1204159UTO<<<<<<<<<<<6', MRZ_ICAO[2]], '2026-10-11');
+      igual(r.controles.nacimiento, false);
+      igual(r.campos.fechaNacimiento, '', 'sin control no hay fecha');
+      igual(r.controles.documento, true, 'lo demás se sigue leyendo');
+      for (const malo of [null, [], ['x', 'y', 'z'], MRZ_ICAO.slice(0, 2)]) igual(leerMrzTd1(malo).estructura, false);
+    }
+  },
+  {
+    grupo: 'Escaneo DNI',
+    nombre: 'Buscar la MRZ en lo que leyó la cámara: corrige O por 0 solo donde van cifras',
+    fn: () => {
+      const ocr = ['REPUBLICA DEL PERU', 'I<UTOD23145890 7<<<<<<<<<<<<<<<',
+        '74O8122F12O4159UTO<<<<<<<<<<<6', 'ERIKSSON<<ANNA<MARIA<<<<<<<<<<'];
+      const r = buscarMrzTd1(ocr, '2026-10-11');
+      ok(r, 'debía encontrarla');
+      igual(r.campos.fechaNacimiento, '1974-08-12');
+      igual(buscarMrzTd1([ocr[1], '7408122F1204158UTO<<<<<<<<<<<6', ocr[3]]), null,
+        'con un control que no cuadra, no hay MRZ');
+      igual(buscarMrzTd1(null), null);
+    }
+  },
+  {
+    grupo: 'Escaneo DNI',
+    nombre: 'MRZ partida en pedazos y sin algunos «<» (así la leyó ML Kit en un moto g77)',
+    fn: () => {
+      // Lo que devolvió el reconocimiento de texto del APK con la MRZ de la
+      // norma impresa en una imagen: pedazos sueltos y «<» de menos.
+      const fragmentos = [
+        { texto: 'I<UTOD231458907<<<', arriba: 60, abajo: 110, izquierda: 40 },
+        { texto: '<<', arriba: 62, abajo: 108, izquierda: 900 },
+        { texto: '7408122F1204159UTO<<', arriba: 170, abajo: 220, izquierda: 40 },
+        { texto: '<<6', arriba: 171, abajo: 219, izquierda: 1000 },
+        { texto: 'ERIKSSON<<ANNA <MARIA<<<<<<<<<<', arriba: 280, abajo: 330, izquierda: 40 }
+      ];
+      const filas = unirFilasOcr(fragmentos);
+      igual(filas.length, 3, 'tres filas');
+      const r = buscarMrzTd1(filas, '2026-10-12');
+      ok(r, 'debía encontrarla');
+      igual(r.campos.numeroDocumento, 'D23145890');
+      igual(r.campos.nombres, 'ANNA MARIA');
+      igual(unirFilasOcr(null).length, 0);
+    }
+  },
+  {
+    grupo: 'Escaneo DNI',
+    nombre: 'Plantilla anónima: la forma del dato, sin el dato',
+    fn: () => {
+      igual(plantillaAnonima('Huamán 12<3'), 'AAAAAA 99<9');
+      igual(plantillaAnonima('A\u0001ÿ'), 'A·A');
+      igual(plantillaAnonima('\u0007'), '·');
+      igual(plantillaAnonima(null), '');
+    }
+  },
+  {
+    grupo: 'Escaneo DNI',
+    nombre: 'PDF417 del DNI azul (sin verificar): nunca lanza y no inventa un DNI',
+    fn: () => {
+      for (const entrada of ['', null, 'x'.repeat(600)]) {
+        const r = leerPdf417DniAzul(entrada);
+        igual(r.campos.numeroDocumento, '', 'sin 8 cifras no hay DNI');
+        igual(r.campos.sexo, '');
+      }
     }
   },
 

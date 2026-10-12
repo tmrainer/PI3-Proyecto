@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+<meta charset="utf-8">
+<!-- La regla de AGENTS.md §3 (nada sale del dispositivo) la impone el navegador:
+     solo se cargan archivos de este mismo sitio y no hay scripts en línea. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Prueba del lector de DNI para el equipo del proyecto. No guarda nada.">
+<meta name="robots" content="noindex, nofollow">
+<title>Probar el lector de DNI · Sistema de Asistencia</title>
+<meta name="theme-color" content="#1b2e1e">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icono-180.png">
+<link rel="preload" href="./fuentes/atkinson-hyperlegible-next-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./fuentes/atkinson-hyperlegible-next-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./estilos.css">
+<script src="./js/errores.js"></script>
+<script src="./js/preferencias.js"></script>
+<!-- En el <head> para que blocking="render" valga: la página no se pinta
+     hasta que su módulo la arma (se ejecuta igual al terminar de leerla). -->
+<script type="module" blocking="render" src="./js/pagina-probar-dni.js"></script>
+</head>
+<body data-pagina="probar-dni">
+<a class="saltar-al-contenido" href="#principal">Saltar al contenido</a>
+<header class="cabecera">
+  <div class="cabecera-titulo">
+    <a class="cabecera-volver" href="./ajustes.html" aria-label="Volver a Ajustes" title="Volver a Ajustes"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <h1>Lector de DNI</h1>
+    <p class="cabecera-sub"></p>
+    <button type="button" class="cabecera-voz" aria-label="Leer esta pantalla en voz alta" title="Leer en voz alta"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M4 9v6h4l5 4V5L8 9zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
+    <button type="button" class="cabecera-menu" aria-label="Más opciones" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M12 5h.01M12 12h.01M12 19h.01"/></svg></button>
+  </div>
+  <!-- El menú está escrito aquí, no lo arma el JS: así existe desde el primer
+       cuadro y no desaparece al pasar de una pantalla a otra. -->
+  <nav class="nav" aria-label="Secciones">
+    <a href="./" class="nav-enlace"><span class="nav-icono"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6"/></svg></span><span class="nav-texto">Inicio</span></a>
+    <a href="./asistencia.html" class="nav-enlace"><span class="nav-icono"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M4 6l2 2 3-3M4 13l2 2 3-3M12 7h8M12 14h8M5 20h1M12 20h8"/></svg></span><span class="nav-texto">Asistencia</span></a>
+    <a href="./padron.html" class="nav-enlace"><span class="nav-icono"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M12.5 8a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5M19.5 9a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0M17 14c2.5 0 4 1.5 4.5 4"/></svg></span><span class="nav-texto">Padrón</span></a>
+    <a href="./formato-b1.html" class="nav-enlace"><span class="nav-icono"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3"/></svg></span><span class="nav-texto">B-1</span></a>
+    <a href="./calendario.html" class="nav-enlace"><span class="nav-icono"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="icono"><path d="M5.5 5h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3.5 10h17M8 3v4M16 3v4M8 14h2M12 14h2"/></svg></span><span class="nav-texto">Entregas</span></a>
+  </nav>
+</header>
+<main id="principal" tabindex="-1">
+
+  <div id="avisos-sistema"></div>
+
+  <section class="bloque" aria-labelledby="titulo-probar">
+    <h2 id="titulo-probar">Probar el lector de DNI</h2>
+    <p>Para el equipo del proyecto. Sirve para comprobar, con DNIs de verdad, cómo vienen
+      los datos antes de usar el lector al inscribir.</p>
+    <ul class="pista">
+      <li>Escanea <strong>tu propio DNI</strong>, o el de alguien que haya aceptado.</li>
+      <li>Lo leído solo se muestra aquí: no se guarda ni sale del teléfono.</li>
+      <li>Compara cada dato con el DNI y marca si salió bien.</li>
+      <li>Al equipo se envía solo la <strong>plantilla</strong>: la forma de los datos, sin los datos.</li>
+    </ul>
+    <p class="pista" id="lectores"></p>
+    <button type="button" class="boton" id="escanear" disabled>Leer un DNI con la cámara</button>
+  </section>
+
+  <section class="bloque" id="resultado" aria-labelledby="titulo-resultado" hidden>
+    <h2 id="titulo-resultado">Lo que se leyó</h2>
+    <p id="resultado-tipo"></p>
+    <div id="resultado-campos"></div>
+    <h3>Plantilla para enviar</h3>
+    <p class="pista">Cada letra es «A», cada cifra «9», y la huella del código «·». No dice de quién es.</p>
+    <pre class="plantilla" id="plantilla"></pre>
+    <div class="acciones">
+      <button type="button" class="boton secundario" id="copiar">Copiar la plantilla y el resultado</button>
+      <button type="button" class="boton secundario" id="borrar">Borrar de la pantalla</button>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

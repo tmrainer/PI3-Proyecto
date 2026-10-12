@@ -134,11 +134,11 @@ sin un servidor. Cómo armarla, instalarla y firmarla: `mobile/LEEME.md`.
       para verificar la fórmula del renglón «gastos con el subsidio».
 - [ ] **Conseguir el formato de padrón que pide la Municipalidad**, para mapear
       las columnas del reporte.
-- [ ] **Averiguar el formato del código de barras (PDF417) del DNI**, con
-      muestras reales, antes de escribir el lector.
-      **PENDIENTE, aún no implementado**: el lector no existe todavía.
-      `web/js/escaneo-dni.js` es solo un esqueleto que devuelve los campos vacíos, y
-      la inscripción se hace a mano.
+- [ ] **Verificar con DNIs reales cómo vienen los datos** (código PDF417 del DNI
+      azul y zona de texto de todos los DNI). Ya está la herramienta: Ajustes →
+      «probar el lector de DNI» (`web/probar-dni.html`), que copia solo una
+      plantilla anónima. Hasta tener 2 o 3 muestras de cada tipo, la inscripción
+      se hace a mano.
 
 ### Por preguntar
 

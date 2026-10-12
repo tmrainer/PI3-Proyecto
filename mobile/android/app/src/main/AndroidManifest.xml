@@ -24,6 +24,12 @@
 
         </activity>
 
+        <!-- El modelo de ML Kit para leer texto (zona MRZ del DNI) lo baja e
+             instala Google Play una sola vez; la app no se conecta a nada. -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="ocr" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -40,4 +46,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Un toque corto al marcar a alguien o deshacer (navigator.vibrate). -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Leer el reverso del DNI al inscribir. Se pide la primera vez que se
+         abre el lector; si se niega, se sigue escribiendo a mano. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>

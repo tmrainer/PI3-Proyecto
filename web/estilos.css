@@ -955,3 +955,35 @@ html { scroll-padding-top: calc(var(--alto-panel, 6rem) + var(--e2) + env(safe-a
 :root[data-tema="oscuro"] .logo-claro { display: none; }
 :root[data-tema="oscuro"] .logo-oscuro { display: block; }
 .acerca p { text-align: center; text-wrap: balance; }
+
+/* ---------- Cámara para leer el DNI ---------- */
+dialog.camara-dni {
+  width: min(560px, calc(100% - 2 * var(--e4))); max-height: calc(100dvh - 2 * var(--e4));
+  border: 0; border-radius: var(--r-l); padding: var(--e4); overflow-y: auto; overscroll-behavior: contain;
+  background: var(--superficie); color: var(--tinta); box-shadow: var(--sombra-2);
+}
+dialog.camara-dni::backdrop { background: rgba(10, 18, 12, .75); }
+.camara-dni h2 { margin: 0 0 var(--e2); }
+.camara-pista { margin: 0 0 var(--e3); }
+.camara-visor { position: relative; border-radius: var(--r-m); overflow: hidden; background: #000; aspect-ratio: 4 / 3; }
+.camara-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* El recuadro donde va el DNI (proporción de una tarjeta, 85,6 × 54 mm). */
+.camara-marco {
+  position: absolute; inset: 0; margin: auto; width: 86%; aspect-ratio: 85.6 / 54;
+  border: 3px solid #fff; border-radius: 12px; box-shadow: 0 0 0 999px rgba(0, 0, 0, .35); pointer-events: none;
+}
+.camara-estado { min-height: 1.5em; margin: var(--e3) 0; font-weight: 600; }
+.camara-dni .boton { width: 100%; }
+
+/* Probar el lector de DNI (equipo del proyecto) */
+.probar-fila {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--e2) var(--e3);
+  padding: var(--e3) 0; border-bottom: 1px solid var(--borde);
+}
+.probar-nombre { display: block; font-size: .85rem; color: var(--tinta-suave); }
+.probar-valor { display: block; font-weight: 700; overflow-wrap: anywhere; }
+.probar-respuesta { display: flex; gap: var(--e2); }
+pre.plantilla {
+  margin: var(--e2) 0 var(--e3); padding: var(--e3); border-radius: var(--r-s); background: var(--superficie-2);
+  white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; max-height: 14em; overflow-y: auto;
+}
