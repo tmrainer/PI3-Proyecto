@@ -1003,3 +1003,9 @@ pre.plantilla {
   white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; max-height: 14em; overflow-y: auto;
 }
 .leer-dni { width: 100%; margin-bottom: var(--e3); }
+
+/* Inscribir leyendo el DNI (en prueba) */
+.alta-dni { margin: var(--e3) 0; padding: var(--e3) var(--e4); border-radius: var(--r-m); background: var(--superficie-2); }
+.alta-dni .boton { width: 100%; }
+.alta-dni-nota:not(:empty) { margin-top: var(--e3); }
+.aviso-texto { color: var(--aviso); font-weight: 600; margin: var(--e2) 0; }

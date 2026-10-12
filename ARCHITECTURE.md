@@ -182,8 +182,12 @@ de lectura mecánica TD1 con sus dígitos de control y, sin verificar, el PDF417
 del DNI azul. `camara-dni.js` abre la cámara y busca a la vez el PDF417
 (`BarcodeDetector`, del navegador) y, en el APK, la MRZ (complemento nativo
 `LectorTexto`, ML Kit). `probar-dni.html` es solo para el equipo: muestra lo
-leído y copia una plantilla anónima. La inscripción todavía no escanea: falta
-verificar el formato con muestras (AGENTS.md §7.5). Asistencia sí: «Pasar
+leído y copia una plantilla anónima. La inscripción lee el DNI «en prueba»
+(solo APK, `montarLecturaDni()` en `ui-personas.js`): reverso y anverso, sin
+el PDF417; llena el formulario, marca qué revisar, ofrece las dos opciones si
+hay una letra dudosa y no inscribe sin «quién revisó» (`verificadoPor`,
+`origenDato: 'escaneo_dni'`, más el sexo). Faltan muestras del DNI azul
+(AGENTS.md §7.5). Asistencia sí: «Pasar
 lista leyendo el DNI» (solo en el APK) abre la cámara en modo continuo
 (`modo: 'asistencia'`), lee solo el reverso y marca a quien tenga ese número
 en el padrón; usa solo el número, que lleva dígito de control y se exige igual

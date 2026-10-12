@@ -46,13 +46,14 @@ export async function lectoresDni() {
  * `alLeer` devuelve el mensaje que se muestra («Marcaste a…»).
  * @param {{ alLeer: (r: {tipo: 'pdf417', cadena: string} |
  *   {tipo: 'mrz', mrz: object, anverso: ?object}) => void,
- *           alCerrar?: () => void, modo?: 'completo' | 'asistencia' }} opciones
+ *           alCerrar?: () => void, modo?: 'completo' | 'asistencia',
+ *           conCodigo?: boolean }} opciones  conCodigo: false deja fuera el PDF417
  * @returns {Promise<void>}
  */
-export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'completo' }) {
+export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'completo', conCodigo = true }) {
   const enAsistencia = modo === 'asistencia';
   const lectores = await lectoresDni();
-  const codigo = lectores.codigo && !enAsistencia;
+  const codigo = lectores.codigo && !enAsistencia && conCodigo;
   const texto = lectores.texto;
   const video = crearElemento('video', { clase: 'camara-video', playsinline: '', muted: '', autoplay: '' });
   video.muted = true;

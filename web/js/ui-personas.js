@@ -8,6 +8,7 @@ import {
 } from './calculos.js';
 import { validarAfiliado, indicePadron } from './validaciones.js';
 import { estado } from './estado.js';
+import { lectoresDni, abrirCamaraDni } from './camara-dni.js';
 import { buscar, crearElemento, campo, icono, chip, avatarPersona } from './ui.js';
 
 // ctx: { fechaRef, busqueda, filtro, conteo, onCambio(), onRepintar() }
@@ -45,6 +46,7 @@ export function montarAltaPersona(ctx) {
   });
 
   buscar('#agregar-afiliado').addEventListener('click', () => inscribir(ctx));
+  montarLecturaDni();
 
   // Enter en cualquier campo del alta inscribe, sin tener que buscar el botón.
   for (const id of ['altaPaterno', 'altaMaterno', 'altaNombres', 'altaDoc']) {
@@ -52,6 +54,93 @@ export function montarAltaPersona(ctx) {
       if (ev.key === 'Enter') { ev.preventDefault(); inscribir(ctx); }
     });
   }
+}
+
+// ------------------------------------------- inscribir leyendo el DNI (en prueba)
+//
+// Solo en el APK. Lee el reverso (zona de lectura mecánica: DNI, nacimiento y
+// sexo con dígito de control) y luego el anverso (tildes, ñ y el segundo
+// apellido, cruzados con el reverso: escaneo-dni.js). LLENA el formulario,
+// no inscribe: la persona revisa, escribe quién revisó y toca «Inscribir»
+// (AGENTS.md §7.1). La cadena leída no se guarda; solo los campos.
+
+// Lo que vino del DNI y todavía no se inscribió: sexo y que el origen es el escaneo.
+let altaEscaneo = null;
+
+function montarLecturaDni() {
+  const caja = crearElemento('div', { clase: 'alta-dni', hidden: true });
+  const boton = crearElemento('button', { type: 'button', clase: 'boton secundario' },
+    [icono('camara', { tam: 22 }), 'Leer el DNI con la cámara']);
+  const nota = crearElemento('div', { clase: 'alta-dni-nota', role: 'status', 'aria-live': 'polite' });
+  const fVerifica = crearElemento('input', { id: 'altaVerifica', type: 'text', autocomplete: 'name' });
+  const verifica = crearElemento('div', { clase: 'campo', hidden: true }, [
+    crearElemento('label', { for: 'altaVerifica', clase: 'obligatoria', texto: 'Quién revisó los datos con el DNI' }), fVerifica
+  ]);
+  caja.append(
+    crearElemento('p', { clase: 'pista', texto: 'En prueba: lee el reverso y luego el lado de la foto. Revisa todo antes de inscribir.' }),
+    boton, nota, verifica
+  );
+  buscar('#bloque-alta .pista').after(caja);
+  lectoresDni().then((l) => { caja.hidden = !l.texto; }).catch(() => {});
+
+  boton.addEventListener('click', () => abrirCamaraDni({
+    conCodigo: false,
+    alLeer: (r) => { if (r.tipo === 'mrz') llenarConDni(r.mrz, r.anverso, nota, verifica); }
+  }));
+}
+
+function llenarConDni(mrz, anverso, nota, verifica) {
+  const c = mrz.campos;
+  nota.textContent = '';
+  if (c.pais !== 'PER') {
+    nota.append(crearElemento('p', { clase: 'aviso-texto', texto: 'No parece un DNI peruano. Escribe los datos a mano.' }));
+    return;
+  }
+  const poner = (id, valor) => {
+    const el = buscar('#' + id);
+    el.value = valor || '';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  buscar('#altaTipoDoc').value = 'dni';
+  poner('altaDoc', c.numeroDocumento);
+  poner('altaNacimiento', c.fechaNacimiento);
+
+  const revisar = [];
+  const dudas = [];
+  const nombre = (id, etiqueta, cruce, deMrz) => {
+    if (!cruce) {                                          // sin el anverso
+      poner(id, deMrz);
+      if (deMrz) revisar.push(`${etiqueta}: viene sin tildes ni ñ.`);
+      return;
+    }
+    if (cruce.estado === 'dudoso') {
+      poner(id, '');
+      dudas.push({ id, etiqueta, opciones: cruce.opciones });
+      return;
+    }
+    poner(id, cruce.valor);
+    if (cruce.estado === 'sin-confirmar' && cruce.valor) revisar.push(`${etiqueta}: compáralo con el DNI.`);
+  };
+  nombre('altaPaterno', 'Apellido paterno', anverso && anverso.apellidoPaterno, c.apellidos.join(' '));
+  nombre('altaMaterno', 'Apellido materno', anverso && anverso.apellidoMaterno, '');
+  nombre('altaNombres', 'Nombres', anverso && anverso.nombres, c.nombres);
+  if (!buscar('#altaMaterno').value) revisar.push('Apellido materno: escríbelo (no se leyó).');
+
+  altaEscaneo = { sexo: c.sexo };
+  nota.append(crearElemento('p', { texto: 'Listo. Revisa los datos con el DNI en la mano.' }));
+  for (const d of dudas) {
+    // No se elige sola: la persona toca la que coincide con el DNI.
+    nota.append(crearElemento('p', { clase: 'aviso-texto', texto: `${d.etiqueta}: ¿cuál dice el DNI?` }),
+      crearElemento('div', { clase: 'acciones' }, d.opciones.map((o) => crearElemento('button', {
+        type: 'button', clase: 'boton diminuto secundario', texto: o,
+        onclick: (ev) => { poner(d.id, o); ev.target.parentElement.remove(); }
+      }))));
+  }
+  if (revisar.length) {
+    nota.append(crearElemento('ul', { clase: 'pista' }, revisar.map((t) => crearElemento('li', { texto: t }))));
+  }
+  verifica.hidden = false;
+  buscar('#altaVerifica').focus({ preventScroll: true });
 }
 
 function inscribir(ctx) {
@@ -65,6 +154,12 @@ function inscribir(ctx) {
   a.fechaNacimiento = buscar('#altaNacimiento').value;
   a.grupoEtarioManual = esIso(a.fechaNacimiento) ? null : altaGrupo;
   a.tipoAfiliado = altaTipo || '';
+  const verifica = document.getElementById('altaVerifica');
+  if (altaEscaneo) {
+    a.origenDato = 'escaneo_dni';
+    a.sexo = altaEscaneo.sexo || '';
+    a.verificadoPor = verifica ? verifica.value.trim() : '';
+  }
 
   const faltan = [];
   if (!a.apellidoPaterno) faltan.push('apellido paterno');
@@ -72,6 +167,7 @@ function inscribir(ctx) {
   if (!a.numeroDocumento) faltan.push('número de documento');
   if (!grupoEtario(a, hoyIso())) faltan.push('grupo de edad');
   if (!a.tipoAfiliado) faltan.push('tipo');
+  if (altaEscaneo && !a.verificadoPor) faltan.push('quién revisó los datos con el DNI');
   if (faltan.length) {
     msg.textContent = 'Falta: ' + faltan.join(', ') + '.';
     return;
@@ -102,6 +198,11 @@ function inscribir(ctx) {
   }
   altaGrupo = null;
   altaTipo = null;
+  if (altaEscaneo) {
+    altaEscaneo = null;
+    verifica.closest('.campo').hidden = true;
+    document.querySelector('.alta-dni-nota').textContent = '';
+  }
   buscar('#altaPaterno').focus();
   ctx.onRepintar();
 }
