@@ -972,6 +972,21 @@ dialog.camara-dni::backdrop { background: rgba(10, 18, 12, .75); }
   position: absolute; inset: 0; margin: auto; width: 86%; aspect-ratio: 85.6 / 54;
   border: 3px solid #fff; border-radius: 12px; box-shadow: 0 0 0 999px rgba(0, 0, 0, .35); pointer-events: none;
 }
+.camara-cargando {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--e3); background: #000; color: #fff; font-weight: 600;
+}
+.girador {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 5px solid rgba(255, 255, 255, .25); border-top-color: #fff;
+  animation: girar .9s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+/* Con «reducir movimiento», late en vez de girar: sigue diciendo «cargando». */
+@media (prefers-reduced-motion: reduce) {
+  .girador { animation: latir 1.6s ease-in-out infinite !important; border-top-color: rgba(255, 255, 255, .25); }
+}
+@keyframes latir { 50% { opacity: .35; } }
 .camara-estado { min-height: 1.5em; margin: var(--e3) 0; font-weight: 600; }
 .camara-dni .boton { width: 100%; }
 

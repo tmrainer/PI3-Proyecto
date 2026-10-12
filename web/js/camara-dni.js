@@ -48,6 +48,13 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {} }) {
   const video = crearElemento('video', { clase: 'camara-video', playsinline: '', muted: '', autoplay: '' });
   video.muted = true;
   const estado = crearElemento('p', { clase: 'camara-estado', role: 'status', 'aria-live': 'polite' });
+  // Mientras la cámara abre (puede tardar un par de segundos en un teléfono
+  // modesto), un círculo que gira sobre negro: se ve que algo está pasando.
+  const cargando = crearElemento('div', { clase: 'camara-cargando' }, [
+    crearElemento('span', { clase: 'girador', 'aria-hidden': 'true' }),
+    crearElemento('span', { texto: 'Abriendo la cámara…' })
+  ]);
+  video.addEventListener('playing', () => { cargando.hidden = true; }, { once: true });
   const omitir = crearElemento('button', {
     type: 'button', clase: 'boton secundario', texto: 'Omitir este paso', hidden: true,
     onclick: () => entregar({ tipo: 'mrz', mrz: mrzLeida, anverso: null })
@@ -55,7 +62,11 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {} }) {
   const dialogo = crearElemento('dialog', { clase: 'camara-dni', 'aria-labelledby': 'camara-titulo' }, [
     crearElemento('h2', { id: 'camara-titulo', texto: 'Leer el DNI' }),
     crearElemento('p', { clase: 'camara-pista', texto: PISTA_REVERSO }),
-    crearElemento('div', { clase: 'camara-visor' }, [video, crearElemento('div', { clase: 'camara-marco', 'aria-hidden': 'true' })]),
+    crearElemento('div', { clase: 'camara-visor' }, [
+      video,
+      crearElemento('div', { clase: 'camara-marco', 'aria-hidden': 'true' }),
+      cargando
+    ]),
     estado,
     crearElemento('div', { clase: 'acciones' }, [omitir,
       crearElemento('button', { type: 'button', clase: 'boton secundario', texto: 'Cancelar', onclick: () => cerrar() })])
@@ -91,6 +102,7 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {} }) {
 
   if (!codigo && !texto) {
     estado.textContent = 'Este teléfono no puede leer el DNI con la cámara. Escribe los datos a mano.';
+    cargando.hidden = true;
     return;
   }
   try {
@@ -100,6 +112,7 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {} }) {
     });
   } catch (e) {
     estado.textContent = 'No se pudo abrir la cámara. Revisa que la app tenga permiso para usarla.';
+    cargando.hidden = true;
     return;
   }
   if (!abierto) { flujo.getTracks().forEach((t) => t.stop()); return; }
