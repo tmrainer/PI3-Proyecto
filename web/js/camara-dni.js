@@ -7,7 +7,8 @@
 //   En el navegador no está, y solo queda el código.
 // Busca con los dos a la vez y entrega lo primero que lea con seguridad. La
 // MRZ vale cuando dos lecturas seguidas dan lo mismo; después se pide el
-// anverso, que trae tildes, ñ y el segundo apellido (escaneo-dni.js lo cruza).
+// anverso, que trae tildes, ñ y el segundo apellido (escaneo-dni.js lo cruza):
+// vale en cuanto paterno y nombres coinciden con la MRZ.
 //
 // Lo que ve la cámara solo pasa por el visor en vivo y por un lienzo que se
 // reutiliza: ningún fotograma se guarda ni sale del teléfono (§7.2). Quien
@@ -112,6 +113,7 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {} }) {
   let fase = 'reverso';
   let mrzLeida = null;
   let anterior = '';                         // la lectura previa, para exigir dos iguales
+  let lecturasAnverso = 0;
 
   // Solo el recuadro del DNI, y ampliado: más píxeles por letra, menos
   // confusiones (B por S, O por 0). El visor recorta el video (object-fit:
@@ -163,7 +165,18 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {} }) {
           } else {
             const anverso = combinarMrzYAnverso(mrzLeida.campos, filas);
             const clave = anverso ? JSON.stringify(anverso) : '';
-            if (anverso && clave === anterior) return entregar({ tipo: 'mrz', mrz: mrzLeida, anverso });
+            if (anverso) {
+              lecturasAnverso += 1;
+              // Paterno y nombres iguales a la MRZ ya son dos fuentes de acuerdo:
+              // no hace falta repetir. El segundo apellido, si no aparece en
+              // unas pocas lecturas, queda para escribirlo. Con una letra
+              // dudosa, sí se esperan dos lecturas iguales.
+              const cruzados = anverso.apellidoPaterno.estado === 'confirmado' && anverso.nombres.estado === 'confirmado';
+              const conMaterno = anverso.apellidoMaterno.estado !== 'no-leido';
+              if ((cruzados && (conMaterno || lecturasAnverso >= 4)) || clave === anterior) {
+                return entregar({ tipo: 'mrz', mrz: mrzLeida, anverso });
+              }
+            }
             anterior = clave;
           }
         }

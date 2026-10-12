@@ -1074,6 +1074,28 @@ export const casos = [
       igual(unirFilasOcr(null).length, 0);
     }
   },
+  // DNI electrónico peruano: datos inventados con la forma EXACTA de una
+  // muestra real verificada (plantilla anónima, AGENTS.md §7.5): solo «<»
+  // tras el DNI en la línea 1 y un solo apellido en la línea 3.
+  {
+    grupo: 'Escaneo DNI',
+    nombre: 'DNI electrónico (forma verificada con una muestra real): todo se lee, un solo apellido',
+    fn: () => {
+      const r = leerMrzTd1([
+        'I<PER12345678<8<<<<<<<<<<<<<<<',
+        '9001158M3001156PER<<<<<<<<<<<6',
+        'VILLANUEVA<<FERNANDO<ALBERTO<<'
+      ], '2026-10-12');
+      ok(Object.values(r.controles).every(Boolean), JSON.stringify(r.controles));
+      igual(r.campos.pais, 'PER');
+      igual(r.campos.numeroDocumento, '12345678', 'el «<» de relleno no es parte del DNI');
+      igual(r.campos.fechaNacimiento, '1990-01-15');
+      igual(r.campos.sexo, 'M');
+      igual(r.campos.vencimiento, '2030-01-15');
+      igual(r.campos.apellidos.join(' '), 'VILLANUEVA', 'solo el primer apellido');
+      igual(r.campos.nombres, 'FERNANDO ALBERTO');
+    }
+  },
   // Un anverso inventado, como lo devuelve el reconocimiento de texto.
   {
     grupo: 'Escaneo DNI',
