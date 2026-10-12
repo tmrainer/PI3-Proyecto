@@ -28,7 +28,7 @@ import {
 } from './importar.js';
 import {
   parsearCadenaDni, CAMPOS, digitoControlIcao, leerMrzTd1, buscarMrzTd1, unirFilasOcr, leerPdf417DniAzul,
-  plantillaAnonima
+  plantillaAnonima, combinarMrzYAnverso, normalizarLetras
 } from './escaneo-dni.js';
 import { sugerirRucProveedor, sugerenciasEncabezado } from './sugerencias.js';
 
@@ -38,6 +38,10 @@ const MRZ_ICAO = [
   '7408122F1204159UTO<<<<<<<<<<<6',
   'ERIKSSON<<ANNA<MARIA<<<<<<<<<<'
 ];
+
+// Filas de un anverso inventado, como las devuelve el reconocimiento de texto.
+const ANVERSO_PRUEBA = ['REPÚBLICA DEL PERÚ', 'DOCUMENTO NACIONAL DE IDENTIDAD', 'Primer Apellido', 'MUÑOZ',
+  'Segundo Apellido', 'QUISPE', 'Prenombres', 'JOSÉ ALBERTO', 'Sexo M'];
 
 // ------------------------------------------------------------------- utilería
 
@@ -1068,6 +1072,39 @@ export const casos = [
       igual(r.campos.numeroDocumento, 'D23145890');
       igual(r.campos.nombres, 'ANNA MARIA');
       igual(unirFilasOcr(null).length, 0);
+    }
+  },
+  // Un anverso inventado, como lo devuelve el reconocimiento de texto.
+  {
+    grupo: 'Escaneo DNI',
+    nombre: 'Anverso: si coincide con la MRZ, vale como está impreso (tildes y ñ)',
+    fn: () => {
+      const r = combinarMrzYAnverso({ apellidos: ['MUNOZ'], nombres: 'JOSE ALBERTO' }, ANVERSO_PRUEBA);
+      igual(r.apellidoPaterno.valor, 'MUÑOZ');
+      igual(r.apellidoPaterno.estado, 'confirmado');
+      igual(r.nombres.valor, 'JOSÉ ALBERTO');
+      igual(r.apellidoMaterno.valor, 'QUISPE', 'el segundo apellido sale del anverso');
+      igual(r.apellidoMaterno.estado, 'sin-confirmar', 'la MRZ no lo trae: hay que mirarlo');
+      igual(normalizarLetras('Peña Ñahui-José'), 'PENA NAHUI JOSE');
+    }
+  },
+  {
+    grupo: 'Escaneo DNI',
+    nombre: 'Anverso: una letra confundida (B por S) no se elige sola, se ofrecen las dos',
+    fn: () => {
+      const r = combinarMrzYAnverso({ apellidos: ['MUNOZ'], nombres: 'JOSE ALSERTO' }, ANVERSO_PRUEBA);
+      igual(r.nombres.estado, 'dudoso');
+      igual(r.nombres.valor, '', 'nada elegido');
+      igual(r.nombres.opciones.join(' | '), 'JOSÉ ALBERTO | JOSE ALSERTO');
+    }
+  },
+  {
+    grupo: 'Escaneo DNI',
+    nombre: 'Anverso de otro DNI (o mal leído): no se usa',
+    fn: () => {
+      igual(combinarMrzYAnverso({ apellidos: ['ROJAS'], nombres: 'ANA' }, ANVERSO_PRUEBA), null);
+      igual(combinarMrzYAnverso(null, ANVERSO_PRUEBA), null);
+      igual(combinarMrzYAnverso({ apellidos: ['MUNOZ'], nombres: 'X' }, null), null);
     }
   },
   {

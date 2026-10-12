@@ -5,14 +5,19 @@
 // - La zona de lectura mecánica (MRZ, todos los DNI), con el reconocimiento de
 //   texto de ML Kit que trae el APK (complemento «LectorTexto», en mobile/).
 //   En el navegador no está, y solo queda el código.
-// Busca con los dos a la vez y entrega lo primero que lea con seguridad.
+// Busca con los dos a la vez y entrega lo primero que lea con seguridad. La
+// MRZ vale cuando dos lecturas seguidas dan lo mismo; después se pide el
+// anverso, que trae tildes, ñ y el segundo apellido (escaneo-dni.js lo cruza).
 //
 // Lo que ve la cámara solo pasa por el visor en vivo y por un lienzo que se
 // reutiliza: ningún fotograma se guarda ni sale del teléfono (§7.2). Quien
 // llama recibe la cadena y decide; esta pieza no guarda nada.
 
 import { crearElemento, icono } from './ui.js';
-import { buscarMrzTd1, unirFilasOcr } from './escaneo-dni.js';
+import { buscarMrzTd1, unirFilasOcr, combinarMrzYAnverso } from './escaneo-dni.js';
+
+const PISTA_REVERSO = 'Pon el reverso del DNI dentro del recuadro, con buena luz, y mantén el teléfono quieto.';
+const PISTA_ANVERSO = 'Ahora voltea el DNI: el lado de la foto, dentro del recuadro. De ahí salen las tildes, la ñ y el segundo apellido.';
 
 function lectorDeTexto() {
   const C = window.Capacitor;
@@ -32,7 +37,8 @@ export async function lectoresDni() {
 
 /**
  * Abre el visor y busca el DNI.
- * @param {{ alLeer: (r: {tipo: 'pdf417', cadena: string} | {tipo: 'mrz', mrz: object}) => void,
+ * @param {{ alLeer: (r: {tipo: 'pdf417', cadena: string} |
+ *   {tipo: 'mrz', mrz: object, anverso: ?object}) => void,
  *           alCerrar?: () => void }} opciones
  * @returns {Promise<void>}
  */
@@ -41,16 +47,19 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {} }) {
   const video = crearElemento('video', { clase: 'camara-video', playsinline: '', muted: '', autoplay: '' });
   video.muted = true;
   const estado = crearElemento('p', { clase: 'camara-estado', role: 'status', 'aria-live': 'polite' });
+  const omitir = crearElemento('button', {
+    type: 'button', clase: 'boton secundario', texto: 'Omitir este paso', hidden: true,
+    onclick: () => entregar({ tipo: 'mrz', mrz: mrzLeida, anverso: null })
+  });
   const dialogo = crearElemento('dialog', { clase: 'camara-dni', 'aria-labelledby': 'camara-titulo' }, [
     crearElemento('h2', { id: 'camara-titulo', texto: 'Leer el DNI' }),
-    crearElemento('p', {
-      clase: 'camara-pista',
-      texto: 'Pon el reverso del DNI dentro del recuadro, con buena luz, y mantén el teléfono quieto.'
-    }),
+    crearElemento('p', { clase: 'camara-pista', texto: PISTA_REVERSO }),
     crearElemento('div', { clase: 'camara-visor' }, [video, crearElemento('div', { clase: 'camara-marco', 'aria-hidden': 'true' })]),
     estado,
-    crearElemento('button', { type: 'button', clase: 'boton secundario', texto: 'Cancelar', onclick: () => cerrar() })
+    crearElemento('div', { clase: 'acciones' }, [omitir,
+      crearElemento('button', { type: 'button', clase: 'boton secundario', texto: 'Cancelar', onclick: () => cerrar() })])
   ]);
+  const pista = dialogo.querySelector('.camara-pista');
   document.body.append(dialogo);
   dialogo.addEventListener('cancel', (e) => { e.preventDefault(); cerrar(); });
   dialogo.showModal();
@@ -100,27 +109,63 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {} }) {
   const detector = codigo ? new window.BarcodeDetector({ formats: ['pdf417'] }) : null;
   const lector = texto ? lectorDeTexto() : null;
   let vuelta = 0;
+  let fase = 'reverso';
+  let mrzLeida = null;
+  let anterior = '';                         // la lectura previa, para exigir dos iguales
+
+  // Solo el recuadro del DNI, y ampliado: más píxeles por letra, menos
+  // confusiones (B por S, O por 0). El visor recorta el video (object-fit:
+  // cover), así que se calcula qué parte del video cae dentro del recuadro.
+  function fotogramaDelRecuadro() {
+    const visor = video.parentElement;
+    const W = visor.clientWidth;
+    const H = visor.clientHeight;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    const escala = Math.max(W / vw, H / vh);
+    const ancho = Math.min(vw, (0.86 * W * 1.1) / escala);
+    const alto = Math.min(vh, ancho * (54 / 85.6));
+    const destino = 1600;
+    lienzo.width = destino;
+    lienzo.height = Math.round(destino * (alto / ancho));
+    lienzo.getContext('2d').drawImage(video, (vw - ancho) / 2, (vh - alto) / 2, ancho, alto, 0, 0, lienzo.width, lienzo.height);
+    return lienzo.toDataURL('image/jpeg', 0.85).split(',')[1];
+  }
+
+  function pasarAlAnverso(mrz) {
+    mrzLeida = mrz;
+    fase = 'anverso';
+    anterior = '';
+    if (navigator.vibrate) { try { navigator.vibrate(40); } catch (e) { /* sin vibración */ } }
+    pista.textContent = PISTA_ANVERSO;
+    estado.textContent = 'Listo el reverso. Ahora el lado de la foto…';
+    omitir.hidden = false;
+  }
 
   async function buscar() {
     if (!abierto) return;
     if (video.readyState >= 2) {
       try {
-        if (detector) {
+        if (detector && fase === 'reverso') {
           const hallados = await detector.detect(video);
           const pdf = hallados.find((h) => h.format === 'pdf417' && h.rawValue);
           if (pdf) return entregar({ tipo: 'pdf417', cadena: pdf.rawValue });
         }
-        // El texto cuesta más: una de cada tres vueltas.
-        if (lector && vuelta % 3 === 0) {
-          const ancho = Math.min(1600, video.videoWidth);
-          const alto = Math.round(video.videoHeight * (ancho / video.videoWidth));
-          lienzo.width = ancho;
-          lienzo.height = alto;
-          lienzo.getContext('2d').drawImage(video, 0, 0, ancho, alto);
-          const imagen = lienzo.toDataURL('image/jpeg', 0.85).split(',')[1];
-          const { fragmentos } = await lector.leer({ imagen });
-          const mrz = buscarMrzTd1(unirFilasOcr(fragmentos));
-          if (mrz) return entregar({ tipo: 'mrz', mrz });
+        // El texto cuesta más: una de cada tres vueltas (en el anverso, todas).
+        if (lector && (fase === 'anverso' || vuelta % 3 === 0)) {
+          const { fragmentos } = await lector.leer({ imagen: fotogramaDelRecuadro() });
+          const filas = unirFilasOcr(fragmentos);
+          if (fase === 'reverso') {
+            const mrz = buscarMrzTd1(filas);
+            const clave = mrz ? mrz.lineas.join('') : '';
+            if (mrz && clave === anterior) pasarAlAnverso(mrz);
+            else anterior = clave;
+          } else {
+            const anverso = combinarMrzYAnverso(mrzLeida.campos, filas);
+            const clave = anverso ? JSON.stringify(anverso) : '';
+            if (anverso && clave === anterior) return entregar({ tipo: 'mrz', mrz: mrzLeida, anverso });
+            anterior = clave;
+          }
         }
       } catch (e) {
         /* un fotograma que no se pudo leer: se prueba con el siguiente */

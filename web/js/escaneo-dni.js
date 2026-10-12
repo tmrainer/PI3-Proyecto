@@ -246,6 +246,86 @@ export function buscarMrzTd1(lineasOcr, fechaRef) {
   return null;
 }
 
+// ------------------------------------------------ el anverso, para tildes y ñ
+//
+// La MRZ no lleva tildes ni ñ (la norma solo admite A-Z), los nombres no
+// tienen dígito de control y en el DNI peruano trae solo el primer apellido.
+// El anverso sí trae los nombres como son. Se cruzan: una fila del anverso
+// vale solo si, quitándole tildes y ñ, es IGUAL a lo de la MRZ. Si difiere en
+// una letra que el reconocimiento suele confundir, no se elige: se ofrecen
+// las dos y decide la persona (§7.1).
+
+/** Mayúsculas, sin tildes, ñ como N, solo letras y un espacio entre palabras. */
+export function normalizarLetras(texto) {
+  return String(texto == null ? '' : texto)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toUpperCase().replace(/[^A-Z]+/g, ' ').trim();
+}
+
+/** La fila del anverso tal como está impresa: letras (con tildes y ñ) y espacios. */
+function textoImpreso(texto) {
+  return String(texto == null ? '' : texto).normalize('NFC').toUpperCase()
+    .replace(/[^\p{L} ]+/gu, ' ').replace(/\s+/g, ' ').trim();
+}
+
+const CONFUSIBLES = ['BS8E', 'O0DQU', 'I1LJT', 'NMH', 'CG', 'VY', 'KX', 'PR', 'FE'];
+function confusibles(a, b) {
+  return CONFUSIBLES.some((g) => g.includes(a) && g.includes(b));
+}
+
+/** ¿Dos textos normalizados difieren solo en 1 o 2 letras que se suelen confundir? */
+function casiIguales(a, b) {
+  if (a.length !== b.length || a === b) return false;
+  let distintas = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] === b[i]) continue;
+    if (!confusibles(a[i], b[i])) return false;
+    distintas += 1;
+  }
+  return distintas <= 2;
+}
+
+function cruzar(valorMrz, filas) {
+  if (!valorMrz) return { valor: '', estado: 'no-leido' };
+  const igual = filas.find((f) => f.normal === valorMrz);
+  if (igual) return { valor: igual.impreso, estado: 'confirmado' };
+  const parecidas = filas.filter((f) => casiIguales(f.normal, valorMrz));
+  if (parecidas.length === 1) {
+    return { valor: '', estado: 'dudoso', opciones: [parecidas[0].impreso, valorMrz] };
+  }
+  return { valor: valorMrz, estado: 'sin-confirmar' };
+}
+
+/**
+ * Cruza los nombres de la MRZ con las filas leídas del anverso. NUNCA lanza.
+ * Estados por campo: «confirmado» (anverso igual a la MRZ: se usa como está
+ * impreso, con tildes y ñ), «dudoso» (difieren en una letra confundible: hay
+ * que elegir entre `opciones`), «sin-confirmar» (solo la MRZ, o el segundo
+ * apellido, que la MRZ no trae: hay que mirarlo) y «no-leido».
+ *
+ * @param {{apellidos: string[], nombres: string}} camposMrz  de leerMrzTd1
+ * @param {string[]} filasAnverso  de unirFilasOcr
+ * @returns {?{apellidoPaterno: object, apellidoMaterno: object, nombres: object}}
+ *   null si el anverso no parece ser del mismo DNI (todavía no se leyó bien)
+ */
+export function combinarMrzYAnverso(camposMrz, filasAnverso) {
+  if (!camposMrz || !Array.isArray(filasAnverso)) return null;
+  const filas = filasAnverso.map((t) => ({ impreso: textoImpreso(t), normal: normalizarLetras(t) }))
+    .filter((f) => f.normal);
+  const paterno = cruzar(normalizarLetras((camposMrz.apellidos || []).join(' ')), filas);
+  const nombres = cruzar(normalizarLetras(camposMrz.nombres), filas);
+  // Sin ninguna fila que coincida, no es este DNI o no se leyó todavía.
+  if (paterno.estado !== 'confirmado' && nombres.estado !== 'confirmado' &&
+    paterno.estado !== 'dudoso' && nombres.estado !== 'dudoso') return null;
+
+  // El segundo apellido solo está en el anverso: la fila que sigue a su rótulo.
+  let materno = { valor: '', estado: 'no-leido' };
+  const i = filas.findIndex((f) => /SEGUNDO ?APELLIDO/.test(f.normal));
+  const siguiente = i >= 0 ? filas.slice(i + 1).find((f) => !/APELLIDO|NOMBRE/.test(f.normal)) : null;
+  if (siguiente) materno = { valor: siguiente.impreso, estado: 'sin-confirmar' };
+  return { apellidoPaterno: paterno, apellidoMaterno: materno, nombres };
+}
+
 /**
  * Campos del PDF417 del DNI azul según la distribución publicada por un
  * tercero (SIN VERIFICAR: ver §7.5). Solo para el modo de prueba.

@@ -78,18 +78,34 @@ function mostrar(r) {
     );
     plantilla = plantillaAnonima(r.cadena);
   } else {
-    const { campos, controles } = r.mrz;
-    tipo = 'Zona de lectura mecánica (MRZ, formato TD1). Los cuatro dígitos de control cuadran.';
+    const { campos } = r.mrz;
+    const a = r.anverso;
+    tipo = 'Zona de lectura mecánica (MRZ). Los cuatro dígitos de control cuadran y salió igual dos veces.' +
+      (a ? ' Nombres cruzados con el anverso.' : ' Sin el anverso (se omitió).');
+    const ESTADOS = {
+      confirmado: 'Igual en el anverso y en la MRZ.',
+      dudoso: 'El anverso y la MRZ difieren en una letra: habría que elegir.',
+      'sin-confirmar': 'Sin cruzar: compáralo con el DNI.',
+      'no-leido': 'No se leyó.'
+    };
+    const cruzado = (nombre, c, deMrz) => (a
+      ? fila(nombre, c.estado === 'dudoso' ? c.opciones.join('  o  ') : c.valor, ESTADOS[c.estado])
+      : fila(nombre, deMrz, 'Solo de la MRZ: sin tildes ni ñ.'));
     caja.append(
       fila('País', campos.pais),
       fila('DNI', campos.numeroDocumento),
       fila('Fecha de nacimiento', campos.fechaNacimiento),
       fila('Sexo', campos.sexo),
       fila('Vencimiento', campos.vencimiento),
-      fila('Apellidos', campos.apellidos.join(' / '), `${campos.apellidos.length} parte(s), separadas por «/».`),
-      fila('Nombres', campos.nombres, 'La MRZ no lleva tildes ni ñ: anota cómo aparece la ñ.')
+      cruzado('Apellido paterno', a && a.apellidoPaterno, campos.apellidos.join(' ')),
+      cruzado('Apellido materno', a && a.apellidoMaterno, '(la MRZ no lo trae)'),
+      cruzado('Nombres', a && a.nombres, campos.nombres)
     );
     plantilla = plantillaAnonima(r.mrz.lineas.join('\n'));
+    if (a) {
+      plantilla += '\n\nanverso: ' + ['apellidoPaterno', 'apellidoMaterno', 'nombres']
+        .map((k) => `${k} ${a[k].estado} ${plantillaAnonima(a[k].valor || (a[k].opciones || []).join(' / '))}`).join('; ');
+    }
   }
   buscar('#resultado-tipo').textContent = tipo;
   buscar('#plantilla').textContent = plantilla;
