@@ -1009,3 +1009,13 @@ pre.plantilla {
 .alta-dni .boton { width: 100%; }
 .alta-dni-nota:not(:empty) { margin-top: var(--e3); }
 .aviso-texto { color: var(--aviso); font-weight: 600; margin: var(--e2) 0; }
+
+/* Inicio: invitación a decir quién usa el teléfono */
+.nota-perfil { margin-top: var(--e3); padding: var(--e3) var(--e4); border-radius: var(--r-m); background: var(--superficie); }
+.nota-perfil p { margin: 0 0 var(--e2); }
+
+/* Juntar la lista de dos teléfonos con un QR */
+.juntar-qr { margin-top: var(--e4); }
+.qr-caja { display: flex; justify-content: center; padding: var(--e3); background: #fff; border-radius: var(--r-m); }
+.qr-lienzo { width: min(100%, 360px); height: auto; image-rendering: pixelated; }
+.qr-parte { min-height: 1.5em; margin: var(--e3) 0; font-weight: 600; text-align: center; }

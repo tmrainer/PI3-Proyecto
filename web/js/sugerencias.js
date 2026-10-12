@@ -34,6 +34,31 @@ export function sugerenciasEncabezado(config) {
 }
 
 /**
+ * Encabezado y firmas a partir del perfil de quien usa el teléfono
+ * (perfil.js): la presidenta propone sus datos en los campos de presidenta y
+ * la tesorera en los suyos; «apoyo» no propone nada. Mismo formato que
+ * sugerenciasEncabezado: se muestra fuera de los campos y entra si se acepta.
+ * @param {{nombre: string, rol: string, dni: string, celular: string}} perfil
+ */
+export function sugerenciasPerfil(perfil) {
+  if (!perfil) return {};
+  const proc = 'de tu perfil';
+  const campos = {
+    presidenta: {
+      nombrePresidenta: perfil.nombre, dniPresidenta: perfil.dni, celular: perfil.celular,
+      nombrePresidentaFirma: perfil.nombre, dniPresidentaFirma: perfil.dni
+    },
+    tesorera: { nombreTesorera: perfil.nombre, dniTesorera: perfil.dni }
+  }[perfil.rol] || {};
+  const out = {};
+  for (const [c, v] of Object.entries(campos)) {
+    const p = propuesta(v, proc);
+    if (p) out[c] = p;
+  }
+  return out;
+}
+
+/**
  * RUC ya usado con un proveedor que la usuaria escribió antes.
  * Solo busca entre sus propias rendiciones. Nunca consulta a nadie.
  */

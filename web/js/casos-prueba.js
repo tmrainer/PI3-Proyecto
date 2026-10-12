@@ -30,7 +30,8 @@ import {
   parsearCadenaDni, CAMPOS, digitoControlIcao, leerMrzTd1, buscarMrzTd1, unirFilasOcr, leerPdf417DniAzul,
   plantillaAnonima, combinarMrzYAnverso, normalizarLetras
 } from './escaneo-dni.js';
-import { sugerirRucProveedor, sugerenciasEncabezado } from './sugerencias.js';
+import { sugerirRucProveedor, sugerenciasEncabezado, sugerenciasPerfil } from './sugerencias.js';
+import { codificarListaQr, decodificarParteQr, sumarMarcasRecibidas } from './lista-qr.js';
 
 // Ejemplo de MRZ TD1 de la norma ICAO 9303-5 (persona y país inventados).
 const MRZ_ICAO = [
@@ -1151,7 +1152,79 @@ export const casos = [
     }
   },
 
+  // ------------------------------------------------- lista por QR entre teléfonos
+  {
+    grupo: 'Lista por QR',
+    nombre: 'Ida y vuelta: lo que sale en el QR vuelve igual, solo con cifras',
+    fn: () => {
+      const marcas = [{ dni: '00000001', menu: 'normal' }, { dni: '00000002', menu: 'ayuda_social' }];
+      const partes = codificarListaQr({ fecha: '2026-10-12', marcas });
+      igual(partes.length, 1);
+      ok(/^\d+$/.test(partes[0]), 'solo cifras (el QR más chico)');
+      const r = decodificarParteQr(partes[0]);
+      igual(r.fecha, '2026-10-12');
+      igual(r.parte, 1);
+      igual(r.total, 1);
+      igual(JSON.stringify(r.marcas), JSON.stringify(marcas));
+    }
+  },
+  {
+    grupo: 'Lista por QR',
+    nombre: 'Muchas personas: se parte en varios códigos; sin DNI de 8 cifras no va',
+    fn: () => {
+      const marcas = Array.from({ length: 100 }, (_, i) => ({ dni: String(10000000 + i), menu: 'normal' }));
+      marcas.push({ dni: '123', menu: 'normal' });
+      const partes = codificarListaQr({ fecha: '2026-10-12', marcas });
+      igual(partes.length, 2);
+      const total = partes.map(decodificarParteQr).reduce((n, p) => n + p.marcas.length, 0);
+      igual(total, 100, 'el DNI corto no entra');
+      igual(codificarListaQr({ fecha: '2026-10-12', marcas: [] }).length, 0);
+      igual(codificarListaQr({ fecha: 'ayer', marcas }).length, 0);
+    }
+  },
+  {
+    grupo: 'Lista por QR',
+    nombre: 'Un QR que no es de esta app, o mal leído, no se usa',
+    fn: () => {
+      for (const t of ['', null, 'https://ejemplo.pe', '81', '8120261012010100100000001', '812026101201010010000000019']) {
+        igual(decodificarParteQr(t), null, JSON.stringify(t));
+      }
+    }
+  },
+  {
+    grupo: 'Lista por QR',
+    nombre: 'Sumar lo recibido: solo quien falta; dice cuántos ya estaban y cuántos no están en el padrón',
+    fn: () => {
+      const personas = [{ id: 'a', numeroDocumento: '00000001' }, { id: 'b', numeroDocumento: '00000002' }];
+      const r = sumarMarcasRecibidas([
+        { dni: '00000001', menu: 'ayuda_social' }, { dni: '00000002', menu: 'normal' },
+        { dni: '00000009', menu: 'normal' }, { dni: '00000001', menu: 'normal' }
+      ], personas, new Set(['b']));
+      igual(JSON.stringify(r.agregar), JSON.stringify([{ afiliadoId: 'a', tipoMenu: 'ayuda_social' }]));
+      igual(r.yaEstaban, 1);
+      igual(r.desconocidos, 1);
+    }
+  },
+
   // ---------------------------------------------------------------- sugerencias
+  {
+    grupo: 'Sugerencias',
+    nombre: 'Perfil: la presidenta propone sus datos y sus firmas; la tesorera, los suyos; apoyo, nada',
+    fn: () => {
+      const base = { nombre: 'Rosa Prueba Ficticia', dni: '00000001', celular: '900000001' };
+      const pres = sugerenciasPerfil({ ...base, rol: 'presidenta' });
+      igual(pres.nombrePresidenta.valor, 'Rosa Prueba Ficticia');
+      igual(pres.dniPresidentaFirma.valor, '00000001');
+      igual(pres.celular.procedencia, 'de tu perfil');
+      ok(!('nombreTesorera' in pres));
+      const tes = sugerenciasPerfil({ ...base, rol: 'tesorera' });
+      igual(Object.keys(tes).sort().join(','), 'dniTesorera,nombreTesorera');
+      igual(Object.keys(sugerenciasPerfil({ ...base, rol: 'apoyo' })).length, 0);
+      igual(Object.keys(sugerenciasPerfil({ nombre: '', rol: 'presidenta', dni: '', celular: '' })).length, 0,
+        'sin datos no propone vacíos');
+      igual(Object.keys(sugerenciasPerfil(null)).length, 0);
+    }
+  },
   {
     grupo: 'Sugerencias',
     nombre: 'Toda sugerencia viaja con su procedencia',

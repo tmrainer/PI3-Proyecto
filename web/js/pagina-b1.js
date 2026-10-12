@@ -7,7 +7,8 @@ import {
 } from './modelo.js';
 import { totales, gastoPorOrigen, proponerPeriodo } from './calculos.js';
 import { validarRendicion } from './validaciones.js';
-import { sugerenciasEncabezado, instantaneaCentro } from './sugerencias.js';
+import { sugerenciasEncabezado, sugerenciasPerfil, instantaneaCentro } from './sugerencias.js';
+import { leerPerfil } from './perfil.js';
 import { alertaProximaEntrega } from './alertas.js';
 import {
   buscar, crearElemento, montarCabecera, pintarPanel,
@@ -158,7 +159,8 @@ function montarSugerenciasEncabezado() {
   const caja = buscar('#sugerencias-encabezado');
   caja.textContent = '';
   // Una sugerencia NUNCA se aplica sola: solo se ofrece (AGENTS.md §2).
-  const props = sugerenciasEncabezado(config);
+  // Lo del perfil manda sobre la rendición anterior: es lo más actual.
+  const props = { ...sugerenciasEncabezado(config), ...sugerenciasPerfil(leerPerfil()) };
   const pendientes = Object.entries(props).filter(([campo]) => {
     if (campo === 'tipoCentro') return !rendicion.tipoCentro;
     return !String(rendicion[campo] || '').trim();
@@ -167,12 +169,13 @@ function montarSugerenciasEncabezado() {
 
   caja.append(crearElemento('p', {
     clase: 'pista',
-    texto: `Tienes los datos del centro ${pendientes[0][1].procedencia}. Puedes usarlos o escribirlos de nuevo.`
+    texto: `Tienes datos guardados (${[...new Set(pendientes.map(([, p]) => p.procedencia))].join(' y ')}). ` +
+      'Puedes usarlos o escribirlos de nuevo.'
   }));
   caja.append(crearElemento('div', { clase: 'acciones' }, [
     crearElemento('button', {
       type: 'button', clase: 'boton secundario',
-      texto: `Usar los datos del centro (${pendientes.length})`,
+      texto: `Usar los datos guardados (${pendientes.length})`,
       onclick: () => {
         for (const [campo, p] of pendientes) {
           if (campo === 'tipoCentro') {

@@ -13,6 +13,7 @@ import {
   buscar, crearElemento, icono, montarCabecera,
   pintarAvisosAlmacenamiento, mostrarBienvenida, bienvenidaVista, exportarTodo
 } from './ui.js';
+import { perfilCompleto, perfilOmitido, omitirPerfil } from './perfil.js';
 
 const padron = leer(CLAVES.padron, padronVacio());
 const config = Object.assign(configVacia(), leer(CLAVES.config, {}));
@@ -80,6 +81,26 @@ if (dias !== null && dias < 14) {
   );
 } else {
   nota.hidden = true;
+}
+
+// ---- quién usa este teléfono ----
+// Una invitación, no un paso obligatorio: se puede decir «Ahora no».
+const notaPerfil = buscar('#nota-perfil');
+if (!perfilCompleto() && !perfilOmitido()) {
+  notaPerfil.hidden = false;
+  notaPerfil.append(
+    crearElemento('p', {}, [
+      crearElemento('strong', { texto: '¿Quién usa este teléfono? ' }),
+      'Con tu nombre y tu rol, la app te propone tus datos en el B-1.'
+    ]),
+    crearElemento('div', { clase: 'acciones' }, [
+      crearElemento('a', { clase: 'boton diminuto', href: './ajustes.html#perfil', texto: 'Poner mis datos' }),
+      crearElemento('button', {
+        type: 'button', clase: 'boton diminuto secundario', texto: 'Ahora no',
+        onclick: () => { omitirPerfil(); notaPerfil.hidden = true; }
+      })
+    ])
+  );
 }
 
 // La primera vez, con el padrón vacío, se explica cómo se usa.

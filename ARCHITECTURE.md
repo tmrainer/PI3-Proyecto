@@ -177,6 +177,20 @@ cuando el teléfono queda libre. En el APK, el fondo de la ventana y del
 WebView es el de la app (`res/values*/fondo.xml`, `MainActivity`), sin el
 cuadro negro entre la pantalla de inicio y la primera pantalla.
 
+**Perfil de quien usa el teléfono** (`perfil.js`, clave `pi3.perfil`, no va en
+las copias): nombre, rol (presidenta, tesorera o apoyo) y, opcional, DNI y
+celular. Se llena en Ajustes («Quién usa este teléfono»); el Inicio lo
+sugiere una vez («Ahora no» lo descarta). El B-1 lo usa como otra fuente de
+`sugerencias.js` (`sugerenciasPerfil`: se propone, no se aplica solo) y la
+inscripción con DNI escribe ese nombre en «quién revisó».
+
+**Juntar la lista de dos teléfonos** (`lista-qr.js` puro, `camara-qr.js`):
+un teléfono muestra un QR con las marcas del día (solo cifras: DNI y menú;
+80 personas por código, varios que se turnan si hacen falta) y el otro lo lee
+con `BarcodeDetector` y suma, por DNI, solo a quien faltaba; se puede
+deshacer. El QR lo dibuja `vendor/qrcode-generator.js`, la única librería
+(MIT, autorizada; ver AGENTS.md §3).
+
 **Lector de DNI (en fase de muestras).** `escaneo-dni.js` (puro) lee la zona
 de lectura mecánica TD1 con sus dígitos de control y, sin verificar, el PDF417
 del DNI azul. `camara-dni.js` abre la cámara y busca a la vez el PDF417

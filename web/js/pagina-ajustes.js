@@ -13,6 +13,7 @@ import {
   buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, botonBorrarTodo,
   pintarAvisosAlmacenamiento, mostrarBienvenida, decir, puedeHablar, sincronizarBarras, avisoAbajo
 } from './ui.js';
+import { leerPerfil, guardarPerfil, ROLES } from './perfil.js';
 
 montarCabecera('ajustes', 'De este teléfono');
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
@@ -49,6 +50,24 @@ buscar('#ultima-copia').textContent = dias === null
   : dias === 0 ? 'Tu última copia es de hoy.'
     : `Tu última copia es del ${fechaLarga(ultima).toLowerCase()} (hace ${cuantos(dias, 'día')}).`;
 if (dias === null || dias >= 14) buscar('#ultima-copia').classList.add('pendiente');
+
+// ---- quién usa este teléfono ----
+const perfil = leerPerfil();
+const avisoPerfil = buscar('#perfil-guardado');
+function guardarElPerfil() {
+  guardarPerfil(perfil);
+  avisoPerfil.textContent = 'Guardado en este teléfono.';
+}
+for (const [id, prop, soloCifras] of [['perfil-nombre', 'nombre', false], ['perfil-dni', 'dni', true], ['perfil-celular', 'celular', true]]) {
+  const el = buscar('#' + id);
+  el.value = perfil[prop] || '';
+  el.addEventListener('input', () => {
+    if (soloCifras) el.value = el.value.replace(/\D/g, '');
+    perfil[prop] = el.value.trim();
+    guardarElPerfil();
+  });
+}
+elegirUno(buscar('#opciones-rol'), 'rol', ROLES, perfil.rol, (valor) => { perfil.rol = valor; guardarElPerfil(); });
 
 // ---- aspecto ----
 elegirUno(buscar('#opciones-tema'), 'tema',
@@ -89,4 +108,4 @@ buscar('#como-se-usa').addEventListener('click', () => mostrarBienvenida());
 buscar('#version-app').textContent = `Versión ${VERSION_APP}`;
 
 // Llegar con #copia (desde el aviso de copia) deja esa sección a la vista.
-if (location.hash === '#copia') buscar('#copia').scrollIntoView({ block: 'start' });
+if (location.hash === '#copia' || location.hash === '#perfil') buscar(location.hash).scrollIntoView({ block: 'start' });

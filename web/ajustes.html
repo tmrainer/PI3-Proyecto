@@ -53,6 +53,31 @@
     <div id="barra-datos"></div>
   </section>
 
+  <section class="bloque" id="perfil" aria-labelledby="titulo-perfil">
+    <h2 id="titulo-perfil">Quién usa este teléfono</h2>
+    <p class="pista">Con tu nombre y tu rol, la app te propone tus datos en el B-1 y escribe tu nombre al
+      inscribir con el DNI. Se queda en este teléfono: no va en las copias.</p>
+    <div class="campo">
+      <label for="perfil-nombre">Tu nombre completo</label>
+      <input id="perfil-nombre" type="text" autocomplete="name">
+    </div>
+    <fieldset style="margin-top:10px">
+      <legend>Tu rol en la olla</legend>
+      <div class="opciones" id="opciones-rol"></div>
+    </fieldset>
+    <div class="rejilla dos" style="margin-top:10px">
+      <div class="campo">
+        <label for="perfil-dni">Tu DNI (opcional)</label>
+        <input id="perfil-dni" type="text" inputmode="numeric" maxlength="8" autocomplete="off">
+      </div>
+      <div class="campo">
+        <label for="perfil-celular">Tu celular (opcional)</label>
+        <input id="perfil-celular" type="tel" inputmode="numeric" maxlength="9" autocomplete="tel-national">
+      </div>
+    </div>
+    <p class="estado-guardado" id="perfil-guardado" role="status" aria-live="polite"></p>
+  </section>
+
   <section class="bloque" aria-labelledby="titulo-aspecto">
     <h2 id="titulo-aspecto">Aspecto</h2>
     <fieldset>

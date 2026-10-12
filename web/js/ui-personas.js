@@ -9,6 +9,7 @@ import {
 import { validarAfiliado, indicePadron } from './validaciones.js';
 import { estado } from './estado.js';
 import { lectoresDni, abrirCamaraDni } from './camara-dni.js';
+import { leerPerfil } from './perfil.js';
 import { buscar, crearElemento, campo, icono, chip, avatarPersona } from './ui.js';
 
 // ctx: { fechaRef, busqueda, filtro, conteo, onCambio(), onRepintar() }
@@ -72,7 +73,8 @@ function montarLecturaDni() {
   const boton = crearElemento('button', { type: 'button', clase: 'boton secundario' },
     [icono('camara', { tam: 22 }), 'Leer el DNI con la cámara']);
   const nota = crearElemento('div', { clase: 'alta-dni-nota', role: 'status', 'aria-live': 'polite' });
-  const fVerifica = crearElemento('input', { id: 'altaVerifica', type: 'text', autocomplete: 'name' });
+  // Quien usa el teléfono es quien revisa: su nombre del perfil, editable.
+  const fVerifica = crearElemento('input', { id: 'altaVerifica', type: 'text', autocomplete: 'name', value: leerPerfil().nombre });
   const verifica = crearElemento('div', { clase: 'campo', hidden: true }, [
     crearElemento('label', { for: 'altaVerifica', clase: 'obligatoria', texto: 'Quién revisó los datos con el DNI' }), fVerifica
   ]);

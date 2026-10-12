@@ -24,7 +24,7 @@ const ARCHIVOS = [
   './icono.svg', './icono-maskable.svg', './icono-180.png', './icono-192.png',
   './icono-512.png', './icono-maskable-512.png',
   './js/alertas.js', './js/avisos-nativos.js', './js/calculos.js', './js/camara-dni.js', './js/errores.js', './js/escaneo-dni.js', './js/estado.js',
-  './js/importar.js', './js/modelo.js', './js/pagina-asistencia.js', './js/pagina-inicio.js', './js/preferencias.js', './fuentes/atkinson-hyperlegible-next-400.woff2', './fuentes/atkinson-hyperlegible-next-600.woff2', './fuentes/atkinson-hyperlegible-next-700.woff2', './img/utec-color.webp', './img/utec-blanco.webp', './ajustes.html', './probar-dni.html', './js/pagina-ajustes.js', './js/pagina-probar-dni.js',
+  './js/importar.js', './js/modelo.js', './js/pagina-asistencia.js', './js/pagina-inicio.js', './js/perfil.js', './js/lista-qr.js', './js/camara-qr.js', './vendor/qrcode-generator.js', './js/preferencias.js', './fuentes/atkinson-hyperlegible-next-400.woff2', './fuentes/atkinson-hyperlegible-next-600.woff2', './fuentes/atkinson-hyperlegible-next-700.woff2', './img/utec-color.webp', './img/utec-blanco.webp', './ajustes.html', './probar-dni.html', './js/pagina-ajustes.js', './js/pagina-probar-dni.js',
   './js/pagina-b1.js', './js/pagina-calendario.js', './js/pagina-padron.js',
   './js/sugerencias.js', './js/ui-asistencia.js',
   './js/ui-importar.js', './js/ui.js', './js/ui-personas.js', './js/ui-reportes.js',
