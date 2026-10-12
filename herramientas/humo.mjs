@@ -737,11 +737,11 @@ async function correr(base, cdp) {
     const FALTAN = `[...document.querySelectorAll('#hoy button')].find((b) => /falta|vinieron todos/.test(b.textContent)).click()`;
     await p.actuar(FALTAN);
     await p.actuar(TOCAR('Gama'));
-    const conFiltro = await p.eval(`document.querySelectorAll('#hoy .toque').length`);
+    const conFiltro = await p.eval(`document.querySelectorAll('#hoy .toque:not([hidden])').length`);
     await p.actuar(FALTAN);
     const r = await p.eval(`(() => {
       const b = [...document.querySelectorAll('#hoy .toque-nombre')].find((x) => x.textContent.includes('Gama'));
-      return { filas: document.querySelectorAll('#hoy .toque').length, gama: b && b.getAttribute('aria-pressed') };
+      return { filas: document.querySelectorAll('#hoy .toque:not([hidden])').length, gama: b && b.getAttribute('aria-pressed') };
     })()`);
     comprobar('filtrar y volver: la fila marcada sigue marcada',
       conFiltro === 1 && r.filas === 3 && r.gama === 'true', JSON.stringify({ conFiltro, ...r }));
@@ -873,7 +873,7 @@ async function correr(base, cdp) {
       const m = await import('./js/modelo.js');
       const id = (n) => 'f0000000-0000-4000-8000-' + String(n).padStart(12, '0');
       const afiliados = Array.from({ length: 300 }, (_, i) => ({
-        id: id(i), apellidoPaterno: 'Prueba' + i, apellidoMaterno: '', nombres: 'Persona',
+        id: id(i), apellidoPaterno: i === 0 ? 'Huamán' : 'Prueba' + i, apellidoMaterno: '', nombres: 'Persona',
         numeroDocumento: String(10000000 + i), tipoDocumento: 'dni', fechaNacimiento: '1990-01-01',
         grupoEtarioManual: null, sexo: '', tipoAfiliado: i % 5 ? 'habitual' : 'caso_social',
         activo: true, altaEn: '2020-01-01', bajaEn: '', motivoBaja: '', origenDato: 'manual',
@@ -901,6 +901,20 @@ async function correr(base, cdp) {
     })()`);
     comprobar('con un año de datos, un toque marca al instante y todo se pone al día rápido',
       toque[0] < 50 && toque[1] < 200, `${toque[0]} ms / ${toque[1]} ms`);
+    // Se escribe como se habla: sin tildes, en mayúsculas, o el DNI.
+    const halla = await p.eval(`(() => {
+      const i = document.getElementById('hoy-buscar');
+      const ver = (q) => {
+        i.value = q; i.dispatchEvent(new Event('input'));
+        return [...document.querySelectorAll('#hoy .toque:not([hidden]) .toque-nombre')].map((b) => b.textContent);
+      };
+      const r = { sinTilde: ver('HUAMAN'), dni: ver('10000007'), nada: ver('zzz').length };
+      ver('');
+      return r;
+    })()`);
+    comprobar('buscar en la lista de hoy: sin tildes y por DNI',
+      halla.sinTilde.length === 1 && halla.sinTilde[0].includes('Huamán') &&
+      halla.dni.length === 1 && halla.dni[0].includes('Prueba7') && halla.nada === 0, JSON.stringify(halla));
     await p.ir(`${base}/padron.html`);
     const padron = await p.eval(`Math.round(performance.getEntriesByType('navigation')[0].domContentLoadedEventEnd)`);
     comprobar('con un año de datos, Padrón abre en menos de 0,8 s', padron < 800, `${padron} ms`);
@@ -929,6 +943,19 @@ async function correr(base, cdp) {
     })()`);
     comprobar('celular: el menú queda abajo', r.navAbajo, JSON.stringify(r));
     comprobar('celular: la primera persona se ve al abrir', r.filaVisible, JSON.stringify(r));
+    // Con una lista larga, lo que se toca al pie de la pantalla tiene que ser
+    // el menú, no una fila dibujada encima (pasó con content-visibility).
+    await p.eval(`import('./js/modelo.js').then((m) => m.guardar('b1.padron.v1', { version: 3, atenciones: [],
+      afiliados: Array.from({ length: 40 }, (_, i) => ({ id: 'f0000000-0000-4000-8000-' + String(i).padStart(12, '0'),
+        apellidoPaterno: 'Prueba' + i, apellidoMaterno: '', nombres: 'Persona', numeroDocumento: String(20000000 + i),
+        tipoDocumento: 'dni', fechaNacimiento: '1990-01-01', grupoEtarioManual: null, sexo: '', tipoAfiliado: 'habitual',
+        activo: true, altaEn: '2020-01-01', bajaEn: '', motivoBaja: '', origenDato: 'manual', verificadoPor: '', nota: '' })) }))`);
+    const tapados = [];
+    for (const nombre of ['asistencia', 'padron']) {
+      await p.ir(`${base}/${nombre}.html`);
+      if (!await p.eval(`!!document.elementFromPoint(innerWidth / 2, innerHeight - 20).closest('.nav')`)) tapados.push(nombre);
+    }
+    comprobar('celular: con una lista larga, el menú de abajo queda encima', tapados.length === 0, tapados.join(' '));
     comprobar('celular: sin errores de consola', p.errores.length === 0, p.errores.join(' | '));
     await p.cerrar();
   }
@@ -970,7 +997,7 @@ async function sinServidor(base, cdp, servidor) {
     if (!ok) fallan.push(nombre);
   }
   await p.ir(`${base}/asistencia.html`);
-  const personas = await p.eval(`document.querySelectorAll('#hoy .toque').length`);
+  const personas = await p.eval(`document.querySelectorAll('#hoy .toque:not([hidden])').length`);
   comprobar('sin servidor: las cinco páginas abren', fallan.length === 0, fallan.join(' '));
   comprobar('sin servidor: la asistencia muestra el padrón', personas === 3, String(personas));
   comprobar('sin servidor: sin errores de consola', p.errores.length === 0, p.errores.join(' | '));

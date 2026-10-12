@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- El fondo de la app (la variable «fondo» de estilos.css), detrás de la página
+         mientras carga: sin esto, entre la pantalla de inicio y la primera
+         pantalla se veía un cuadro negro. -->
+    <color name="fondo_app">#f5f7f0</color>
+</resources>

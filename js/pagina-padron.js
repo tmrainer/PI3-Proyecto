@@ -98,7 +98,9 @@ if (location.hash === '#inscribir') abrirInscripcion();
 addEventListener('hashchange', () => { if (location.hash === '#inscribir') abrirInscripcion(); });
 montarImportacion(ctx);
 repintar();
-guardarYa();   // consolida la migración del padrón si la hubo
+// Consolida la migración del padrón si la hubo. Cuando el teléfono queda libre:
+// no hace falta para ver la pantalla, y escribir el padrón entero cuesta.
+(window.requestIdleCallback || setTimeout)(() => guardarYa(), { timeout: 2000 });
 vigilarPestanas(() => repintarConservandoVista(repintar));
 
 avisarAlSalirDelCampo(validar);

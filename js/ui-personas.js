@@ -1,7 +1,7 @@
 // ui-personas.js — inscribir, listar y editar personas del padrón.
 // Dibuja; no calcula ni valida: eso vive en calculos.js y validaciones.js.
 
-import { nombreCompleto, normalizarNombre, nuevoAfiliado, esIso, hoyIso, debounce, cuantos } from './modelo.js';
+import { nombreCompleto, normalizarNombre, ORDEN_NOMBRES, nuevoAfiliado, esIso, hoyIso, debounce, cuantos } from './modelo.js';
 import {
   grupoEtario, etiquetaGrupoEtario, edadEnFecha, resumenEtario, afiliadosActivos,
   TRAMOS_ETARIOS, TIPOS_AFILIADO
@@ -331,7 +331,7 @@ export function pintarListaPersonas(lista, ctx) {
   const indice = indicePadron(estado.padron);
   const conFiltro = estado.padron.afiliados
     .filter((a) => pasaFiltro(a, ctx, indice))
-    .sort((a, b) => nombreCompleto(a).localeCompare(nombreCompleto(b), 'es'));
+    .sort((a, b) => ORDEN_NOMBRES.compare(nombreCompleto(a), nombreCompleto(b)));
   incompletasPintadas = estado.padron.afiliados
     .filter((a) => a.activo && validarAfiliado(a, estado.padron, indice).some((x) => x.severidad === 'error')).length;
   const fichaFaltan = document.querySelector('#filtroAfiliado [data-valor="incompletas"]');

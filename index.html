@@ -18,6 +18,9 @@
 <link rel="stylesheet" href="./estilos.css">
 <script src="./js/errores.js"></script>
 <script src="./js/preferencias.js"></script>
+<!-- En el <head> para que blocking="render" valga: la página no se pinta
+     hasta que su módulo la arma (se ejecuta igual al terminar de leerla). -->
+<script type="module" blocking="render" src="./js/pagina-inicio.js"></script>
 </head>
 <body data-pagina="inicio">
 <a class="saltar-al-contenido" href="#principal">Saltar al contenido</a>
@@ -64,6 +67,5 @@
   <a class="enlace-ajustes" id="enlace-ajustes" href="./ajustes.html">Ajustes: copia de tus datos, letra, modo oscuro y voz</a>
 
 </main>
-<script type="module" blocking="render" src="./js/pagina-inicio.js"></script>
 </body>
 </html>

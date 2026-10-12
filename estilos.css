@@ -206,6 +206,10 @@ main:focus, [data-paso] > h2:focus { outline: none; }
      empieza debajo de la barra de estado; en una pestaña común vale 0. */
   padding-top: env(safe-area-inset-top, 0px);
   background: var(--marca); color: var(--marca-texto);
+  /* view-transition-name la vuelve una capa propia, y el menú de abajo (fijo)
+     vive dentro: sin un z-index aquí, las filas de las listas largas
+     (content-visibility, también capas propias) se pintaban encima del menú. */
+  position: relative; z-index: 20;
 }
 .cabecera-titulo {
   max-width: 980px; margin-inline: auto; padding: var(--e2) 6px var(--e2) var(--e4); min-height: 64px;
@@ -495,6 +499,13 @@ body[data-pagina="asistencia"] .panel { position: static; }
 }
 .lista-toque > :last-child, .persona:last-of-type, .dia:last-of-type, .imp-item:last-child,
 .mes-item:last-child, .agenda-item:last-child, .revision-pendientes li:last-child { border-bottom: 0; }
+
+/* Listas largas (cientos de personas, un año de días): el teléfono solo
+   dibuja las filas que están a la vista. Las de afuera conservan un alto
+   estimado, y el real una vez vistas, para que la barra no salte. */
+.lista-toque > .toque, .persona, .dia {
+  content-visibility: auto; contain-intrinsic-size: auto 64px;
+}
 
 /* Asistencia: una fila, un toque */
 .lista-toque { display: grid; grid-template-columns: minmax(0, 1fr); }

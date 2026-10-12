@@ -18,6 +18,9 @@
 <link rel="stylesheet" href="./estilos.css">
 <script src="./js/errores.js"></script>
 <script src="./js/preferencias.js"></script>
+<!-- En el <head> para que blocking="render" valga: la página no se pinta
+     hasta que su módulo la arma (se ejecuta igual al terminar de leerla). -->
+<script type="module" blocking="render" src="./js/pagina-asistencia.js"></script>
 </head>
 <body data-pagina="asistencia">
 <a class="saltar-al-contenido" href="#principal">Saltar al contenido</a>
@@ -100,6 +103,5 @@
 
 
 </main>
-<script type="module" blocking="render" src="./js/pagina-asistencia.js"></script>
 </body>
 </html>

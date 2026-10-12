@@ -4,15 +4,23 @@
 // (habitual -> normal, ayuda social -> menú de ayuda social) y solo hace falta
 // tocarlo cuando ese día come otro. Sin desplegables. Ver AGENTS.md §6.5.
 
-import { nuevaAtencion, nombreCompleto, aDdMmAa, hoyIso, aCentimos, formatearSoles, cuantos } from './modelo.js';
+import {
+  nuevaAtencion, nombreCompleto, normalizarNombre, ORDEN_NOMBRES, aDdMmAa, hoyIso, aCentimos,
+  formatearSoles, cuantos
+} from './modelo.js';
 import {
   afiliadosActivos, grupoEtario, etiquetaGrupoEtario, menuPorDefecto,
-  desgloseDelDia, recaudacionDelDiaCent, asistio, menuDe, asistenciasConTodos, sinInscribirDelDia
+  desgloseDelDia, recaudacionDelDiaCent, asistio, asistenciasDelDia, menuDe, asistenciasConTodos, sinInscribirDelDia
 } from './calculos.js';
 import { estado, preciosActuales } from './estado.js';
 import { crearElemento, campo, icono, vigilarAltoFijo, chip, avatarPersona, avisoAbajo, vibrar, estadoVacio } from './ui.js';
 
 // ctx: { fechaRef, titulo, onCambio(), onRepintar(), onResumen() }
+
+/** Lo que se busca de una persona: nombre sin tildes ni mayúsculas, y su DNI. */
+function claveBusqueda(p) {
+  return `${normalizarNombre(nombreCompleto(p))} ${p.numeroDocumento || ''}`;
+}
 
 // ----------------------------------------- asistencia: una fila, un toque
 //
@@ -143,96 +151,6 @@ function contadorSinInscribir(at, alCambiar) {
 function fichaAtencion(at, ctx) {
   const idp = at.id.slice(0, 8);
 
-  const fFecha = crearElemento('input', { id: `at-fecha-${idp}`, type: 'date', value: at.fecha || '' });
-  fFecha.addEventListener('input', () => {
-    at.fecha = fFecha.value;
-    pintarLista();
-    refrescarResumenDia();
-    ctx.onCambio();
-  });
-
-  const soles = (prop, id) => {
-    const el = crearElemento('input', {
-      id, type: 'text', inputmode: 'decimal', placeholder: '0.00', value: formatearSoles(at[prop])
-    });
-    el.addEventListener('input', () => {
-      at[prop] = aCentimos(el.value);
-      at.precioTomadoDeConfig = false;
-      refrescarResumenDia();
-      ctx.onCambio();
-    });
-    return el;
-  };
-  const fPrecioNormal = soles('precioMenuNormalCent', `at-pn-${idp}`);
-  const fPrecioAyuda = soles('precioMenuAyudaSocialCent', `at-pa-${idp}`);
-
-  const fNota = crearElemento('input', { id: `at-nota-${idp}`, type: 'text', value: at.nota || '', autocomplete: 'off' });
-  fNota.addEventListener('input', () => { at.nota = fNota.value; ctx.onCambio(); });
-
-  const contadores = crearElemento('div', { clase: 'resumen-chips' });
-  const avisoLegado = crearElemento('p', { clase: 'asistencia-resumen' });
-
-  function refrescarResumenDia() {
-    const d = desgloseDelDia(at);
-    const recaudado = recaudacionDelDiaCent(at);
-    contadores.textContent = '';
-    contadores.append(
-      chip(`Raciones`, `${d.total}`),
-      chip(`Normal`, `${d.normal}`),
-      chip(`Ayuda social`, `${d.ayudaSocial}`),
-      chip('Recaudado', recaudado === null ? '—' : `S/ ${formatearSoles(recaudado)}`)
-    );
-    avisoLegado.textContent = d.origen === 'legado'
-      ? `Estas ${d.total} raciones vienen anotadas a mano de la versión anterior. ` +
-        'Si marcas la asistencia, pasarán a contarse de la lista.'
-      : '';
-  }
-
-  // ---- lista de un toque ----
-  const buscador = crearElemento('input', {
-    id: `at-buscar-${idp}`, type: 'search', placeholder: 'Buscar…', autocomplete: 'off'
-  });
-  const listaAsistencia = crearElemento('div', { clase: 'lista-toque' });
-  let filtro = '';
-  buscador.addEventListener('input', () => { filtro = buscador.value.trim().toLowerCase(); pintarLista(); });
-
-  function pintarLista() {
-    listaAsistencia.textContent = '';
-    const activos = afiliadosActivos(estado.padron, at.fecha)
-      .filter((p) => !filtro || nombreCompleto(p).toLowerCase().includes(filtro))
-      .sort((a, b) => nombreCompleto(a).localeCompare(nombreCompleto(b), 'es'));
-
-    if (activos.length === 0) {
-      listaAsistencia.append(crearElemento('p', {
-        clase: 'pista',
-        texto: filtro ? 'Nadie coincide con esa búsqueda.'
-          : 'No hay personas activas en el padrón para esa fecha.'
-      }));
-      return;
-    }
-    for (const persona of activos) listaAsistencia.append(filaToque(at, persona, ctx, refrescarTodo));
-  }
-
-  function marcarTodos(marcar) {
-    const activos = afiliadosActivos(estado.padron, at.fecha);
-    const antes = { asistencias: asistenciasDelDiaCopia(at), legado: at.legado };
-    if (marcar) {
-      at.legado = null;
-      at.asistencias = asistenciasConTodos(at, activos);
-    } else {
-      at.asistencias = [];
-    }
-    const repintar = () => { pintarLista(); if (caja._refrescar) caja._refrescar(); ctx.onCambio(); ctx.onResumen(); };
-    repintar();
-    avisoAbajo(marcar ? 'Marcaste a todos' : 'Quitaste a todos', () => {
-      at.asistencias = antes.asistencias;
-      at.legado = antes.legado;
-      repintar();
-    });
-  }
-
-  refrescarResumenDia();
-
   const esHoy = at.fecha === hoyIso();
   const resumenCorto = crearElemento('span', { clase: 'dia-resumen' });
   function refrescarResumenCorto() {
@@ -248,6 +166,10 @@ function fichaAtencion(at, ctx) {
     }
   }
   refrescarResumenCorto();
+
+  // Lo de adentro (campos, checklist, buscador) se arma al abrir el día: con
+  // un año de días, armarlo todo al cargar trababa la pantalla en un celular.
+  let refrescarResumenDia = () => {};
   const refrescarTodo = () => { refrescarResumenDia(); refrescarResumenCorto(); };
 
   const caja = crearElemento('details', {
@@ -261,12 +183,106 @@ function fichaAtencion(at, ctx) {
   ]);
   caja._refrescar = refrescarTodo;
 
-  // El cuerpo —y sobre todo el checklist— se construye al abrir el día, no antes.
   let cuerpo = null;
   caja.addEventListener('toggle', () => {
     if (!caja.open || cuerpo) return;
+    cuerpo = armarCuerpo();
+    caja.append(cuerpo);
+  });
+
+  function armarCuerpo() {
+    const fFecha = crearElemento('input', { id: `at-fecha-${idp}`, type: 'date', value: at.fecha || '' });
+    fFecha.addEventListener('input', () => {
+      at.fecha = fFecha.value;
+      pintarLista();
+      refrescarResumenDia();
+      ctx.onCambio();
+    });
+
+    const soles = (prop, id) => {
+      const el = crearElemento('input', {
+        id, type: 'text', inputmode: 'decimal', placeholder: '0.00', value: formatearSoles(at[prop])
+      });
+      el.addEventListener('input', () => {
+        at[prop] = aCentimos(el.value);
+        at.precioTomadoDeConfig = false;
+        refrescarResumenDia();
+        ctx.onCambio();
+      });
+      return el;
+    };
+    const fPrecioNormal = soles('precioMenuNormalCent', `at-pn-${idp}`);
+    const fPrecioAyuda = soles('precioMenuAyudaSocialCent', `at-pa-${idp}`);
+
+    const fNota = crearElemento('input', { id: `at-nota-${idp}`, type: 'text', value: at.nota || '', autocomplete: 'off' });
+    fNota.addEventListener('input', () => { at.nota = fNota.value; ctx.onCambio(); });
+
+    const contadores = crearElemento('div', { clase: 'resumen-chips' });
+    const avisoLegado = crearElemento('p', { clase: 'asistencia-resumen' });
+
+    function pintarResumenDia() {
+      const d = desgloseDelDia(at);
+      const recaudado = recaudacionDelDiaCent(at);
+      contadores.textContent = '';
+      contadores.append(
+        chip(`Raciones`, `${d.total}`),
+        chip(`Normal`, `${d.normal}`),
+        chip(`Ayuda social`, `${d.ayudaSocial}`),
+        chip('Recaudado', recaudado === null ? '—' : `S/ ${formatearSoles(recaudado)}`)
+      );
+      avisoLegado.textContent = d.origen === 'legado'
+        ? `Estas ${d.total} raciones vienen anotadas a mano de la versión anterior. ` +
+          'Si marcas la asistencia, pasarán a contarse de la lista.'
+        : '';
+    }
+
+    // ---- lista de un toque ----
+    const buscador = crearElemento('input', {
+      id: `at-buscar-${idp}`, type: 'search', placeholder: 'Buscar…', autocomplete: 'off'
+    });
+    const listaAsistencia = crearElemento('div', { clase: 'lista-toque' });
+    let filtro = '';
+    buscador.addEventListener('input', () => { filtro = normalizarNombre(buscador.value); pintarLista(); });
+
+    function pintarLista() {
+      listaAsistencia.textContent = '';
+      const activos = afiliadosActivos(estado.padron, at.fecha)
+        .filter((p) => !filtro || claveBusqueda(p).includes(filtro))
+        .sort((a, b) => ORDEN_NOMBRES.compare(nombreCompleto(a), nombreCompleto(b)));
+
+      if (activos.length === 0) {
+        listaAsistencia.append(crearElemento('p', {
+          clase: 'pista',
+          texto: filtro ? 'Nadie coincide con esa búsqueda.'
+            : 'No hay personas activas en el padrón para esa fecha.'
+        }));
+        return;
+      }
+      for (const persona of activos) listaAsistencia.append(filaToque(at, persona, ctx, refrescarTodo));
+    }
+
+    function marcarTodos(marcar) {
+      const activos = afiliadosActivos(estado.padron, at.fecha);
+      const antes = { asistencias: asistenciasDelDiaCopia(at), legado: at.legado };
+      if (marcar) {
+        at.legado = null;
+        at.asistencias = asistenciasConTodos(at, activos);
+      } else {
+        at.asistencias = [];
+      }
+      const repintar = () => { pintarLista(); if (caja._refrescar) caja._refrescar(); ctx.onCambio(); ctx.onResumen(); };
+      repintar();
+      avisoAbajo(marcar ? 'Marcaste a todos' : 'Quitaste a todos', () => {
+        at.asistencias = antes.asistencias;
+        at.legado = antes.legado;
+        repintar();
+      });
+    }
+
+    refrescarResumenDia = pintarResumenDia;
+    pintarResumenDia();
     pintarLista();
-    cuerpo = crearElemento('div', { clase: 'dia-cuerpo' }, [
+    return crearElemento('div', { clase: 'dia-cuerpo' }, [
       crearElemento('div', { clase: 'rejilla dos' }, [campo('Fecha', fFecha), campo('Nota', fNota)]),
       contadores,
       avisoLegado,
@@ -308,8 +324,7 @@ function fichaAtencion(at, ctx) {
         ])
       ])
     ]);
-    caja.append(cuerpo);
-  });
+  }
 
   if (esHoy) caja.open = true;      // el día de hoy arranca abierto
   return caja;
@@ -420,8 +435,15 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   }
   botonFaltan.addEventListener('click', alternarFaltan);
 
+  // Quiénes ya están marcados, de una vez: preguntarlo persona por persona
+  // recorría la lista del día por cada fila y se notaba con cientos.
+  function marcados() {
+    return new Set(asistenciasDelDia(at).map((x) => x.afiliadoId));
+  }
+
   function sinMarcar() {
-    return activos.filter((p) => !asistio(at, p.id)).length;
+    const m = marcados();
+    return activos.filter((p) => !m.has(p.id)).length;
   }
 
   function refrescarBotonFaltan() {
@@ -447,48 +469,59 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
     if (soloSinMarcar) pintarLista();
   };
 
+  // El orden y lo que se busca de cada persona se calculan una vez: buscar o
+  // filtrar solo oculta filas, sin rehacerlas ni volver a ordenar por tecla.
+  const ordenados = activos.slice().sort((a, b) => ORDEN_NOMBRES.compare(nombreCompleto(a), nombreCompleto(b)));
+  const claves = new Map(ordenados.map((p) => [p.id, claveBusqueda(p)]));
+  const vacio = crearElemento('div', { clase: 'lista-toque-vacia', hidden: true });
+
+  function armarFilas() {
+    lista.textContent = '';
+    filas.clear();
+    lista.append(vacio);
+    for (const persona of ordenados) {
+      const fila = filaToque(at, persona, ctx, alCambiar);
+      filas.set(persona.id, fila);
+      lista.append(fila);
+    }
+  }
+
   function pintarLista() {
     // Con el filtro puesto, la fila tocada desaparece: se conserva la posición
     // del foco para que el teclado pueda seguir bajando por la lista.
     const activo = document.activeElement;
-    const enLista = lista.contains(activo);
-    const i = enLista ? [...lista.querySelectorAll('.toque-nombre')].indexOf(activo) : -1;
+    const visiblesAntes = () => [...lista.querySelectorAll('.toque:not([hidden]) .toque-nombre')];
+    const i = lista.contains(activo) ? visiblesAntes().indexOf(activo) : -1;
 
-    lista.textContent = '';
-    const visibles = activos
-      .filter((p) => !filtroHoy || nombreCompleto(p).toLowerCase().includes(filtroHoy))
-      .filter((p) => !soloSinMarcar || !asistio(at, p.id))
-      .sort((a, b) => nombreCompleto(a).localeCompare(nombreCompleto(b), 'es'));
+    if (filas.size !== ordenados.length) armarFilas();
+    const aguja = normalizarNombre(filtroHoy);
+    const ya = soloSinMarcar ? marcados() : null;
+    let visibles = 0;
+    for (const persona of ordenados) {
+      const ve = (!aguja || claves.get(persona.id).includes(aguja)) && !(ya && ya.has(persona.id));
+      filas.get(persona.id).hidden = !ve;
+      if (ve) visibles += 1;
+    }
 
-    if (visibles.length === 0) {
-      // Una pantalla vacía es una invitación a hacer algo, no un aviso. Cuando
-      // falta el padrón entero, lo que hace falta es el camino para empezarlo.
-      if (activos.length === 0) {
-        lista.append(estadoVacio({
+    // Una pantalla vacía es una invitación a hacer algo, no un aviso. Cuando
+    // falta el padrón entero, lo que hace falta es el camino para empezarlo.
+    vacio.hidden = visibles > 0;
+    vacio.textContent = '';
+    if (visibles === 0) {
+      vacio.append(activos.length === 0
+        ? estadoVacio({
           icono: 'personas', titulo: 'Todavía no hay personas',
           texto: 'Para pasar lista, primero inscribe a quienes vienen a la olla.',
           boton: { texto: 'Inscribir a la primera persona', href: './padron.html#inscribir' }
-        }));
-      } else if (soloSinMarcar) {
-        lista.append(estadoVacio({ icono: 'ok', titulo: 'Lista completa', texto: 'Ya marcaste a todos.', tono: 'logrado' }));
-      } else {
-        lista.append(estadoVacio({ icono: 'buscar', titulo: 'Nadie coincide con esa búsqueda' }));
-      }
-      refrescarBotonFaltan();
-      return;
-    }
-    for (const persona of visibles) {
-      let fila = filas.get(persona.id);
-      if (!fila) {
-        fila = filaToque(at, persona, ctx, alCambiar);
-        filas.set(persona.id, fila);
-      }
-      lista.append(fila);
+        })
+        : soloSinMarcar
+          ? estadoVacio({ icono: 'ok', titulo: 'Lista completa', texto: 'Ya marcaste a todos.', tono: 'logrado' })
+          : estadoVacio({ icono: 'buscar', titulo: 'Nadie coincide con esa búsqueda', texto: 'Prueba con el apellido o el DNI.' }));
     }
     refrescarBotonFaltan();
 
     if (i >= 0) {
-      const botones = lista.querySelectorAll('.toque-nombre');
+      const botones = visiblesAntes();
       const destino = botones[Math.min(i, botones.length - 1)];
       if (destino) destino.focus({ preventScroll: true });
     }

@@ -74,10 +74,10 @@ En memoria, cada página comparte un único objeto `estado`
 
 | Acción                         | Dónde                         | Operación |
 |--------------------------------|-------------------------------|-----------|
-| Tocar el nombre de una persona | `filaToque()`, L66-73         | `push({ afiliadoId, tipoMenu })` o `filter()` para quitarla; pone `legado = null` |
-| Cambiar su menú ese día        | `filaToque()`, L80-83         | muta `reg.tipoMenu` |
-| «Marcar a todos» (días pasados)| `fichaAtencion()`, L173-180   | reemplaza el arreglo entero con `asistenciasConTodos()` (`calculos.js:215-220`), o lo vacía |
-| «Marcar a todos» (hoy)         | `pintarAsistenciaDeHoy()`, L429-435 | igual |
+| Tocar el nombre de una persona | `filaToque()`, L80-84         | `push({ afiliadoId, tipoMenu })` o `filter()` para quitarla; pone `legado = null` |
+| Cambiar su menú ese día        | `filaToque()`, L98            | muta `reg.tipoMenu` |
+| «Marcar a todos» (días pasados)| `fichaAtencion()`, L264-272   | reemplaza el arreglo entero con `asistenciasConTodos()` (`calculos.js:215-220`), o lo vacía |
+| «Marcar a todos» (hoy)         | `pintarAsistenciaDeHoy()`, L535-542 | igual |
 
 **Leen**: todo pasa por `asistenciasDelDia(at)` (`calculos.js:191-193`), que
 devuelve `[]` si el campo falta. La usan `asistio()`, `menuDe()`,
@@ -149,14 +149,27 @@ redefine esos valores, bajo `prefers-color-scheme: dark` (si no se eligió
 Una sola capa: secciones sobre el fondo y una superficie por lista (filas
 separadas por una línea), sin rayas de color al costado. Entre páginas,
 transición de vista (`@view-transition`) con la cabecera y el menú quietos; los
-módulos de cada página cargan con `blocking="render"`, para que se pinte de una
-vez y la transición capture la página completa. En el APK: barra de estado con
+módulos de cada página cargan en el `<head>` con `blocking="render"` (fuera
+del `<head>` no vale), para que se pinte de una vez y la transición capture la
+página completa. En el APK: barra de estado con
 íconos claros (`SystemBars`), pantalla de inicio de Android 12+
 (`res/values-v31/styles.xml`: la figura del ícono y, abajo, el logo de UTEC
 sin texto), ícono temático de Android 13 (`ic_launcher_monochrome`) y permiso
 de vibración. Letra: Atkinson Hyperlegible Next en `fuentes/` (licencia en
 `fuentes/OFL.txt`), precargada en cada página. Pantallas vacías con
 `estadoVacio()` (`ui.js`): dibujo, qué es el lugar y un solo botón.
+
+Teléfonos modestos (medido en un moto g77 con 300 personas y un año de días):
+las filas de las listas largas llevan `content-visibility: auto` y solo se
+dibujan las que están a la vista (por eso `.cabecera` tiene `z-index`: el menú
+de abajo vive dentro y si no las filas se pintaban encima). La lista de hoy
+se ordena una vez (`ORDEN_NOMBRES`, un `Intl.Collator`) y buscar o «ver los que
+faltan» solo ocultan filas; se busca sin tildes y por DNI, como en el Padrón.
+Los días pasados arman su contenido al abrirlos. Revisar todos los días va
+600 ms después del último toque, y el guardado de arranque (`guardarYa()`)
+cuando el teléfono queda libre. En el APK, el fondo de la ventana y del
+WebView es el de la app (`res/values*/fondo.xml`, `MainActivity`), sin el
+cuadro negro entre la pantalla de inicio y la primera pantalla.
 
 **App Android y avisos con la app cerrada.** `app-android/` empaqueta la app
 web con Capacitor (ver su `LEEME.md`); `copiar-web.mjs` copia los archivos de

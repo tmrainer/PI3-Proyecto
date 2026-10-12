@@ -339,6 +339,13 @@ export function nombreCompleto(afiliado) {
     .join(' ');
 }
 
+/**
+ * Orden alfabético en castellano (la ñ va después de la n), para listas de
+ * nombres: `lista.sort((a, b) => ORDEN_NOMBRES.compare(x, y))`. Armado una
+ * vez, es varias veces más rápido que localeCompare en cada comparación.
+ */
+export const ORDEN_NOMBRES = new Intl.Collator('es');
+
 /** Normaliza para comparar duplicados: sin tildes, sin dobles espacios, minúsculas. */
 export function normalizarNombre(texto) {
   return String(texto || '')

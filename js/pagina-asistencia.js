@@ -1,7 +1,7 @@
 // pagina-asistencia.js — controlador de asistencia.html (pasar lista).
 // Solo cablea: la interfaz vive en ui-asistencia.js, los cálculos en calculos.js.
 
-import { hoyIso, aCentimos, formatearSoles, nuevaAtencion, fechaLarga } from './modelo.js';
+import { hoyIso, aCentimos, formatearSoles, nuevaAtencion, fechaLarga, debounce } from './modelo.js';
 import { resumenEconomicoRaciones } from './calculos.js';
 import { validarAtenciones, validarPreciosMenu } from './validaciones.js';
 import {
@@ -69,8 +69,12 @@ function refrescar() {
   }
   buscar('#nota-precio').textContent = partes.join(' ');
 
-  validar();
+  validarPronto();
 }
+
+// Revisar todos los días es lo más caro de un toque (con un año de días, más
+// que marcar en sí): se hace cuando se deja de tocar, una vez por tanda.
+const validarPronto = debounce(() => validar(), 600);
 
 function validar() {
   const hallazgos = validarAtenciones(estado.padron)
@@ -121,7 +125,9 @@ buscar('#agregar-atencion').addEventListener('click', () => {
 });
 
 repintar();
-guardarYa();   // consolida la migración del padrón si la hubo
+// Consolida la migración del padrón si la hubo. Cuando el teléfono queda libre:
+// no hace falta para ver la pantalla, y escribir el padrón entero cuesta.
+(window.requestIdleCallback || setTimeout)(() => guardarYa(), { timeout: 2000 });
 vigilarPestanas(() => repintarConservandoVista(() => { pintarPrecios(); repintar(); }));
 
 avisarAlSalirDelCampo(validar);

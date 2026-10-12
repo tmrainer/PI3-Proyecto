@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- El mismo fondo, en modo oscuro (la variable «fondo» oscura de estilos.css). -->
+    <color name="fondo_app">#101712</color>
+</resources>
