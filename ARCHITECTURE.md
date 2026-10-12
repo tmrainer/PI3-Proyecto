@@ -136,7 +136,9 @@ asistencia está en `asistencia.html`. `montarCabecera()` arma el menú de abajo
 (ícono y palabra), la flecha para volver y el menú ⋮ (leer la pantalla en voz
 alta con `speechSynthesis`, ¿cómo se usa?, Ajustes). El menú de abajo, la flecha
 y el ⋮ vienen escritos en el HTML de cada página (así no parpadean en la
-transición); `montarCabecera()` solo les agrega el comportamiento. En `ui.js`
+transición); `montarCabecera()` solo les agrega el comportamiento. En la
+computadora y la tablet la app se ve igual que en el teléfono: el mismo menú
+de abajo y una sola columna de 720 px como máximo. En `ui.js`
 también: `avisoAbajo()` (aviso con «Deshacer», en vez de `confirm()`),
 `avatarPersona()` (iniciales del color del grupo de edad) y
 `mostrarBienvenida()` (primer uso). El B-1 va por pasos (`irAPaso()` en
