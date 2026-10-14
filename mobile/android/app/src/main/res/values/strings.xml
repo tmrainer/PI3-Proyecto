@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Sistema de Asistencia</string>
-    <string name="title_activity_main">Sistema de Asistencia</string>
+    <string name="app_name">OllaConecta</string>
+    <string name="title_activity_main">OllaConecta</string>
     <string name="package_name">io.github.tmrainer.asistencia</string>
     <string name="custom_url_scheme">io.github.tmrainer.asistencia</string>
 </resources>

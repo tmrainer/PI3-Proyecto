@@ -1,4 +1,4 @@
-# Sistema de Asistencia
+# OllaConecta
 
 Aplicación web para las dirigentes de ollas comunes y comedores del Programa de
 Complementación Alimentaria (PCA) de la Municipalidad Distrital de Villa María

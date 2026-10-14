@@ -919,7 +919,7 @@ export async function exportarTodo(contrasena) {
     const archivo = new File([JSON.stringify(datos, null, 2)], nombre, { type: 'application/json' });
     if (navigator.canShare({ files: [archivo] })) {
       try {
-        await navigator.share({ files: [archivo], title: 'Copia del Sistema de Asistencia' });
+        await navigator.share({ files: [archivo], title: 'Copia de OllaConecta' });
         entregado = true;
       } catch (e) {
         if (e && e.name === 'AbortError') return;   // cerró el menú: no hubo respaldo

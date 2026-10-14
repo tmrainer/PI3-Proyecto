@@ -46,7 +46,7 @@ async function pintarAvisosTelefono(programados) {
   caja.append(crearElemento('div', { clase: 'estado-b1 pendiente' }, [
     crearElemento('span', {
       texto: permiso === 'denied'
-        ? 'Los avisos del teléfono están apagados. Actívalos en Ajustes → Aplicaciones → Sistema de Asistencia → Notificaciones.'
+        ? 'Los avisos del teléfono están apagados. Actívalos en Ajustes → Aplicaciones → OllaConecta → Notificaciones.'
         : 'Activa los avisos para que el teléfono te recuerde la entrega aunque la aplicación esté cerrada.'
     }),
     permiso === 'denied' ? null : crearElemento('button', {

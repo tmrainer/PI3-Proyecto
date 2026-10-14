@@ -1,6 +1,6 @@
 {
   "appId": "io.github.tmrainer.asistencia",
-  "appName": "Sistema de Asistencia",
+  "appName": "OllaConecta",
   "webDir": "www",
   "android": {
     "allowMixedContent": false,
