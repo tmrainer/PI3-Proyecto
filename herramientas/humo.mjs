@@ -585,6 +585,24 @@ async function correr(base, cdp) {
     })()`);
     comprobar('ajustes: sin la copia, con el paso a Tus datos',
       ajustes.sinCopia && ajustes.enlace === './datos.html', JSON.stringify(ajustes));
+    // Cada cosa en su lugar: en cada página, primero el trabajo, después lo
+    // que se configura, los reportes y al final traer datos.
+    const titulos = async (pagina) => {
+      await p.ir(`${base}/${pagina}`);
+      return p.eval(`[...document.querySelectorAll('main h2')].map((h) => h.textContent.trim()).join('|')`);
+    };
+    const ordenes = {
+      'datos.html': 'Copia de tus datos|Qué va en la copia|Pasar a otro teléfono|Traer un padrón de Excel|Dónde se guardan|Borrar todo',
+      'asistencia.html': 'Asistencia de hoy|Otros días|Precio del menú|Resumen por fechas',
+      'padron.html': 'Inscribir a una persona|Personas afiliadas|Reporte para el padrón|Cargar un padrón desde Excel'
+    };
+    for (const [pagina, esperado] of Object.entries(ordenes)) {
+      const visto = (await titulos(pagina)).replace(/Asistencia de hoy.*?\|/, 'Asistencia de hoy|');
+      comprobar(`orden de ${pagina}`, visto === esperado, visto);
+    }
+    await p.ir(`${base}/index.html`);
+    const mas = await p.eval(`[...document.querySelectorAll('.mas-opciones .enlace-titulo')].map((e) => e.textContent).join('|')`);
+    comprobar('Inicio: «Más» con Tus datos, Ajustes y ¿Cómo se usa?', mas === 'Tus datos|Ajustes|¿Cómo se usa?', mas);
     await p.ir(`${base}/padron.html`);
     const letra = await p.eval(`({ clase: document.documentElement.classList.contains('letra-grande'),
       base: getComputedStyle(document.documentElement).fontSize,
@@ -668,8 +686,8 @@ async function correr(base, cdp) {
     const inicio = await p.eval(`({ tareas: document.querySelectorAll('.tarea').length,
       bienvenida: !!document.querySelector('dialog#bienvenida[open]'),
       menu: [...document.querySelectorAll('.nav-enlace')].map((a) => a.textContent).join(',') })`);
-    comprobar('Inicio: cinco tareas, menú con Inicio y primer uso la primera vez',
-      inicio.tareas === 5 && inicio.bienvenida && inicio.menu === 'Inicio,Asistencia,Padrón,B-1,Entregas', JSON.stringify(inicio));
+    comprobar('Inicio: cuatro tareas, menú con Inicio y primer uso la primera vez',
+      inicio.tareas === 4 && inicio.bienvenida && inicio.menu === 'Inicio,Asistencia,Padrón,B-1,Entregas', JSON.stringify(inicio));
     await p.actuar(`[...document.querySelectorAll('#bienvenida button')].find((b) => b.textContent === 'Saltar').click()`);
     await p.ir(`${base}/index.html`);
     comprobar('primer uso: con «Saltar» no vuelve a aparecer', !(await p.eval(`!!document.querySelector('dialog#bienvenida')`)), '');

@@ -58,19 +58,12 @@
   <div id="panel" class="panel" role="status" aria-live="polite" aria-label="Resumen de revisión"></div>
 
   <section class="bloque apoyo">
-    <h2>Resumen por fechas</h2>
-    <div class="rejilla dos">
-      <div class="campo">
-        <label for="periodoInicio">Desde</label>
-        <input id="periodoInicio" type="date">
-      </div>
-      <div class="campo">
-        <label for="periodoFin">Hasta</label>
-        <input id="periodoFin" type="date">
-      </div>
+    <h2>Otros días</h2>
+    <p class="pista">Para corregir o completar días pasados.</p>
+    <div class="acciones">
+      <button type="button" class="boton secundario" id="agregar-atencion">+ Registrar otro día</button>
     </div>
-    <div id="resumen-raciones" class="resumen-chips" style="margin-top:12px"></div>
-    <p class="nota-calculo" id="nota-precio"></p>
+    <div id="lista-atenciones" style="margin-top:12px"></div>
   </section>
 
   <section class="bloque apoyo">
@@ -90,17 +83,22 @@
   </section>
 
   <section class="bloque apoyo">
-    <h2>Otros días</h2>
-    <p class="pista">Para corregir o completar días pasados.</p>
-    <div class="acciones">
-      <button type="button" class="boton secundario" id="agregar-atencion">+ Registrar otro día</button>
+    <h2>Resumen por fechas</h2>
+    <div class="rejilla dos">
+      <div class="campo">
+        <label for="periodoInicio">Desde</label>
+        <input id="periodoInicio" type="date">
+      </div>
+      <div class="campo">
+        <label for="periodoFin">Hasta</label>
+        <input id="periodoFin" type="date">
+      </div>
     </div>
-    <div id="lista-atenciones" style="margin-top:12px"></div>
+    <div id="resumen-raciones" class="resumen-chips" style="margin-top:12px"></div>
+    <p class="nota-calculo" id="nota-precio"></p>
   </section>
 
   <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras tocas.</p>
-
-
 
 </main>
 </body>

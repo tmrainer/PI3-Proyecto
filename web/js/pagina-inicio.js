@@ -60,9 +60,12 @@ for (const t of document.querySelectorAll('.tarea')) {
   );
 }
 buscar('#como-se-usa').addEventListener('click', () => mostrarBienvenida());
-const enlaceAjustes = buscar('#enlace-ajustes');
-enlaceAjustes.prepend(icono('ajustes', { tam: 22 }));
-buscar('#enlace-datos').prepend(icono('escudo', { tam: 22 }));
+// «Más»: lo mismo que el menú ⋮, con una línea de qué hay en cada uno.
+for (const [id, cual] of [['#enlace-datos', 'escudo'], ['#enlace-ajustes', 'ajustes'], ['#como-se-usa', 'ayuda']]) {
+  const e = buscar(id);
+  e.prepend(icono(cual, { tam: 24 }));
+  e.append(icono('flecha', { tam: 20 }));
+}
 
 // ---- la copia de los datos ----
 const nota = buscar('#nota-copia');

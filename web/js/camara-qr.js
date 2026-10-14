@@ -2,8 +2,9 @@
 // otro (formato en compartir-qr.js).
 //
 // Mostrar: el QR lo arma qrcode-generator (vendor/, MIT, copiado dentro de la
-// app: sin internet) y se dibuja en un lienzo. Si son varias partes, se
-// turnan solas cada 2 s (se pueden pausar): quien lee solo tiene que apuntar.
+// app: sin internet) y se dibuja en un lienzo. Si son varias partes, se pasa
+// de una a otra a mano («Siguiente»), cuando el otro teléfono ya vibró: así
+// nadie se apura ni se salta un código.
 // Leer: con BarcodeDetector, del propio navegador (en el APK lo trae el
 // WebView). Se juntan las partes de un mismo envío hasta tenerlas todas.
 // Nada de esto sale del teléfono: el QR se ve en pantalla y nada más.
@@ -27,7 +28,9 @@ let generador = null;
 const cargarGenerador = () => generador || (generador = import('../vendor/qrcode-generator.js').then((m) => m.default));
 
 function dibujarQr(qrcode, lienzo, texto) {
-  const qr = qrcode(0, 'M');
+  // Nivel L: menos módulos para lo mismo, y se lee mejor desde otra pantalla
+  // (no hay manchas ni roturas que corregir; cada parte se revisa al juntar).
+  const qr = qrcode(0, 'L');
   // Solo cifras (QR de antes) o el alfabeto de base45: los modos más compactos.
   qr.addData(texto, /^\d+$/.test(texto) ? 'Numeric' : 'Alphanumeric');
   qr.make();
@@ -52,48 +55,54 @@ export async function mostrarListaQr({ partes, titulo, detalle }) {
   const qrcode = await cargarGenerador();
   const lienzo = crearElemento('canvas', { clase: 'qr-lienzo', role: 'img', 'aria-label': 'Código QR con los datos' });
   const cual = crearElemento('p', { clase: 'qr-parte', role: 'status', 'aria-live': 'polite' });
-  const pausa = crearElemento('button', {
-    type: 'button', clase: 'boton secundario', texto: 'Pausar', hidden: partes.length < 2,
-    onclick: () => { reloj ? detener() : seguir(); }
+  const varias = partes.length > 1;
+  const anterior = crearElemento('button', {
+    type: 'button', clase: 'boton secundario', texto: 'Anterior', hidden: !varias, onclick: () => ir(-1)
+  });
+  const siguiente = crearElemento('button', {
+    type: 'button', clase: 'boton', texto: 'Siguiente', hidden: !varias, onclick: () => ir(1)
   });
   const dialogo = crearElemento('dialog', { clase: 'camara-dni', 'aria-labelledby': 'qr-titulo' }, [
     crearElemento('h2', { id: 'qr-titulo', texto: titulo }),
-    crearElemento('p', { clase: 'camara-pista', texto: detalle }),
+    crearElemento('p', { clase: 'camara-pista', texto: varias
+      ? `${detalle} Son ${partes.length} códigos: pasa al siguiente cuando el otro teléfono vibre.` : detalle }),
     crearElemento('div', { clase: 'qr-caja' }, [lienzo]),
     cual,
     crearElemento('div', { clase: 'acciones' }, [
-      pausa,
+      anterior,
+      siguiente,
       crearElemento('button', { type: 'button', clase: 'boton secundario', texto: 'Listo', onclick: () => cerrar() })
     ])
   ]);
   let i = 0;
-  let reloj = 0;
   function pintar() {
     dibujarQr(qrcode, lienzo, partes[i]);
-    cual.textContent = partes.length > 1
-      ? `Código ${i + 1} de ${partes.length}${reloj ? ' (cambian solos)' : ' (en pausa)'}` : '';
+    cual.textContent = varias ? `Código ${i + 1} de ${partes.length}` : '';
+    anterior.disabled = i === 0;
+    siguiente.disabled = i === partes.length - 1;
   }
-  function seguir() {
-    reloj = setInterval(() => { i = (i + 1) % partes.length; pintar(); }, 2000);
-    pausa.textContent = 'Pausar';
-    pintar();
-  }
-  function detener() {
-    clearInterval(reloj);
-    reloj = 0;
-    pausa.textContent = 'Seguir';
+  function ir(paso) {
+    i = Math.min(partes.length - 1, Math.max(0, i + paso));
     pintar();
   }
   function cerrar() {
-    clearInterval(reloj);
     dialogo.close();
     dialogo.remove();
   }
   document.body.append(dialogo);
   dialogo.addEventListener('cancel', (e) => { e.preventDefault(); cerrar(); });
   dialogo.showModal();
-  if (partes.length > 1) seguir();
-  else pintar();
+  pintar();
+}
+
+// Enfoque continuo si la cámara lo permite (de cerca, a una pantalla, el fijo
+// suele quedar borroso). Si no se puede, sigue igual.
+function enfocarSolo(flujo) {
+  try {
+    const pista = flujo.getVideoTracks()[0];
+    const modos = (pista.getCapabilities && pista.getCapabilities().focusMode) || [];
+    if (modos.includes('continuous')) pista.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+  } catch (e) { /* sin control de enfoque */ }
 }
 
 /**
@@ -146,13 +155,19 @@ export async function leerListaQr({ alRecibir }) {
   document.addEventListener('visibilitychange', alOcultar);
 
   try {
-    flujo = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' } } });
+    // Sin tamaño, Android abre la cámara a 640×480: muy poco para un QR denso
+    // en otra pantalla, y tardaba mucho en leerlo.
+    flujo = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
   } catch (e) {
     cargando.hidden = true;
     estado.textContent = 'No se pudo abrir la cámara. Revisa que la app tenga permiso para usarla.';
     return;
   }
   if (!abierto) { flujo.getTracks().forEach((t) => t.stop()); return; }
+  enfocarSolo(flujo);
   video.srcObject = flujo;
   try { await video.play(); } catch (e) { /* se reintenta en el bucle */ }
   estado.textContent = 'Buscando el código…';

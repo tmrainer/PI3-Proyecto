@@ -59,15 +59,26 @@
     <a class="tarea" href="./padron.html#inscribir" data-icono="personaMas" data-tono="verde">Inscribir a una persona</a>
     <a class="tarea" href="./formato-b1.html#compras" data-icono="boleta" data-tono="ocre">Anotar una compra</a>
     <a class="tarea" href="./calendario.html" data-icono="calendario" data-tono="azul">Ver entregas</a>
-    <button type="button" class="tarea" id="como-se-usa" data-icono="ayuda" data-tono="verde">¿Cómo se usa?</button>
   </nav>
 
   <p class="nota-copia" id="nota-copia" data-leer></p>
 
   <div class="nota-perfil" id="nota-perfil" hidden></div>
 
-  <a class="enlace-ajustes" id="enlace-datos" href="./datos.html">Tus datos: dónde se guardan y copia</a>
-  <a class="enlace-ajustes" id="enlace-ajustes" href="./ajustes.html">Ajustes: tu perfil, letra, modo oscuro y voz</a>
+  <!-- Lo que no es el trabajo del día: los datos, cómo se ve la app y la ayuda.
+       Lo mismo está en el menú ⋮ de todas las páginas. -->
+  <nav class="mas-opciones" aria-labelledby="titulo-mas">
+    <h2 class="titulo-mas" id="titulo-mas">Más</h2>
+    <a class="enlace-ajustes enlace-datos" id="enlace-datos" href="./datos.html">
+      <span><span class="enlace-titulo">Tus datos</span>
+      <span class="enlace-detalle">Guardar una copia y pasar datos a otro teléfono</span></span></a>
+    <a class="enlace-ajustes enlace-datos" id="enlace-ajustes" href="./ajustes.html">
+      <span><span class="enlace-titulo">Ajustes</span>
+      <span class="enlace-detalle">Tu perfil, tamaño de letra, modo oscuro y voz</span></span></a>
+    <button type="button" class="enlace-ajustes enlace-datos" id="como-se-usa">
+      <span><span class="enlace-titulo">¿Cómo se usa?</span>
+      <span class="enlace-detalle">Un recorrido corto por la aplicación</span></span></button>
+  </nav>
 
 </main>
 </body>

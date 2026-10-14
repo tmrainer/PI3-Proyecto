@@ -275,8 +275,9 @@ function montarBarraTitulo(claveActiva) {
       icono(nombreIcono, { tam: 22 }), crearElemento('span', { texto })
     ]);
   }
-  // Lo que se usa poco: la copia de los datos va en Tus datos; letra, modo y
-  // voz, en Ajustes.
+  // Lo que no es el trabajo del día (eso va en la barra de abajo): la ayuda;
+  // copia, pasar a otro teléfono y borrar, en Tus datos; perfil, letra, modo
+  // y voz, en Ajustes.
   function pintarOpciones() {
     opciones.textContent = '';
     opciones.append(
@@ -368,7 +369,8 @@ const PASOS_BIENVENIDA = [
   { titulo: 'Inscribe a las personas', texto: 'En Padrón anotas a cada persona una sola vez: nombre, DNI y su grupo de edad.', dibujo: 'personas' },
   { titulo: 'Toca a quien vino', texto: 'Cada día, en Asistencia, tocas el nombre de quien llegó. La app cuenta las raciones sola.', dibujo: 'lista' },
   { titulo: 'Anota tus compras', texto: 'En el Formato B-1 anotas cada boleta. La app suma y te dice qué falta antes de entregar.', dibujo: 'boleta' },
-  { titulo: 'Guarda una copia', texto: 'Tus datos están solo en este teléfono. Guarda una copia cada dos semanas, en Ajustes.', dibujo: 'escudo' }
+  { titulo: 'Te avisa las entregas', texto: 'En Entregas pones cada cuánto entregas el B-1, y la app te avisa unos días antes.', dibujo: 'calendario' },
+  { titulo: 'Guarda una copia', texto: 'Tus datos están solo en este teléfono. Guarda una copia cada dos semanas, en Tus datos (menú ⋮).', dibujo: 'escudo' }
 ];
 
 /** ¿Ya vio la bienvenida en este equipo? */

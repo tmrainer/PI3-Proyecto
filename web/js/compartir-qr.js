@@ -19,14 +19,14 @@
 // une las partes de un mismo envío: dos envíos no se mezclan.
 // También se leen los QR de antes (solo cifras, lista-qr.js).
 
-import { asistenciasDelDia, afiliadosActivos } from './calculos.js';
+import { asistenciasDelDia, afiliadosActivos, sinInscribirDelDia, TRAMOS_ETARIOS } from './calculos.js';
 import { nombreCompleto, normalizarNombre, nuevaAtencion, nuevaEntrega, nuevoAfiliado } from './modelo.js';
 import { decodificarParteQr } from './lista-qr.js';
 
 const ALFABETO = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
 const LETRA = { padron: 'P', asistencia: 'A', entregas: 'E' };
 const TIPO = { P: 'padron', A: 'asistencia', E: 'entregas' };
-const POR_PARTE = 700;          // ~QR versión 17: lo lee bien una cámara modesta desde otra pantalla
+const POR_PARTE = 700;          // ~QR versión 14 (nivel L): lo lee bien una cámara modesta desde otra pantalla
 const MAX_PARTES = 99;
 
 // ------------------------------------------------------------------ base45
@@ -156,7 +156,9 @@ function revisarPaquete(tipo, p) {
     if (!Array.isArray(p.p) || !p.p.every((f) => Array.isArray(f) && f.length === 13 &&
       f.every((x, i) => (i === 9 ? x === 0 || x === 1 : esTexto(x))))) return null;
   } else if (tipo === 'asistencia') {
-    if (!Array.isArray(p.d) || !p.d.every((d) => Array.isArray(d) && d.length === 4 && esFecha(d[0]) &&
+    const esCuenta = (n) => Number.isInteger(n) && n >= 0 && n < 10000;
+    if (!Array.isArray(p.d) || !p.d.every((d) => Array.isArray(d) && (d.length === 4 ||
+      (d.length === 5 && Array.isArray(d[4]) && d[4].length === 2 && d[4].every(esCuenta))) && esFecha(d[0]) &&
       esPrecio(d[1]) && esPrecio(d[2]) && Array.isArray(d[3]) &&
       d[3].every((m) => Array.isArray(m) && esTexto(m[0]) && m[0] && (m.length === 1 || (m.length === 2 && m[1] === 1)))))
       return null;
@@ -181,11 +183,18 @@ export function paqueteDelPadron(padron) {
   };
 }
 
+// Lo que no es un valor de la app se descarta, no se guarda tal cual: un tipo
+// desconocido queda vacío y la persona aparece en «Les faltan datos».
+const unoDe = (v, permitidos, si) => (permitidos.includes(v) ? v : si);
+const fechaO = (v) => (esFecha(v) ? v : '');
+
 function personaDeFila(f) {
   return {
-    apellidoPaterno: f[0], apellidoMaterno: f[1], nombres: f[2], numeroDocumento: f[3], tipoDocumento: f[4] || 'dni',
-    fechaNacimiento: f[5], grupoEtarioManual: f[6] || null, sexo: f[7], tipoAfiliado: f[8],
-    activo: f[9] === 1, altaEn: f[10], bajaEn: f[11], motivoBaja: f[12]
+    apellidoPaterno: f[0], apellidoMaterno: f[1], nombres: f[2], numeroDocumento: f[3],
+    tipoDocumento: unoDe(f[4], ['dni', 'ce'], 'dni'),
+    fechaNacimiento: fechaO(f[5]), grupoEtarioManual: unoDe(f[6], TRAMOS_ETARIOS.map((t) => t.clave), null),
+    sexo: unoDe(f[7], ['F', 'M'], ''), tipoAfiliado: unoDe(f[8], ['habitual', 'caso_social'], ''),
+    activo: f[9] === 1, altaEn: fechaO(f[10]), bajaEn: fechaO(f[11]), motivoBaja: f[12]
   };
 }
 
@@ -211,7 +220,12 @@ export function paqueteDeAsistencia(padron, fechas) {
     }
     personas += marcas.length;
     const precio = (n) => (Number.isInteger(n) ? n : null);
-    d.push([fecha, precio(at.precioMenuNormalCent), precio(at.precioMenuAyudaSocialCent), marcas]);
+    const dia = [fecha, precio(at.precioMenuNormalCent), precio(at.precioMenuAyudaSocialCent), marcas];
+    // Quienes comieron sin estar en el padrón, por menú. Solo si hay: así un
+    // día sin ellos se lee igual en un teléfono con la versión anterior.
+    const fuera = sinInscribirDelDia(at);
+    if (fuera.total) dia.push([fuera.normal, fuera.ayudaSocial]);
+    d.push(dia);
   }
   return { paquete: { t: 'A', v: 1, d }, personas, sinDocumento };
 }
@@ -319,19 +333,24 @@ export function aplicarPadron(padron, eleccion) {
  * @returns {{fecha: string, existe: boolean, agregar: {afiliado: object, tipoMenu: string}[],
  *   menuDistinto: {afiliado: object, mio: string, recibido: string}[], yaEstaban: number,
  *   desconocidos: number, inactivos: number, soloAqui: number,
- *   precios: {normal: ?number, ayuda: ?number}, preciosDistintos: ?{mio: object, recibido: object}}[]}
+ *   precios: {normal: ?number, ayuda: ?number}, preciosDistintos: ?{mio: object, recibido: object},
+ *   fuera: {normal: number, ayudaSocial: number, total: number}, fueraDistinto: ?{mio: object, recibido: object}}[]}
+ *   fuera: los que comieron sin estar en el padrón, según el otro teléfono.
+ *   No se suman a los de aquí: pueden ser las mismas personas contadas dos veces.
  */
 export function compararAsistencia(padron, paquete) {
   const afiliados = (padron && padron.afiliados) || [];
   const porDoc = new Map();
   for (const a of afiliados) if (docDe(a) && !porDoc.has(docDe(a))) porDoc.set(docDe(a), a);
-  return paquete.d.map(([fecha, normal, ayuda, marcas]) => {
+  return paquete.d.map(([fecha, normal, ayuda, marcas, cuenta]) => {
     const at = ((padron && padron.atenciones) || []).find((o) => o.fecha === fecha);
     const activos = new Set(afiliadosActivos(padron, fecha).map((a) => a.id));
     const ya = new Map(at ? asistenciasDelDia(at).map((x) => [x.afiliadoId, x.tipoMenu]) : []);
     const dia = {
       fecha, existe: !!at, agregar: [], menuDistinto: [], yaEstaban: 0, desconocidos: 0, inactivos: 0, soloAqui: 0,
-      precios: { normal, ayuda }, preciosDistintos: null
+      precios: { normal, ayuda }, preciosDistintos: null,
+      fuera: sinInscribirDelDia({ sinInscribir: cuenta ? { normal: cuenta[0], ayudaSocial: cuenta[1] } : null }),
+      fueraDistinto: null
     };
     const vistos = new Set();
     const coinciden = new Set();
@@ -356,13 +375,18 @@ export function compararAsistencia(padron, paquete) {
         dia.preciosDistintos = { mio, recibido: { normal, ayuda } };
       }
     }
+    const mioFuera = sinInscribirDelDia(at);
+    if (at && (mioFuera.normal !== dia.fuera.normal || mioFuera.ayudaSocial !== dia.fuera.ayudaSocial) && dia.fuera.total) {
+      dia.fueraDistinto = { mio: mioFuera, recibido: dia.fuera };
+    }
     return dia;
   });
 }
 
 /**
- * @param {{dias: Set<string>, menuRecibido: Set<string>, preciosRecibidos: Set<string>}} eleccion
- *   dias: fechas a sumar; menuRecibido: «fecha|afiliadoId» donde se usa el menú recibido
+ * @param {{dias: Set<string>, menuRecibido: Set<string>, preciosRecibidos: Set<string>, fueraRecibido?: Set<string>}} eleccion
+ *   dias: fechas a sumar; menuRecibido: «fecha|afiliadoId» donde se usa el menú recibido;
+ *   fueraRecibido: fechas donde se usa la cuenta recibida de quienes no están en el padrón
  * @param {?{precioMenuNormalCent: ?number, precioMenuAyudaSocialCent: ?number}} preciosPorDefecto
  *   para un día que aquí no existía y llega sin precio
  */
@@ -382,7 +406,10 @@ export function aplicarAsistencia(padron, comparacion, eleccion, preciosPorDefec
     }
     const cambiaMenu = dia.menuDistinto.filter((m) => eleccion.menuRecibido.has(`${dia.fecha}|${m.afiliado.id}`));
     const tocaPrecios = dia.preciosDistintos && eleccion.preciosRecibidos.has(dia.fecha);
-    if (i >= 0 && !dia.agregar.length && !cambiaMenu.length && !tocaPrecios) continue;
+    // Día nuevo aquí: va la cuenta recibida. Día que ya estaba: solo si se eligió.
+    const tocaFuera = dia.fuera.total > 0 &&
+      (i < 0 || (dia.fueraDistinto && eleccion.fueraRecibido && eleccion.fueraRecibido.has(dia.fecha)));
+    if (i >= 0 && !dia.agregar.length && !cambiaMenu.length && !tocaPrecios && !tocaFuera) continue;
     for (const m of cambiaMenu) {
       const x = at.asistencias.find((y) => y.afiliadoId === m.afiliado.id);
       if (x) x.tipoMenu = m.recibido;
@@ -393,6 +420,7 @@ export function aplicarAsistencia(padron, comparacion, eleccion, preciosPorDefec
       if (dia.precios.ayuda !== null) at.precioMenuAyudaSocialCent = dia.precios.ayuda;
       at.precioTomadoDeConfig = false;
     }
+    if (tocaFuera) at.sinInscribir = { normal: dia.fuera.normal, ayudaSocial: dia.fuera.ayudaSocial };
     at.legado = null;
     if (i >= 0) atenciones[i] = at;
     else atenciones.push(at);
@@ -413,14 +441,19 @@ const CAMPOS_ENTREGAS = [
  */
 export function compararEntregas(calendario, paquete) {
   const mio = calendario || {};
-  const recibido = { periodicidad: paquete.c[0], fechaLimiteBase: paquete.c[1], diasDeAviso: paquete.c[2] };
+  // Una periodicidad desconocida no se ofrece; un estado desconocido llega como pendiente.
+  const recibido = {
+    periodicidad: unoDe(paquete.c[0], ['semanal', 'quincenal', 'mensual'], ''),
+    fechaLimiteBase: paquete.c[1], diasDeAviso: paquete.c[2]
+  };
   const texto = (v) => (Array.isArray(v) ? v.join(',') : String(v ?? ''));
   const config = CAMPOS_ENTREGAS
     .filter(([k]) => texto(recibido[k]) !== '' && texto(mio[k]) !== texto(recibido[k]))
     .map(([campo, etiqueta]) => ({ campo, etiqueta, mio: mio[campo], recibido: recibido[campo] }));
   const r = { config, nuevas: [], distintas: [], iguales: 0 };
   const mias = new Map((mio.entregas || []).map((e) => [e.fechaLimite, e]));
-  for (const [fechaLimite, estado, nota] of paquete.e) {
+  for (const [fechaLimite, estadoRecibido, nota] of paquete.e) {
+    const estado = unoDe(estadoRecibido, ['pendiente', 'entregada', 'observada', 'conforme'], 'pendiente');
     const e = mias.get(fechaLimite);
     if (!e) r.nuevas.push({ fechaLimite, estado, nota });
     else if ((e.estado || 'pendiente') === estado && String(e.nota || '') === nota) r.iguales += 1;

@@ -834,6 +834,8 @@ body.por-pasos [data-paso]:not(.paso-actual) { display: none; }
 .hoy-entrega.proxima { background: #7d5300; }
 
 .tareas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--e3); margin-bottom: var(--e4); }
+/* Si la última queda sola en su fila, ocupa la fila entera. */
+.tareas .tarea:last-child:nth-child(even) { grid-column: 1 / -1; }
 .tarea {
   display: flex; flex-direction: column; justify-content: space-between; gap: var(--e4);
   min-height: 128px; padding: var(--e4); border: 0; border-radius: var(--r-l); text-align: left;
@@ -932,8 +934,12 @@ html { scroll-padding-top: calc(var(--alto-panel, 6rem) + var(--e2) + env(safe-a
   text-decoration: none; font-weight: 600;
 }
 .enlace-ajustes .icono { color: var(--acento-texto); flex: none; }
-/* En Ajustes, el paso a «Tus datos»: título y una línea de qué hay. */
+/* Paso a otra página: título y una línea de qué hay (Inicio, Ajustes). */
 .enlace-datos { margin: 0 0 var(--e4); }
+button.enlace-ajustes { width: 100%; border: 0; font: inherit; text-align: start; cursor: pointer; }
+.mas-opciones { display: grid; gap: var(--e2); margin-top: var(--e5); }
+.mas-opciones .enlace-datos { margin: 0; }
+.titulo-mas { margin: 0 0 var(--e1); font-size: 1rem; color: var(--tinta-suave); }
 .enlace-datos > span { flex: 1; display: grid; gap: 2px; }
 .enlace-detalle { font-weight: 400; font-size: .9rem; color: var(--tinta-suave); }
 

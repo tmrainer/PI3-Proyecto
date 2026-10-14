@@ -117,16 +117,33 @@ botones −/+ de «Comieron sin estar en el padrón», hoy y en los días anteri
 `beforeinstallprompt` (Chrome y Edge), la app ofrece su propio botón «Instalar»
 arriba; «Ahora no» lo posterga 14 días.
 
+**Dónde está cada cosa.** Separado por para qué sirve:
+
+| Para qué | Dónde |
+| --- | --- |
+| El trabajo del día | La barra de abajo: Asistencia, Padrón, B-1, Entregas (y los atajos del Inicio) |
+| Configurar ese trabajo | En su página, debajo del trabajo: precio del menú (Asistencia), cada cuánto se entrega (Entregas), centro de atención (B-1, paso 1) |
+| Reportes | En su página, después de lo que se configura: resumen por fechas (Asistencia), reporte para el padrón (Padrón), el B-1 |
+| Traer y llevar datos | Tus datos: copia, pasar a otro teléfono por QR, traer un padrón de Excel (lleva a Padrón, donde se revisa), borrar todo. Atajo en Asistencia para juntar la lista de hoy |
+| Cómo se ve la app y quién la usa | Ajustes |
+| Ayuda | «¿Cómo se usa?» |
+
+Tus datos, Ajustes y «¿Cómo se usa?» están en el menú ⋮ de todas las páginas y
+en «Más», al pie del Inicio. Las secciones de cada página van en ese orden
+(trabajo, configurar, reportes, traer datos); `humo.mjs` lo comprueba.
+
 **Tus datos** (`datos.html`, `pagina-datos.js`; desde el menú ⋮, el Inicio y
-Ajustes). Todo lo que toca a los datos, separado de los ajustes: «Dónde se
-guardan» (`lugaresDeLosDatos()` en `ui.js`: en el teléfono; en el APK, también
-la copia de seguridad de Google del teléfono, porque `allowBackup` sigue en
-`true` y se dice; en las copias que guarda la persona), la copia (guardar, con
-contraseña, recuperar, fecha de la última), qué va y qué no en la copia y, al
-final, «Borrar todo». `ajustes.html#copia` redirige aquí.
+Ajustes). Todo lo que toca a los datos, separado de los ajustes, con las
+acciones primero: la copia (guardar, con contraseña, recuperar, fecha de la
+última) y qué va y qué no en ella; pasar a otro teléfono; traer un padrón de
+Excel; «Dónde se guardan» (`lugaresDeLosDatos()` en `ui.js`: en el teléfono; en
+el APK, también la copia de seguridad de Google del teléfono, porque
+`allowBackup` sigue en `true` y se dice; en las copias que guarda la persona)
+y, al final, «Borrar todo». `ajustes.html#copia` redirige aquí.
 
 **Ajustes** (`ajustes.html`, `pagina-ajustes.js`; se llega desde el menú ⋮ y
-desde el Inicio). Lo que es del teléfono: quién lo usa, el modo
+desde el Inicio). Al final, un paso a Tus datos para quien busque ahí la copia.
+Lo que es del teléfono: quién lo usa, el modo
 (automático, claro u oscuro), el tamaño de letra (normal 16 px, grande 18,
 muy grande 20; todo el CSS va en rem), el botón 🔊 en la cabecera y la
 velocidad de la voz. `js/preferencias.js` es un script
@@ -192,12 +209,15 @@ sugiere una vez («Ahora no» lo descarta). El B-1 lo usa como otra fuente de
 inscripción con DNI escribe ese nombre en «quién revisó».
 
 **Pasar datos a otro teléfono por QR** (`compartir-qr.js` puro, `ui-compartir.js`,
-`camara-qr.js`). Desde Tus datos se envía el padrón (sin notas), la asistencia
-de los días que se marquen o las entregas (configuración y lo anotado de cada
+`camara-qr.js`). Desde Tus datos se envía el padrón (sin notas; con el tipo,
+habitual o caso social), la asistencia de los días que se marquen (cada marca con
+su menú, normal o ayuda social; los precios del día y, si hay, cuántos comieron
+sin estar en el padrón, por menú: esa cuenta no se suma a la de aquí, se elige
+una, porque pueden ser las mismas personas) o las entregas (configuración y lo anotado de cada
 una); desde Asistencia, la lista de hoy. El JSON va comprimido (deflate de
 `CompressionStream`) y en base45, en modo alfanumérico del QR; cada código
-lleva tipo, id del envío y parte/total, y si son varios se turnan cada 2 s
-(se pueden pausar). Los QR de antes (`lista-qr.js`, solo cifras) se siguen
+lleva tipo, id del envío y parte/total, y si son varios se pasan a mano
+(«Siguiente», cuando el otro teléfono vibró). Los QR de antes (`lista-qr.js`, solo cifras) se siguen
 leyendo. **Quien recibe nunca guarda a ciegas:** `comparar*()` muestra qué se
 agrega, qué ya estaba, qué queda solo aquí y qué no coincide; lo que no
 coincide se queda como aquí salvo que se elija lo recibido (o que aquí esté

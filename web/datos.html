@@ -46,17 +46,21 @@
 
   <div id="avisos-sistema"></div>
 
-  <section class="bloque" id="donde" aria-labelledby="titulo-donde">
-    <h2 id="titulo-donde">Dónde se guardan</h2>
-    <div id="lugares"></div>
-  </section>
-
   <section class="bloque" id="copia" aria-labelledby="titulo-copia">
     <h2 id="titulo-copia">Copia de tus datos</h2>
     <p class="pista">Una copia es un archivo con todos tus datos. Con ella los recuperas en otro teléfono o si se pierden en este. Guarda una cada dos semanas.</p>
     <p id="ultima-copia" data-leer></p>
     <div id="barra-datos"></div>
     <p class="pista" style="margin-top:12px">La copia tiene nombres y DNI. Si la mandas por WhatsApp o correo, ponle contraseña.</p>
+  </section>
+
+  <section class="bloque" aria-labelledby="titulo-que">
+    <h2 id="titulo-que">Qué va en la copia</h2>
+    <ul class="lista-datos" data-leer>
+      <li><b>Sí va:</b> el padrón, la asistencia, el formato B-1 y las entregas.</li>
+      <li><b>No va:</b> tu perfil (quién usa este teléfono), la letra, el modo y la voz. Son de este teléfono:
+        en otro, se ponen de nuevo en <a href="./ajustes.html">Ajustes</a>.</li>
+    </ul>
   </section>
 
   <section class="bloque" id="pasar" aria-labelledby="titulo-pasar">
@@ -67,13 +71,15 @@
     <div id="recibir-qr"></div>
   </section>
 
-  <section class="bloque" aria-labelledby="titulo-que">
-    <h2 id="titulo-que">Qué va en la copia</h2>
-    <ul class="lista-datos" data-leer>
-      <li><b>Sí va:</b> el padrón, la asistencia, el formato B-1 y las entregas.</li>
-      <li><b>No va:</b> tu perfil (quién usa este teléfono), la letra, el modo y la voz. Son de este teléfono:
-        en otro, se ponen de nuevo en <a href="./ajustes.html">Ajustes</a>.</li>
-    </ul>
+  <section class="bloque" id="excel" aria-labelledby="titulo-excel">
+    <h2 id="titulo-excel">Traer un padrón de Excel</h2>
+    <p class="pista">Si ya tienen la lista de personas en Excel, se carga en el Padrón. Nada se agrega hasta que la revises.</p>
+    <div class="acciones"><a class="boton secundario" href="./padron.html#excel">Ir a cargar el padrón</a></div>
+  </section>
+
+  <section class="bloque" id="donde" aria-labelledby="titulo-donde">
+    <h2 id="titulo-donde">Dónde se guardan</h2>
+    <div id="lugares"></div>
   </section>
 
   <section class="bloque zona-peligro" aria-labelledby="titulo-borrar">

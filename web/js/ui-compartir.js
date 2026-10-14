@@ -68,8 +68,7 @@ export async function enviarPorQr(tipo, { padron, calendario, fechas = [] }) {
   const quien = leerPerfil().nombre;
   mostrarListaQr({
     partes, titulo,
-    detalle: detalle + (quien ? ` Enviado por ${quien}.` : '') +
-      (partes.length > 1 ? ` Son ${partes.length} códigos: deja la otra cámara apuntando hasta que los lea todos.` : '')
+    detalle: detalle + (quien ? ` Enviado por ${quien}.` : '')
   });
 }
 
@@ -250,7 +249,8 @@ const chip = (texto) => crearElemento('span', { clase: 'chip', texto });
 function vistaPadron(paquete, { padron }) {
   const c = compararPadron(padron, paquete);
   const secciones = [];
-  const nuevas = c.nuevas.map((p) => ({ p, ...casilla(`${nombreCompleto(p)} · ${p.numeroDocumento || 'sin documento'}`, true) }));
+  const nuevas = c.nuevas.map((p) => ({ p, ...casilla(`${nombreCompleto(p)} · ${p.numeroDocumento || 'sin documento'}` +
+    `${p.tipoAfiliado === 'caso_social' ? ' · Caso social' : ''}`, true) }));
   if (nuevas.length) secciones.push(seccion(`Personas nuevas (${nuevas.length})`, [
     linea('No están en este teléfono. Se agregan las marcadas.', 'pista'),
     crearElemento('div', { clase: 'opciones' }, nuevas.map((x) => x.caja))
@@ -309,7 +309,7 @@ function vistaPadron(paquete, { padron }) {
 function vistaAsistencia(paquete, { padron, config }) {
   const dias = compararAsistencia(padron, paquete);
   const vistas = dias.map((d) => {
-    const nombres = d.agregar.map((a) => nombreCompleto(a.afiliado));
+    const nombres = d.agregar.map((a) => nombreCompleto(a.afiliado) + (a.tipoMenu === 'ayuda_social' ? ' (ayuda social)' : ''));
     const menus = d.menuDistinto.map((m) => ({
       m, lado: elegirLado(enPalabras('menu', m.mio), enPalabras('menu', m.recibido), false)
     }));
@@ -317,8 +317,11 @@ function vistaAsistencia(paquete, { padron, config }) {
       `ayuda social S/ ${p.ayuda === null ? '—' : formatearSoles(p.ayuda)}`;
     const precios = d.preciosDistintos
       ? elegirLado(precio(d.preciosDistintos.mio), precio(d.preciosDistintos.recibido), false) : null;
+    const cuenta = (f) => `${f.normal} con menú normal y ${f.ayudaSocial} con ayuda social`;
+    const fuera = d.fueraDistinto
+      ? elegirLado(cuenta(d.fueraDistinto.mio), cuenta(d.fueraDistinto.recibido), d.fueraDistinto.mio.total === 0) : null;
     // Un día que aquí no existe solo se crea si trae a alguien que sumar.
-    const cambia = !!(d.agregar.length || menus.length || precios);
+    const cambia = !!(d.agregar.length || menus.length || precios || fuera || (!d.existe && d.fuera.total));
     const incluir = casilla(d.existe ? 'Sumar a este día' : 'Agregar este día', !!cambia);
     const caja = crearElemento('div', { clase: 'comparar-item' }, [
       crearElemento('p', { clase: 'comparar-nombre', texto: `${fechaLarga(d.fecha)}${d.existe ? '' : ' (día nuevo aquí)'}` }),
@@ -331,9 +334,13 @@ function vistaAsistencia(paquete, { padron, config }) {
       ...menus.flatMap((x) => [linea(`${nombreCompleto(x.m.afiliado)}: el menú no coincide.`, 'aviso-texto'), x.lado.caja]),
       precios ? linea('Los precios del día no coinciden.', 'aviso-texto') : null,
       precios ? precios.caja : null,
+      !d.existe && d.fuera.total
+        ? linea(`Sin estar en el padrón comieron ${cuenta(d.fuera)}.`) : null,
+      fuera ? linea('No coincide cuántos comieron sin estar en el padrón. Elige uno: no se suman, porque pueden ser las mismas personas.', 'aviso-texto') : null,
+      fuera ? fuera.caja : null,
       incluir.caja
     ]);
-    return { d, menus, precios, incluir, caja, cambia };
+    return { d, menus, precios, fuera, incluir, caja, cambia };
   });
   const sumas = dias.reduce((n, d) => n + d.agregar.length, 0);
   return {
@@ -345,7 +352,7 @@ function vistaAsistencia(paquete, { padron, config }) {
     resumen: [chip(`${cuantos(dias.length, 'día')}`), chip(`${sumas} por sumar`)],
     secciones: vistas.map((v) => v.caja),
     aplicar() {
-      const eleccion = { dias: new Set(), menuRecibido: new Set(), preciosRecibidos: new Set() };
+      const eleccion = { dias: new Set(), menuRecibido: new Set(), preciosRecibidos: new Set(), fueraRecibido: new Set() };
       let suman = 0;
       for (const v of vistas) {
         if (!v.incluir.marcada()) continue;
@@ -353,6 +360,7 @@ function vistaAsistencia(paquete, { padron, config }) {
         suman += v.d.agregar.length;
         for (const x of v.menus) if (x.lado.usarRecibido()) eleccion.menuRecibido.add(`${v.d.fecha}|${x.m.afiliado.id}`);
         if (v.precios && v.precios.usarRecibido()) eleccion.preciosRecibidos.add(v.d.fecha);
+        if (v.fuera && v.fuera.usarRecibido()) eleccion.fueraRecibido.add(v.d.fecha);
       }
       if (!eleccion.dias.size) return null;
       return {

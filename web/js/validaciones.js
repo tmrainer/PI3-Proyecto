@@ -363,11 +363,11 @@ export function validarAtencion(atencion, padron, indice = indicePadron(padron))
   // Si hubo raciones de un tipo de menú, hace falta su precio para el promedio.
   if (d.normal > 0 && !Number.isFinite(at.precioMenuNormalCent)) {
     hs.push(h(ERROR, campo,
-      'Falta el precio del menú normal de ese día. Puedes fijarlo arriba, en «Precio del menú».'));
+      'Falta el precio del menú normal de ese día. Puedes fijarlo más abajo, en «Precio del menú».'));
   }
   if (d.ayudaSocial > 0 && !Number.isFinite(at.precioMenuAyudaSocialCent)) {
     hs.push(h(ERROR, campo,
-      'Falta el precio del menú de ayuda social de ese día. Puedes fijarlo arriba, en «Precio del menú».'));
+      'Falta el precio del menú de ayuda social de ese día. Puedes fijarlo más abajo, en «Precio del menú».'));
   }
   if (Number.isFinite(at.precioMenuNormalCent) &&
       Number.isFinite(at.precioMenuAyudaSocialCent) &&

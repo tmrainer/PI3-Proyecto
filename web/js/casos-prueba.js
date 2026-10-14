@@ -1733,6 +1733,58 @@ export const casos = [
   },
   {
     grupo: 'Pasar datos por QR',
+    nombre: 'Quienes comieron sin estar en el padrón viajan por menú y no se suman dos veces',
+    fn: async () => {
+      const a = (doc) => ({ ...nuevoAfiliado(), numeroDocumento: doc, altaEn: '2026-01-01' });
+      const aqui = { afiliados: [a('00000001')], atenciones: [] };
+      aqui.atenciones.push({ ...nuevaAtencion(null), fecha: '2026-10-10', asistencias: [],
+        sinInscribir: { normal: 1, ayudaSocial: 0 } });
+      const otros = { afiliados: [a('00000001')], atenciones: [] };
+      otros.atenciones.push({ ...nuevaAtencion(null), fecha: '2026-10-10', asistencias: [],
+        sinInscribir: { normal: 2, ayudaSocial: 3 } });
+      otros.atenciones.push({ ...nuevaAtencion(null), fecha: '2026-10-11', asistencias: [],
+        sinInscribir: { normal: 0, ayudaSocial: 4 } });
+      otros.atenciones.push({ ...nuevaAtencion(null), fecha: '2026-10-12', asistencias: [] });
+      const { paquete } = paqueteDeAsistencia(otros, ['2026-10-10', '2026-10-11', '2026-10-12']);
+      igual(paquete.d[2].length, 4, 'sin nadie de fuera, el día va como antes');
+      const vuelta = await juntarPartesQr((await codificarParaQr('asistencia', paquete)).map(leerParteQr));
+      ok(vuelta, 'el paquete con la cuenta se lee');
+      const [d10, d11] = compararAsistencia(aqui, vuelta);
+      igual(d10.fuera.ayudaSocial, 3);
+      ok(d10.fueraDistinto, '1 y 0 aquí contra 2 y 3 allá');
+      const dias = new Set(['2026-10-10', '2026-10-11']);
+      const base = { dias, menuRecibido: new Set(), preciosRecibidos: new Set() };
+      const quedo = aplicarAsistencia(aqui, [d10, d11], base, null);
+      igual(quedo.atenciones[0].sinInscribir.normal, 1, 'sin elegir, queda la de aquí (no se suma)');
+      igual(quedo.atenciones.find((o) => o.fecha === '2026-10-11').sinInscribir.ayudaSocial, 4, 'día nuevo: va la recibida');
+      const elegido = aplicarAsistencia(aqui, [d10, d11], { ...base, fueraRecibido: new Set(['2026-10-10']) }, null);
+      igual(elegido.atenciones[0].sinInscribir.ayudaSocial, 3, 'elegida la recibida');
+      igual(aqui.atenciones[0].sinInscribir.normal, 1, 'no toca el original');
+      vuelta.d[0][4] = [-1, 2];
+      const malo = { ...vuelta }; delete malo.tipo;
+      ok(!(await juntarPartesQr((await codificarParaQr('asistencia', malo)).map(leerParteQr))), 'una cuenta negativa no se acepta');
+    }
+  },
+  {
+    grupo: 'Pasar datos por QR',
+    nombre: 'Lo recibido que no es un valor de la app no se guarda tal cual',
+    fn: () => {
+      const fila = ['RARO', '', 'PRUEBA', '00000077', 'pasaporte', 'ayer', 'bebe', 'X', 'beneficiario', 1, '2026-01-01', 'nunca', ''];
+      const c = compararPadron({ afiliados: [], atenciones: [] }, { t: 'P', v: 1, p: [fila] });
+      const p = c.nuevas[0];
+      igual(p.tipoAfiliado, '', 'tipo desconocido: vacío (queda en «Les faltan datos»)');
+      igual(p.tipoDocumento, 'dni');
+      igual(p.grupoEtarioManual, null);
+      igual(p.sexo, '');
+      igual(p.fechaNacimiento, '');
+      igual(p.bajaEn, '');
+      const e = compararEntregas({ entregas: [] }, { t: 'E', v: 1, c: ['diaria', '', []], e: [['2026-10-20', 'perdida', '']] });
+      igual(e.config.length, 0, 'periodicidad desconocida: no se ofrece');
+      igual(e.nuevas[0].estado, 'pendiente');
+    }
+  },
+  {
+    grupo: 'Pasar datos por QR',
     nombre: 'El QR de antes (solo cifras) se sigue leyendo',
     fn: async () => {
       const partes = codificarListaQr({ fecha: '2026-10-12', marcas: [{ dni: '00000001', menu: 'ayuda_social' }] });

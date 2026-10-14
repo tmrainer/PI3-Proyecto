@@ -122,23 +122,6 @@
   </section>
 
   <section class="bloque apoyo">
-    <h2>Cargar un padrón desde Excel</h2>
-    <p class="pista">Elige el archivo, o copia las filas con sus títulos y pégalas. Nada se guarda hasta que revises.</p>
-    <div class="campo">
-      <label for="pegarPadron">Pega aquí las filas (con la fila de títulos)</label>
-      <textarea id="pegarPadron" rows="5" placeholder="Apellido paterno	Apellido materno	Nombres	DNI	Grupo de edad	Tipo"></textarea>
-    </div>
-    <div class="acciones" style="margin-top:10px">
-      <label class="boton secundario" for="archivoPadron">Elegir archivo de Excel</label>
-      <input type="file" id="archivoPadron" accept=".xlsx,.xls,.csv,.tsv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="oculto-visual">
-      <button type="button" class="boton secundario" id="revisar-importacion">Revisar</button>
-      <button type="button" class="boton" id="confirmar-importacion" hidden>Agregar</button>
-      <button type="button" class="boton secundario" id="cancelar-importacion" hidden>Cancelar</button>
-    </div>
-    <div id="vista-importacion" style="margin-top:12px"></div>
-  </section>
-
-  <section class="bloque apoyo">
     <h2>Reporte para el padrón</h2>
     <p class="pista">Personas activas, numeradas y ordenadas por apellido.</p>
     <div class="rejilla dos">
@@ -158,8 +141,24 @@
     <div id="reporte-padron" style="margin-top:12px"></div>
   </section>
 
-  <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras escribes.</p>
+  <section class="bloque apoyo" id="excel">
+    <h2>Cargar un padrón desde Excel</h2>
+    <p class="pista">Elige el archivo, o copia las filas con sus títulos y pégalas. Nada se guarda hasta que revises. Para pasar el padrón a otro teléfono, usa <a href="./datos.html#pasar">Tus datos</a>.</p>
+    <div class="campo">
+      <label for="pegarPadron">Pega aquí las filas (con la fila de títulos)</label>
+      <textarea id="pegarPadron" rows="5" placeholder="Apellido paterno	Apellido materno	Nombres	DNI	Grupo de edad	Tipo"></textarea>
+    </div>
+    <div class="acciones" style="margin-top:10px">
+      <label class="boton secundario" for="archivoPadron">Elegir archivo de Excel</label>
+      <input type="file" id="archivoPadron" accept=".xlsx,.xls,.csv,.tsv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="oculto-visual">
+      <button type="button" class="boton secundario" id="revisar-importacion">Revisar</button>
+      <button type="button" class="boton" id="confirmar-importacion" hidden>Agregar</button>
+      <button type="button" class="boton secundario" id="cancelar-importacion" hidden>Cancelar</button>
+    </div>
+    <div id="vista-importacion" style="margin-top:12px"></div>
+  </section>
 
+  <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras escribes.</p>
 
 </main>
 </body>
