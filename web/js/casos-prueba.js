@@ -1778,6 +1778,9 @@ export const casos = [
       igual(p.sexo, '');
       igual(p.fechaNacimiento, '');
       igual(p.bajaEn, '');
+      const conRaro = { afiliados: [{ ...nuevoAfiliado(), numeroDocumento: '00000077', nombres: 'PRUEBA', apellidoPaterno: 'RARO', tipoAfiliado: 'beneficiario' }], atenciones: [] };
+      const fila2 = fila.slice(); fila2[8] = 'habitual';
+      ok(compararPadron(conRaro, { t: 'P', v: 1, p: [fila2] }).distintas[0].soloCompleta, 'un tipo inválido aquí cuenta como vacío');
       const e = compararEntregas({ entregas: [] }, { t: 'E', v: 1, c: ['diaria', '', []], e: [['2026-10-20', 'perdida', '']] });
       igual(e.config.length, 0, 'periodicidad desconocida: no se ofrece');
       igual(e.nuevas[0].estado, 'pendiente');

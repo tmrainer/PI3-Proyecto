@@ -187,13 +187,17 @@ export function paqueteDelPadron(padron) {
 // desconocido queda vacío y la persona aparece en «Les faltan datos».
 const unoDe = (v, permitidos, si) => (permitidos.includes(v) ? v : si);
 const fechaO = (v) => (esFecha(v) ? v : '');
+const PERMITIDOS = {
+  tipoDocumento: ['dni', 'ce'], sexo: ['F', 'M'], tipoAfiliado: ['habitual', 'caso_social'],
+  grupoEtarioManual: TRAMOS_ETARIOS.map((t) => t.clave)
+};
 
 function personaDeFila(f) {
   return {
     apellidoPaterno: f[0], apellidoMaterno: f[1], nombres: f[2], numeroDocumento: f[3],
-    tipoDocumento: unoDe(f[4], ['dni', 'ce'], 'dni'),
-    fechaNacimiento: fechaO(f[5]), grupoEtarioManual: unoDe(f[6], TRAMOS_ETARIOS.map((t) => t.clave), null),
-    sexo: unoDe(f[7], ['F', 'M'], ''), tipoAfiliado: unoDe(f[8], ['habitual', 'caso_social'], ''),
+    tipoDocumento: unoDe(f[4], PERMITIDOS.tipoDocumento, 'dni'),
+    fechaNacimiento: fechaO(f[5]), grupoEtarioManual: unoDe(f[6], PERMITIDOS.grupoEtarioManual, null),
+    sexo: unoDe(f[7], PERMITIDOS.sexo, ''), tipoAfiliado: unoDe(f[8], PERMITIDOS.tipoAfiliado, ''),
     activo: f[9] === 1, altaEn: fechaO(f[10]), bajaEn: fechaO(f[11]), motivoBaja: f[12]
   };
 }
@@ -253,6 +257,8 @@ export const CAMPOS_PERSONA = [
 
 const valorCampo = (p, k) => (k === 'activo' ? p.activo !== false : String(p[k] ?? '').trim());
 const vacio = (v) => v === '' || v === null || v === undefined;
+// Lo de aquí que no es un valor de la app cuenta como vacío: se propone lo recibido.
+const vacioAqui = (p, k) => vacio(valorCampo(p, k)) || (PERMITIDOS[k] && !PERMITIDOS[k].includes(p[k]));
 const claveNombre = (p) => normalizarNombre(nombreCompleto(p));
 
 /**
@@ -298,7 +304,7 @@ export function compararPadron(padron, paquete) {
     r.distintas.push({
       mia, recibida, campos,
       nombreDistinto: claveNombre(mia) !== claveNombre(recibida),
-      soloCompleta: campos.every((c) => c.campo !== 'activo' && vacio(valorCampo(mia, c.campo)))
+      soloCompleta: campos.every((c) => c.campo !== 'activo' && vacioAqui(mia, c.campo))
     });
   }
   r.soloAqui = mias.filter((a) => !tocadas.has(a)).length;

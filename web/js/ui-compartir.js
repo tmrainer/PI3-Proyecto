@@ -205,7 +205,20 @@ function compararYConfirmar(paquete, alGuardar) {
   const armado = paquete.tipo === 'padron' ? vistaPadron(paquete, datos)
     : paquete.tipo === 'asistencia' ? vistaAsistencia(paquete, datos) : vistaEntregas(paquete, datos);
   if (!armado.hayCambios) {
-    avisoAbajo(armado.sinCambios || 'Ya tenías todo igual: no hay nada que cambiar.');
+    // Antes era un aviso abajo que se iba solo: la cámara se cerraba y parecía
+    // que no había pasado nada. Ahora queda a la vista hasta tocar «Listo».
+    const listo = crearElemento('button', { type: 'button', clase: 'boton', texto: 'Listo', onclick: () => { aviso.close(); aviso.remove(); } });
+    const aviso = crearElemento('dialog', { clase: 'camara-dni comparar', 'aria-labelledby': 'comparar-titulo' }, [
+      crearElemento('h2', { id: 'comparar-titulo', texto: armado.titulo }),
+      crearElemento('div', { clase: 'resumen-chips comparar-resumen' }, armado.resumen),
+      crearElemento('p', { texto: armado.sinCambios || 'Ya tenías todo igual: no hay nada que cambiar.' }),
+      crearElemento('p', { clase: 'pista', texto: 'No se guardó nada porque no hacía falta.' }),
+      crearElemento('div', { clase: 'acciones comparar-acciones' }, [listo])
+    ]);
+    document.body.append(aviso);
+    aviso.addEventListener('cancel', (e) => { e.preventDefault(); aviso.close(); aviso.remove(); });
+    aviso.showModal();
+    vibrar(40);
     return;
   }
   const guardarBoton = crearElemento('button', { type: 'button', clase: 'boton', texto: 'Guardar los cambios' });
