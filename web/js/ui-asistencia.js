@@ -12,11 +12,9 @@ import {
   afiliadosActivos, grupoEtario, etiquetaGrupoEtario, menuPorDefecto,
   desgloseDelDia, recaudacionDelDiaCent, asistio, asistenciasDelDia, menuDe, asistenciasConTodos, sinInscribirDelDia
 } from './calculos.js';
-import { estado, preciosActuales } from './estado.js';
+import { estado, preciosActuales, guardarYa } from './estado.js';
 import { lectoresDni, abrirCamaraDni } from './camara-dni.js';
-import { codificarListaQr, sumarMarcasRecibidas } from './lista-qr.js';
-import { mostrarListaQr, leerListaQr, puedeLeerQr } from './camara-qr.js';
-import { leerPerfil } from './perfil.js';
+import { enviarPorQr, recibirPorQr, puedeLeerQr } from './ui-compartir.js';
 import { crearElemento, campo, icono, vigilarAltoFijo, chip, avatarPersona, avisoAbajo, vibrar, estadoVacio } from './ui.js';
 
 // ctx: { fechaRef, titulo, onCambio(), onRepintar(), onResumen() }
@@ -353,84 +351,24 @@ export function pintarOtrosDias(lista, ctx) {
 // ------------------------------------- juntar la lista de dos teléfonos (QR)
 //
 // Si dos personas pasan lista en teléfonos distintos, una muestra un QR con
-// sus marcas de hoy y la otra lo lee: se suman las que faltaban, por DNI
-// (lista-qr.js). Sin internet ni servidor. Se puede deshacer.
+// sus marcas de hoy y la otra lo lee. Antes de guardar se ve qué se suma y
+// qué no coincide (ui-compartir.js). Sin internet ni servidor. Se puede deshacer.
 
-function juntarConOtroTelefono(at, ctx, repintarHoy) {
+function juntarConOtroTelefono(at, ctx) {
   const pasar = crearElemento('button', {
     type: 'button', clase: 'boton diminuto secundario', texto: 'Pasar mi lista por QR',
-    onclick: () => {
-      const porId = new Map(estado.padron.afiliados.map((p) => [p.id, p]));
-      const marcas = [];
-      let sinDni = 0;
-      for (const x of asistenciasDelDia(at)) {
-        const dni = String((porId.get(x.afiliadoId) || {}).numeroDocumento || '').trim();
-        if (/^\d{8}$/.test(dni)) marcas.push({ dni, menu: x.tipoMenu });
-        else sinDni += 1;
-      }
-      const partes = codificarListaQr({ fecha: at.fecha, marcas });
-      if (!partes.length) {
-        avisoAbajo(sinDni ? 'Las personas marcadas no tienen DNI de 8 cifras: no se pueden pasar por QR.'
-          : 'Todavía no marcaste a nadie hoy.');
-        return;
-      }
-      const quien = leerPerfil().nombre;
-      mostrarListaQr({
-        partes,
-        titulo: 'Pasar mi lista a otro teléfono',
-        detalle: `${cuantos(marcas.length, 'persona')} de hoy${quien ? `, marcadas por ${quien}` : ''}. ` +
-          'En el otro teléfono: Asistencia → «Recibir lista por QR».' +
-          (sinDni ? ` ${cuantos(sinDni, 'persona')} sin DNI de 8 cifras no van en el código.` : '')
-      });
-    }
+    onclick: () => enviarPorQr('asistencia', { padron: estado.padron, fechas: [at.fecha] })
   });
   const recibir = crearElemento('button', {
-    type: 'button', clase: 'boton diminuto secundario', texto: 'Recibir lista por QR', hidden: true,
-    onclick: () => leerListaQr({ alRecibir: (lista) => sumarLista(lista, at, ctx, repintarHoy) })
+    type: 'button', clase: 'boton diminuto secundario', texto: 'Recibir por QR', hidden: true,
+    // Lo que está por guardarse se guarda antes: la comparación lee lo guardado.
+    onclick: () => { guardarYa(); recibirPorQr({ alGuardar: ctx.onDatosNuevos }); }
   });
   puedeLeerQr().then((si) => { recibir.hidden = !si; }).catch(() => {});
   return crearElemento('div', { clase: 'juntar-qr' }, [
-    crearElemento('p', { clase: 'pista', texto: '¿Pasaron lista en dos teléfonos? Junten las listas con un código QR.' }),
+    crearElemento('p', { clase: 'pista', texto: '¿Pasaron lista en dos teléfonos? Junten las listas con un código QR. Otros días, el padrón y las entregas se pasan desde Tus datos.' }),
     crearElemento('div', { clase: 'acciones' }, [pasar, recibir])
   ]);
-}
-
-function sumarLista({ fecha, marcas }, atHoy, ctx, repintarHoy) {
-  const esHoy = fecha === atHoy.fecha;
-  let dia = esHoy ? atHoy : estado.padron.atenciones.find((o) => o.fecha === fecha);
-  const nuevo = !dia;
-  if (nuevo) {
-    dia = nuevaAtencion(preciosActuales());
-    dia.fecha = fecha;
-  }
-  const ya = new Set(asistenciasDelDia(dia).map((x) => x.afiliadoId));
-  const r = sumarMarcasRecibidas(marcas, afiliadosActivos(estado.padron, fecha), ya);
-  const otros = [
-    r.yaEstaban ? (r.yaEstaban === 1 ? '1 ya estaba' : `${r.yaEstaban} ya estaban`) : '',
-    r.desconocidos ? (r.desconocidos === 1 ? '1 no está en tu padrón' : `${r.desconocidos} no están en tu padrón`) : ''
-  ].filter(Boolean).join(', ');
-  if (!r.agregar.length) {
-    avisoAbajo(`No había nadie nuevo que sumar${otros ? ` (${otros})` : ''}.`);
-    return;
-  }
-  const antes = { asistencias: asistenciasDelDiaCopia(dia), legado: dia.legado };
-  dia.asistencias = [...asistenciasDelDia(dia), ...r.agregar];
-  dia.legado = null;
-  if (esHoy) asegurarHoyGuardado();
-  else if (nuevo) estado.padron.atenciones.push(dia);
-  const repintar = () => {
-    if (esHoy) { repintarHoy(); ctx.onCambio(); ctx.onResumen(); } else ctx.onRepintar();
-  };
-  repintar();
-  vibrar(40);
-  avisoAbajo(`${r.agregar.length === 1 ? 'Se sumó' : 'Se sumaron'} ${cuantos(r.agregar.length, 'persona')}` +
-    `${esHoy ? '' : ` al ${aDdMmAa(fecha)}`}` +
-    `${otros ? ` (${otros})` : ''}.`, () => {
-    dia.asistencias = antes.asistencias;
-    dia.legado = antes.legado;
-    if (nuevo) estado.padron.atenciones = estado.padron.atenciones.filter((o) => o !== dia);
-    repintar();
-  });
 }
 
 // -------------------------------------------------------- asistencia de hoy
@@ -708,7 +646,7 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
       crearElemento('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Marcar a todos', onclick: () => marcarTodos(true) }),
       crearElemento('button', { type: 'button', clase: 'boton diminuto secundario', texto: 'Quitar a todos', onclick: () => marcarTodos(false) })
     ]),
-    juntarConOtroTelefono(at, ctx, () => { filas.clear(); pintarLista(); refrescar(); })
+    juntarConOtroTelefono(at, ctx)
   );
   vigilarAltoFijo(fija);
   pintarLista();

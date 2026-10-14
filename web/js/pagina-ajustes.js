@@ -1,16 +1,14 @@
 // pagina-ajustes.js — controlador de ajustes.html.
 //
-// En un solo lugar lo que antes estaba repartido: la copia de los datos y la
-// privacidad (antes, plegada al pie de cada pantalla), el modo claro u
-// oscuro, el tamaño de letra y la lectura en voz alta. Las preferencias son de
-// este equipo (claves «pi3.*», ver js/preferencias.js): no van en las copias.
-
-import { CLAVES, leer, hoyIso, cuantos, fechaLarga } from './modelo.js';
+// Lo que es de este teléfono: quién lo usa, el modo claro u oscuro, el tamaño
+// de letra y la lectura en voz alta. Las preferencias son de este equipo
+// (claves «pi3.*», ver js/preferencias.js): no van en las copias. Lo que toca
+// a los datos (dónde se guardan, la copia, borrar todo) está en datos.html.
 
 /** Versión que se muestra en «Acerca de». Subirla junto con versionName del APK. */
-const VERSION_APP = '1.1';
+const VERSION_APP = '1.2';
 import {
-  buscar, crearElemento, montarCabecera, bloquePrivacidad, barraDatos, botonBorrarTodo,
+  buscar, crearElemento, montarCabecera, icono,
   pintarAvisosAlmacenamiento, mostrarBienvenida, decir, puedeHablar, sincronizarBarras, avisoAbajo
 } from './ui.js';
 import { leerPerfil, guardarPerfil, ROLES } from './perfil.js';
@@ -38,18 +36,12 @@ function elegirUno(caja, nombre, opciones, actual, alElegir) {
   }
 }
 
-// ---- copia de los datos ----
-buscar('#privacidad').append(bloquePrivacidad());
-// Borrar todo va aparte, al final, lejos de «Guardar una copia».
-buscar('#barra-datos').append(barraDatos({ borrar: false }));
-buscar('#borrar-todo').append(botonBorrarTodo());
-const ultima = leer(CLAVES.respaldo, {}).ultimoEn;
-const dias = ultima ? Math.round((Date.parse(hoyIso()) - Date.parse(ultima)) / 86400000) : null;
-buscar('#ultima-copia').textContent = dias === null
-  ? 'Todavía no guardaste ninguna copia en este teléfono.'
-  : dias === 0 ? 'Tu última copia es de hoy.'
-    : `Tu última copia es del ${fechaLarga(ultima).toLowerCase()} (hace ${cuantos(dias, 'día')}).`;
-if (dias === null || dias >= 14) buscar('#ultima-copia').classList.add('pendiente');
+// ---- tus datos: página aparte ----
+// Antes la copia estaba aquí: quien llega con #copia va a la página nueva.
+if (location.hash === '#copia') location.replace('./datos.html#copia');
+const enlaceDatos = buscar('#enlace-datos');
+enlaceDatos.prepend(icono('escudo', { tam: 24 }));
+enlaceDatos.append(icono('flecha', { tam: 20 }));
 
 // ---- quién usa este teléfono ----
 const perfil = leerPerfil();
@@ -107,5 +99,5 @@ buscar('#como-se-usa').addEventListener('click', () => mostrarBienvenida());
 // ---- acerca de ----
 buscar('#version-app').textContent = `Versión ${VERSION_APP}`;
 
-// Llegar con #copia (desde el aviso de copia) deja esa sección a la vista.
-if (location.hash === '#copia' || location.hash === '#perfil') buscar(location.hash).scrollIntoView({ block: 'start' });
+// Llegar con #perfil (desde la invitación del Inicio) deja esa sección a la vista.
+if (location.hash === '#perfil') buscar('#perfil').scrollIntoView({ block: 'start' });

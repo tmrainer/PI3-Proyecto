@@ -62,6 +62,7 @@ for (const t of document.querySelectorAll('.tarea')) {
 buscar('#como-se-usa').addEventListener('click', () => mostrarBienvenida());
 const enlaceAjustes = buscar('#enlace-ajustes');
 enlaceAjustes.prepend(icono('ajustes', { tam: 22 }));
+buscar('#enlace-datos').prepend(icono('escudo', { tam: 22 }));
 
 // ---- la copia de los datos ----
 const nota = buscar('#nota-copia');

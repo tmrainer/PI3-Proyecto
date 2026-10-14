@@ -86,6 +86,8 @@ const TRAZOS = {
   ayuda: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17.5h.01',
   letra: 'M4 19l5-14 5 14M6 14h6M15 19l3-8 3 8M16.2 16h3.6',
   buscar: 'M17.5 11a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0M16 16l4.5 4.5',
+  nube: 'M7 18h10a4 4 0 0 0 .6-8A6 6 0 0 0 6 11.5 3.3 3.3 0 0 0 7 18z',
+  archivo: 'M14 3H6v18h12V7zM14 3v4h4M9 13h6M9 17h6',
   camara: 'M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3zM15 13a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
   ajustes: 'M15.5 12a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
   lapiz: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z'
@@ -273,13 +275,14 @@ function montarBarraTitulo(claveActiva) {
       icono(nombreIcono, { tam: 22 }), crearElemento('span', { texto })
     ]);
   }
-  // Lo que se usa poco: el resto (copia de los datos, letra, modo, voz) está
-  // en Ajustes, en un solo lugar.
+  // Lo que se usa poco: la copia de los datos va en Tus datos; letra, modo y
+  // voz, en Ajustes.
   function pintarOpciones() {
     opciones.textContent = '';
     opciones.append(
       opcion('voz', 'Leer esta pantalla en voz alta', leerPantalla),
       opcion('ayuda', '¿Cómo se usa?', () => mostrarBienvenida()),
+      opcion('escudo', 'Tus datos', () => { location.href = './datos.html'; }),
       opcion('ajustes', 'Ajustes', () => { location.href = './ajustes.html'; })
     );
   }
@@ -461,6 +464,17 @@ export function vigilarAltoFijo(el, variable = '--alto-panel', posicion = 'stick
  */
 function registrarTrabajador() {
   if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
+  // Dentro del APK los archivos ya vienen en el teléfono: el trabajador solo
+  // sumaba una copia más, que tras instalar un APK nuevo seguía sirviendo la
+  // versión vieja hasta recargar. Se quita el que haya quedado de antes.
+  const C = window.Capacitor;
+  if (C && C.isNativePlatform && C.isNativePlatform()) {
+    navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
+    if (window.caches) {
+      caches.keys().then((ks) => ks.filter((k) => k.startsWith('pi3-app-')).forEach((k) => caches.delete(k))).catch(() => {});
+    }
+    return;
+  }
   navigator.serviceWorker.register('./sw.js').catch(() => { /* sin él, la app funciona igual con red */ });
   // La app se sirve de su copia guardada; las novedades se bajan aparte, ya
   // cargada la página, y se avisa para que se use la versión nueva al recargar.
@@ -665,31 +679,49 @@ export function bannerAlerta(alerta, { mostrarEnlace = true, pedirConfigurar = t
   return caja;
 }
 
-// --------------------------------------------------- aviso de privacidad (§9)
+// --------------------------------------------- dónde se guardan los datos (§9)
 
-export function bloquePrivacidad() {
-  // Va en Ajustes, arriba de «Copia de tus datos»: tres líneas a la vista,
-  // sin plegar.
-  const estadoProteccion = crearElemento('p', { clase: 'dato-fuerte estado-proteccion', texto: textoProteccion() });
-  return crearElemento('div', { clase: 'privacidad privacidad-cuerpo' }, [
-    crearElemento('p', {
-      texto: 'Tus datos se guardan solo en este equipo, no en internet. Funciona sin señal.'
-    }),
-    crearElemento('p', {
-      texto: (esAppNativa()
-        ? 'Si desinstalas la aplicación o cambias de teléfono, se pierden. '
-        : 'Si borras los datos del navegador o cambias de teléfono, se pierden. ') +
-        'Guarda una copia cada dos semanas.'
-    }),
-    estadoProteccion,
-    crearElemento('button', {
-      type: 'button', clase: 'boton diminuto boton-instalar', texto: 'Instalar la aplicación',
-      hidden: !pedidoInstalar, onclick: instalar
-    }),
-    crearElemento('p', {
-      texto: 'La copia tiene nombres y DNI. Si la mandas por WhatsApp o correo, ponle contraseña.'
-    })
+/**
+ * «Dónde se guardan» (página Tus datos): cada lugar donde quedan los datos,
+ * dicho con claridad. En el APK, Android puede sumarlos a la copia de
+ * seguridad de Google del teléfono (allowBackup en AndroidManifest.xml): se
+ * dice, para que nadie se sorprenda ni confíe solo en ella.
+ */
+export function lugaresDeLosDatos() {
+  const nativa = esAppNativa();
+  const lugar = (nombreIcono, titulo, textos, extra = []) => crearElemento('li', { clase: 'lugar' }, [
+    icono(nombreIcono, { tam: 24 }),
+    crearElemento('div', {}, [
+      crearElemento('p', { clase: 'lugar-titulo', texto: titulo }),
+      ...textos.map((t) => crearElemento('p', { texto: t })),
+      ...extra
+    ])
   ]);
+  const lugares = [
+    lugar('escudo', nativa ? 'En este teléfono, dentro de la app' : 'En este teléfono, dentro del navegador', [
+      'El padrón, la asistencia, el B-1 y las entregas no se mandan a internet. Funciona sin señal.',
+      nativa
+        ? 'Si desinstalas la app o cambias de teléfono, pueden perderse.'
+        : 'Si borras los datos del navegador o cambias de teléfono, se pierden.'
+    ], nativa ? [] : [
+      crearElemento('p', { clase: 'dato-fuerte estado-proteccion', texto: textoProteccion() }),
+      crearElemento('button', {
+        type: 'button', clase: 'boton diminuto boton-instalar', texto: 'Instalar la aplicación',
+        hidden: !pedidoInstalar, onclick: instalar
+      })
+    ])
+  ];
+  if (nativa) {
+    lugares.push(lugar('nube', 'En la copia de seguridad de Google, si está activada', [
+      'Android puede guardar los datos de esta app en la copia de seguridad de la cuenta Google del ' +
+        'teléfono. Se prende o se apaga en los ajustes del teléfono: Google → Copia de seguridad.',
+      'El equipo del proyecto no la ve. No siempre se recupera: no te fíes solo de ella.'
+    ]));
+  }
+  lugares.push(lugar('archivo', 'En las copias que guardas tú', [
+    'Solo cuando tocas «Guardar una copia»: un archivo que queda donde tú lo guardes.'
+  ]));
+  return crearElemento('ul', { clase: 'lugares' }, lugares);
 }
 
 /** Qué tan protegidos están los datos contra el borrado automático del navegador. */

@@ -24,7 +24,9 @@ const ctx = {
   titulo: null,
   onCambio: () => { guardarPronto(); refrescarPronto(); },
   onRepintar: () => { guardarPronto(); repintar(); },
-  onResumen: () => refrescarPronto()
+  onResumen: () => refrescarPronto(),
+  // Llegaron datos por QR (ya guardados): se vuelven a leer y se repinta todo.
+  onDatosNuevos: () => { cargar(); repintarConservandoVista(() => { pintarPrecios(); repintar(); }); }
 };
 
 // Un toque debe verse marcado AL INSTANTE: el resumen del periodo y la

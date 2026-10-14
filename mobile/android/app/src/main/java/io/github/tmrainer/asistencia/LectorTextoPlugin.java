@@ -26,8 +26,8 @@ import java.util.List;
  * mecánica (MRZ) del DNI. La app web le pasa un fotograma de la cámara en
  * JPEG (base64) y recibe los pedazos de texto con su posición, de arriba abajo.
  *
- * Todo pasa en el teléfono, con el modelo de ML Kit que viene dentro del APK:
- * la imagen no se guarda ni sale del aparato. En el navegador este
+ * Todo pasa en el teléfono, con el modelo de ML Kit que instala Google Play
+ * (ver AndroidManifest.xml): la imagen no se guarda ni sale del aparato. En el navegador este
  * complemento no existe y la app web solo ofrece el código de barras.
  */
 @CapacitorPlugin(name = "LectorTexto")

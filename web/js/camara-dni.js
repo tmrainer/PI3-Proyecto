@@ -97,6 +97,7 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
     if (!abierto) return;
     abierto = false;
     clearTimeout(temporizador);
+    document.removeEventListener('visibilitychange', alOcultar);
     if (flujo) flujo.getTracks().forEach((t) => t.stop());
     video.srcObject = null;
     lienzo.width = 0;                       // suelta el último fotograma
@@ -104,6 +105,11 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
     dialogo.remove();
     alCerrar();
   }
+  // Si se sale de la app con la cámara abierta, se cierra: Android se la
+  // quita igual y el visor quedaba congelado gastando batería. Solo con la
+  // cámara ya abierta, para no cerrarlo con el aviso de permiso.
+  function alOcultar() { if (document.hidden && flujo) cerrar(); }
+  document.addEventListener('visibilitychange', alOcultar);
 
   function entregar(resultado) {
     if (!abierto) return;
@@ -157,8 +163,16 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
     const destino = 1600;
     lienzo.width = destino;
     lienzo.height = Math.round(destino * (alto / ancho));
-    lienzo.getContext('2d').drawImage(video, (vw - ancho) / 2, (vh - alto) / 2, ancho, alto, 0, 0, lienzo.width, lienzo.height);
-    return lienzo.toDataURL('image/jpeg', 0.85).split(',')[1];
+    lienzo.getContext('2d', { alpha: false }).drawImage(video, (vw - ancho) / 2, (vh - alto) / 2, ancho, alto, 0, 0, lienzo.width, lienzo.height);
+    // toBlob comprime el JPEG fuera del hilo principal (toDataURL lo hacía en
+    // él y trababa el visor en un teléfono modesto, una vez cada 750 ms).
+    return new Promise((ok, mal) => lienzo.toBlob((jpeg) => {
+      if (!jpeg) return mal(new Error('sin fotograma'));
+      const lectura = new FileReader();
+      lectura.onload = () => ok(String(lectura.result).split(',')[1]);
+      lectura.onerror = () => mal(lectura.error);
+      lectura.readAsDataURL(jpeg);
+    }, 'image/jpeg', 0.85));
   }
 
   function pasarAlAnverso(mrz) {
@@ -182,7 +196,7 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
         }
         // El texto cuesta más: una de cada tres vueltas (en el anverso, todas).
         if (lector && (fase === 'anverso' || vuelta % 3 === 0)) {
-          const { fragmentos } = await lector.leer({ imagen: fotogramaDelRecuadro() });
+          const { fragmentos } = await lector.leer({ imagen: await fotogramaDelRecuadro() });
           const filas = unirFilasOcr(fragmentos);
           if (fase === 'reverso') {
             const mrz = buscarMrzTd1(filas);

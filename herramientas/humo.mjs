@@ -24,7 +24,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = path.resolve(process.argv[2] || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web'));
-const PAGINAS = ['index', 'asistencia', 'padron', 'formato-b1', 'calendario', 'ajustes', 'probar-dni', 'pruebas'];
+const PAGINAS = ['index', 'asistencia', 'padron', 'formato-b1', 'calendario', 'ajustes', 'datos', 'probar-dni', 'pruebas'];
 
 // ------------------------------------------------------------ padrón de prueba
 
@@ -370,7 +370,7 @@ async function correr(base, cdp) {
     comprobar('respaldo con contraseña: cifrado, y la equivocada no lo abre',
       r1.oculto && r1.malaFalla && r1.vuelta === 3, JSON.stringify(r1));
 
-    await p.ir(`${base}/ajustes.html`);      // ya con el padrón vacío
+    await p.ir(`${base}/datos.html`);      // ya con el padrón vacío
     const ABRIR_CON = (clave) => `(async () => {
       document.getElementById('clave-importar').value = ${JSON.stringify(clave)};
       [...document.querySelectorAll('.respaldo-clave button')].find((b) => b.textContent === 'Abrir copia').click();
@@ -395,7 +395,7 @@ async function correr(base, cdp) {
     await p.cerrar();
   }
 
-  // 1e. Recuperar una copia (en Ajustes) restaura TODO lo que trae el
+  // 1e. Recuperar una copia (en Tus datos) restaura TODO lo que trae el
   // respaldo: padrón, calendario y B-1.
   {
     const p = await pestana(cdp);
@@ -410,7 +410,7 @@ async function correr(base, cdp) {
       localStorage.clear();
       return 1;
     })()`);
-    await p.ir(`${base}/ajustes.html`);
+    await p.ir(`${base}/datos.html`);
     await p.actuar(`(async () => {
       window.confirm = () => true;
       const dt = new DataTransfer();
@@ -562,18 +562,29 @@ async function correr(base, cdp) {
     await p.ir(`${base}/asistencia.html`);
     const menu = await p.eval(`(document.querySelector('.cabecera-menu').click(),
       [...document.querySelectorAll('.menu-opciones button')].map((b) => b.textContent.trim()))`);
-    comprobar('menú ⋮: leer, ayuda y Ajustes', menu.join('|') === 'Leer esta pantalla en voz alta|¿Cómo se usa?|Ajustes', menu.join('|'));
+    comprobar('menú ⋮: leer, ayuda, Tus datos y Ajustes',
+      menu.join('|') === 'Leer esta pantalla en voz alta|¿Cómo se usa?|Tus datos|Ajustes', menu.join('|'));
+    await p.ir(`${base}/datos.html`);
+    const datos = await p.eval(`({ copia: !!document.querySelector('#barra-datos .boton'),
+      borrarAparte: !document.querySelector('#barra-datos .peligro') && !!document.querySelector('#borrar-todo .peligro'),
+      ultima: document.getElementById('ultima-copia').textContent,
+      lugares: document.querySelectorAll('#lugares .lugar').length })`);
+    comprobar('tus datos: dónde se guardan, copia y «Borrar todo» aparte al final',
+      datos.copia && datos.borrarAparte && /Todavía no guardaste/.test(datos.ultima) && datos.lugares >= 2, JSON.stringify(datos));
+    await p.ir(`${base}/ajustes.html#copia`);
+    await pausa(400);
+    const desvio = await p.eval('location.pathname + location.hash');
+    comprobar('ajustes: #copia lleva a Tus datos', desvio.endsWith('/datos.html#copia'), desvio);
     await p.ir(`${base}/ajustes.html`);
     const ajustes = await p.actuar(`(() => {
       document.getElementById('letra-grande').click();
       document.getElementById('tema-oscuro').click();
       document.getElementById('voz-boton').click();
-      return { copia: !!document.querySelector('#barra-datos .boton'),
-        borrarAparte: !document.querySelector('#barra-datos .peligro') && !!document.querySelector('#borrar-todo .peligro'),
-        ultima: document.getElementById('ultima-copia').textContent };
+      return { sinCopia: !document.getElementById('barra-datos') && !document.getElementById('borrar-todo'),
+        enlace: document.getElementById('enlace-datos').getAttribute('href') };
     })()`);
-    comprobar('ajustes: copia arriba, «Borrar todo» aparte al final',
-      ajustes.copia && ajustes.borrarAparte && /Todavía no guardaste/.test(ajustes.ultima), JSON.stringify(ajustes));
+    comprobar('ajustes: sin la copia, con el paso a Tus datos',
+      ajustes.sinCopia && ajustes.enlace === './datos.html', JSON.stringify(ajustes));
     await p.ir(`${base}/padron.html`);
     const letra = await p.eval(`({ clase: document.documentElement.classList.contains('letra-grande'),
       base: getComputedStyle(document.documentElement).fontSize,

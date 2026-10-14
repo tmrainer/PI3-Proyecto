@@ -32,6 +32,10 @@ import {
 } from './escaneo-dni.js';
 import { sugerirRucProveedor, sugerenciasEncabezado, sugerenciasPerfil } from './sugerencias.js';
 import { codificarListaQr, decodificarParteQr, sumarMarcasRecibidas } from './lista-qr.js';
+import {
+  aBase45, deBase45, codificarParaQr, leerParteQr, juntarPartesQr, paqueteDelPadron, paqueteDeAsistencia,
+  paqueteDeEntregas, compararPadron, aplicarPadron, compararAsistencia, aplicarAsistencia, compararEntregas, aplicarEntregas
+} from './compartir-qr.js';
 
 // Ejemplo de MRZ TD1 de la norma ICAO 9303-5 (persona y país inventados).
 const MRZ_ICAO = [
@@ -1630,14 +1634,140 @@ export const casos = [
       igual(normalizarNombre('Maria Jose'), 'maria jose');
       igual(nombreCompleto({ apellidoPaterno: 'Pérez', apellidoMaterno: '', nombres: 'Ana' }), 'Pérez Ana');
     }
+  },
+  // ------------------------------------------------ pasar datos por QR
+  {
+    grupo: 'Pasar datos por QR',
+    nombre: 'base45 (RFC 9285): el ejemplo de la norma y la vuelta',
+    fn: () => {
+      igual(aBase45(new TextEncoder().encode('AB')), 'BB8');
+      igual(aBase45(new TextEncoder().encode('Hello!!')), '%69 VD92EX0');
+      const bytes = new Uint8Array([0, 1, 255, 254, 128, 7, 200]);
+      igual(JSON.stringify([...deBase45(aBase45(bytes))]), JSON.stringify([...bytes]));
+      igual(deBase45('GGW'), null, 'fuera de rango');
+      igual(deBase45('a'), null);
+    }
+  },
+  {
+    grupo: 'Pasar datos por QR',
+    nombre: 'Un padrón grande va comprimido en varios códigos y vuelve igual',
+    fn: async () => {
+      const padron = { afiliados: Array.from({ length: 150 }, (_, i) => ({
+        ...nuevoAfiliado(), apellidoPaterno: 'PRUEBA', apellidoMaterno: 'ÑANDÚ', nombres: `PERSONA ${i}`,
+        numeroDocumento: String(10000000 + i), tipoAfiliado: 'habitual', grupoEtarioManual: 'adulto'
+      })), atenciones: [] };
+      const partes = await codificarParaQr('padron', paqueteDelPadron(padron));
+      ok(partes.length > 1, 'varias partes');
+      ok(partes.every((t) => /^P3P[0-9A-Z]{4}\d{4}[0-9A-Z $%*+\-./:]*:$/.test(t)), 'solo el alfabeto del QR');
+      const leidas = partes.map(leerParteQr).reverse();     // en cualquier orden
+      const vuelta = await juntarPartesQr(leidas);
+      igual(vuelta.tipo, 'padron');
+      igual(vuelta.p.length, 150);
+      igual(vuelta.p[3][1], 'ÑANDÚ', 'tildes y ñ intactas');
+      igual(await juntarPartesQr(leidas.slice(1)), null, 'falta una parte');
+      igual(leerParteQr('hola'), null);
+      igual(leerParteQr('P3PABCD0101XX'), null, 'sin cierre');
+    }
+  },
+  {
+    grupo: 'Pasar datos por QR',
+    nombre: 'Padrón recibido: nuevas, iguales, distintas y «mismo nombre, otro DNI»; lo de aquí no se pierde',
+    fn: () => {
+      const p = (doc, ap, nom, extra = {}) => ({ ...nuevoAfiliado(), apellidoPaterno: ap, nombres: nom,
+        numeroDocumento: doc, tipoAfiliado: 'habitual', grupoEtarioManual: 'adulto', ...extra });
+      const aqui = { afiliados: [p('00000001', 'ALFA', 'ANA'), p('00000002', 'BETA', 'BEA'),
+        p('00000003', 'GAMA', 'GIL', { sexo: '' }), p('00000004', 'DELTA', 'DORA'), p('00000009', 'SOLO', 'AQUI')], atenciones: [] };
+      const alla = { afiliados: [p('00000001', 'ALFA', 'ANA'), p('00000002', 'OTRO', 'NOMBRE'),
+        p('00000003', 'GAMA', 'GIL', { sexo: 'M' }), p('00000044', 'DELTA', 'DORA'), p('00000005', 'NUEVA', 'NORA'),
+        p('00000005', 'NUEVA', 'NORA')], atenciones: [] };
+      const c = compararPadron(aqui, paqueteDelPadron(alla));
+      igual(c.iguales, 1);
+      igual(c.nuevas.length, 1, 'la repetida cuenta una vez');
+      igual(c.dudosas.length, 1, 'DELTA DORA con otro DNI');
+      igual(c.distintas.length, 2);
+      const beta = c.distintas.find((d) => d.mia.numeroDocumento === '00000002');
+      ok(beta.nombreDistinto && !beta.soloCompleta, 'mismo DNI, otro nombre: se avisa');
+      const gama = c.distintas.find((d) => d.mia.numeroDocumento === '00000003');
+      ok(gama.soloCompleta, 'solo llena el sexo vacío');
+      igual(c.soloAqui, 2);
+      const nuevo = aplicarPadron(aqui, { agregar: c.nuevas, usarRecibida: [gama] });
+      igual(nuevo.afiliados.length, 6);
+      igual(nuevo.afiliados[2].sexo, 'M');
+      igual(nuevo.afiliados[1].apellidoPaterno, 'BETA', 'lo no elegido queda como aquí');
+      igual(nuevo.afiliados[5].origenDato, 'qr');
+      igual(aqui.afiliados.length, 5, 'no toca el original');
+    }
+  },
+  {
+    grupo: 'Pasar datos por QR',
+    nombre: 'Asistencia recibida: suma por DNI, respeta menús y precios de aquí salvo elección',
+    fn: async () => {
+      const a = (doc) => ({ ...nuevoAfiliado(), numeroDocumento: doc, altaEn: '2026-01-01' });
+      const aqui = { afiliados: [a('00000001'), a('00000002'), a('00000003')], atenciones: [] };
+      aqui.atenciones.push({ ...nuevaAtencion({ precioMenuNormalCent: 500, precioMenuAyudaSocialCent: 0 }), fecha: '2026-10-10',
+        asistencias: [{ afiliadoId: aqui.afiliados[0].id, tipoMenu: 'normal' }, { afiliadoId: aqui.afiliados[1].id, tipoMenu: 'normal' }] });
+      const otros = { afiliados: [a('00000001'), a('00000002'), a('00000003'), a('00000099')], atenciones: [] };
+      const ids = otros.afiliados.map((x) => x.id);
+      otros.atenciones.push({ ...nuevaAtencion({ precioMenuNormalCent: 600, precioMenuAyudaSocialCent: 0 }), fecha: '2026-10-10',
+        asistencias: [{ afiliadoId: ids[0], tipoMenu: 'normal' }, { afiliadoId: ids[1], tipoMenu: 'ayuda_social' },
+          { afiliadoId: ids[2], tipoMenu: 'normal' }, { afiliadoId: ids[3], tipoMenu: 'normal' }] });
+      otros.atenciones.push({ ...nuevaAtencion(null), fecha: '2026-10-11', asistencias: [{ afiliadoId: ids[2], tipoMenu: 'normal' }] });
+      const { paquete } = paqueteDeAsistencia(otros, ['2026-10-10', '2026-10-11']);
+      const vuelta = await juntarPartesQr((await codificarParaQr('asistencia', paquete)).map(leerParteQr));
+      const [d10, d11] = compararAsistencia(aqui, vuelta);
+      igual(d10.agregar.length, 1);
+      igual(d10.yaEstaban, 1);
+      igual(d10.menuDistinto.length, 1);
+      igual(d10.desconocidos, 1, 'no está en el padrón de aquí');
+      ok(d10.preciosDistintos, 'precio 6.00 contra 5.00');
+      ok(!d11.existe);
+      const eleccion = { dias: new Set(['2026-10-10', '2026-10-11']), menuRecibido: new Set(), preciosRecibidos: new Set() };
+      const nuevo = aplicarAsistencia(aqui, [d10, d11], eleccion, { precioMenuNormalCent: 500, precioMenuAyudaSocialCent: 0 });
+      const at10 = nuevo.atenciones.find((o) => o.fecha === '2026-10-10');
+      igual(at10.asistencias.length, 3);
+      igual(at10.asistencias[1].tipoMenu, 'normal', 'el menú de aquí se queda');
+      igual(at10.precioMenuNormalCent, 500, 'el precio de aquí se queda');
+      igual(nuevo.atenciones.find((o) => o.fecha === '2026-10-11').precioMenuNormalCent, 500, 'día nuevo: precio de aquí');
+      igual(aqui.atenciones[0].asistencias.length, 2, 'no toca el original');
+    }
+  },
+  {
+    grupo: 'Pasar datos por QR',
+    nombre: 'El QR de antes (solo cifras) se sigue leyendo',
+    fn: async () => {
+      const partes = codificarListaQr({ fecha: '2026-10-12', marcas: [{ dni: '00000001', menu: 'ayuda_social' }] });
+      const p = await juntarPartesQr(partes.map(leerParteQr));
+      igual(p.tipo, 'asistencia');
+      igual(JSON.stringify(p.d), JSON.stringify([['2026-10-12', null, null, [['00000001', 1]]]]));
+    }
+  },
+  {
+    grupo: 'Pasar datos por QR',
+    nombre: 'Entregas recibidas: nuevas, distintas y la configuración; se aplica solo lo elegido',
+    fn: () => {
+      const aqui = { periodicidad: 'mensual', fechaLimiteBase: '', diasDeAviso: [7, 3, 1],
+        entregas: [{ id: 'x', fechaLimite: '2026-10-15', estado: 'pendiente', nota: '' }] };
+      const alla = { periodicidad: 'quincenal', fechaLimiteBase: '2026-10-15', diasDeAviso: [7, 3, 1],
+        entregas: [{ fechaLimite: '2026-10-15', estado: 'entregada', nota: '' }, { fechaLimite: '2026-09-30', estado: 'conforme', nota: 'ok' }] };
+      const c = compararEntregas(aqui, paqueteDeEntregas(alla));
+      igual(c.config.map((x) => x.campo).join(','), 'periodicidad,fechaLimiteBase');
+      igual(c.nuevas.length, 1);
+      igual(c.distintas.length, 1);
+      const nuevo = aplicarEntregas(aqui, c, { config: new Set(['fechaLimiteBase']), nuevas: new Set(['2026-09-30']), distintas: new Set() });
+      igual(nuevo.periodicidad, 'mensual');
+      igual(nuevo.fechaLimiteBase, '2026-10-15');
+      igual(nuevo.entregas.length, 2);
+      igual(nuevo.entregas[0].estado, 'pendiente');
+      igual(aqui.entregas.length, 1, 'no toca el original');
+    }
   }
 ];
 
-export function ejecutar() {
+export async function ejecutar() {
   const resultados = [];
   for (const caso of casos) {
     try {
-      caso.fn();
+      await caso.fn();
       resultados.push({ ...caso, estado: 'pasa', detalle: '' });
     } catch (e) {
       resultados.push({ ...caso, estado: 'falla', detalle: e && e.message ? e.message : String(e) });

@@ -426,7 +426,7 @@ legend.obligatoria::after { content: " *"; color: var(--error); font-weight: 700
    Todos iguales: fondo suave del estado, esquinas redondeadas, un ícono.
    Sin rayas de color al costado. */
 
-.aviso-sistema, .recordatorio-respaldo, .banner-alerta, .estado-b1, .sugerencia, .privacidad {
+.aviso-sistema, .recordatorio-respaldo, .banner-alerta, .estado-b1, .sugerencia {
   border-radius: var(--r-m); padding: var(--e3) var(--e4); font-size: .9rem;
 }
 .aviso-sistema { background: var(--aviso-fondo); color: var(--tinta); margin-bottom: var(--e4); }
@@ -466,10 +466,6 @@ legend.obligatoria::after { content: " *"; color: var(--error); font-weight: 700
 .propuesto { background: var(--superficie-2); border-color: var(--acento-texto); }
 .marca-propuesto { font-size: .8rem; color: var(--acento-texto); font-weight: 700; }
 
-.privacidad { background: var(--superficie-2); margin-bottom: var(--e3); font-size: .9rem; }
-.privacidad-cuerpo p { margin: 0 0 .5em; }
-.privacidad-cuerpo p:last-child { margin-bottom: 0; }
-.privacidad-cuerpo p:empty { display: none; }
 
 /* -------------------------------------------------------- panel de revisión */
 
@@ -936,6 +932,25 @@ html { scroll-padding-top: calc(var(--alto-panel, 6rem) + var(--e2) + env(safe-a
   text-decoration: none; font-weight: 600;
 }
 .enlace-ajustes .icono { color: var(--acento-texto); flex: none; }
+/* En Ajustes, el paso a «Tus datos»: título y una línea de qué hay. */
+.enlace-datos { margin: 0 0 var(--e4); }
+.enlace-datos > span { flex: 1; display: grid; gap: 2px; }
+.enlace-detalle { font-weight: 400; font-size: .9rem; color: var(--tinta-suave); }
+
+/* ---------- Tus datos ---------- */
+.lugares { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--e3); }
+.lugar {
+  display: flex; gap: var(--e3); align-items: flex-start; padding: var(--e3) var(--e4);
+  border-radius: var(--r-m); background: var(--superficie-2);
+}
+.lugar > .icono { color: var(--acento-texto); flex: none; margin-top: 2px; }
+.lugar > div { min-width: 0; }
+.lugar p { margin: 0 0 .4em; }
+.lugar p:last-child { margin-bottom: 0; }
+.lugar p:empty { display: none; }
+.lugar-titulo { font-weight: 700; }
+.lista-datos { margin: 0; padding-inline-start: 1.2em; }
+.lista-datos li + li { margin-top: var(--e2); }
 .vista-previa {
   margin: var(--e3) 0 0; padding: var(--e3) var(--e4); border-radius: var(--r-s);
   background: var(--superficie-2); color: var(--tinta);
@@ -1019,3 +1034,22 @@ pre.plantilla {
 .qr-caja { display: flex; justify-content: center; padding: var(--e3); background: #fff; border-radius: var(--r-m); }
 .qr-lienzo { width: min(100%, 360px); height: auto; image-rendering: pixelated; }
 .qr-parte { min-height: 1.5em; margin: var(--e3) 0; font-weight: 600; text-align: center; }
+#enviar-qr .boton { flex: 1 1 12em; }
+#recibir-qr { margin-top: var(--e3); }
+#recibir-qr .boton { width: 100%; }
+
+/* Recibir por QR: la comparación antes de guardar */
+.comparar-resumen { margin: 0 0 var(--e3); }
+.comparar-seccion { margin-top: var(--e4); }
+.comparar-seccion h3 { margin: 0 0 var(--e2); font-size: 1rem; }
+.comparar-cuidado { padding: var(--e3); border-radius: var(--r-m); background: var(--aviso-fondo); }
+.comparar-item { padding: var(--e3) 0; border-top: 1px solid var(--borde); }
+.comparar-item p { margin: 0 0 var(--e2); }
+.comparar-nombre { font-weight: 700; margin: var(--e2) 0; overflow-wrap: anywhere; }
+.comparar-acciones { position: sticky; bottom: calc(-1 * var(--e4)); margin: var(--e4) calc(-1 * var(--e4)) calc(-1 * var(--e4));
+  padding: var(--e3) var(--e4) var(--e4); background: var(--superficie); box-shadow: 0 -1px 0 var(--borde); }
+/* Opciones con texto largo: una por fila, sin forma de píldora. */
+.elegir-lado, .lista-dias, .comparar-seccion .opciones { flex-direction: column; align-items: stretch; }
+.elegir-lado .opcion, .lista-dias .opcion, .comparar-seccion .opciones .opcion {
+  border-radius: var(--r-m); padding-block: var(--e2); overflow-wrap: anywhere;
+}

@@ -117,12 +117,19 @@ botones −/+ de «Comieron sin estar en el padrón», hoy y en los días anteri
 `beforeinstallprompt` (Chrome y Edge), la app ofrece su propio botón «Instalar»
 arriba; «Ahora no» lo posterga 14 días.
 
+**Tus datos** (`datos.html`, `pagina-datos.js`; desde el menú ⋮, el Inicio y
+Ajustes). Todo lo que toca a los datos, separado de los ajustes: «Dónde se
+guardan» (`lugaresDeLosDatos()` en `ui.js`: en el teléfono; en el APK, también
+la copia de seguridad de Google del teléfono, porque `allowBackup` sigue en
+`true` y se dice; en las copias que guarda la persona), la copia (guardar, con
+contraseña, recuperar, fecha de la última), qué va y qué no en la copia y, al
+final, «Borrar todo». `ajustes.html#copia` redirige aquí.
+
 **Ajustes** (`ajustes.html`, `pagina-ajustes.js`; se llega desde el menú ⋮ y
-desde el Inicio). En un solo lugar: la privacidad y la copia de los datos
-(guardar, con contraseña, recuperar, fecha de la última), el modo
+desde el Inicio). Lo que es del teléfono: quién lo usa, el modo
 (automático, claro u oscuro), el tamaño de letra (normal 16 px, grande 18,
-muy grande 20; todo el CSS va en rem), el botón 🔊 en la cabecera, la velocidad
-de la voz y, aparte y al final, «Borrar todo». `js/preferencias.js` es un script
+muy grande 20; todo el CSS va en rem), el botón 🔊 en la cabecera y la
+velocidad de la voz. `js/preferencias.js` es un script
 clásico en el `<head>` que aplica modo, letra y 🔊 antes del primer cuadro
 (`data-tema` y clases en `<html>`); Ajustes vuelve a llamar a
 `window.aplicarPreferencias()` tras cada cambio. Son preferencias del equipo
@@ -184,12 +191,22 @@ sugiere una vez («Ahora no» lo descarta). El B-1 lo usa como otra fuente de
 `sugerencias.js` (`sugerenciasPerfil`: se propone, no se aplica solo) y la
 inscripción con DNI escribe ese nombre en «quién revisó».
 
-**Juntar la lista de dos teléfonos** (`lista-qr.js` puro, `camara-qr.js`):
-un teléfono muestra un QR con las marcas del día (solo cifras: DNI y menú;
-80 personas por código, varios que se turnan si hacen falta) y el otro lo lee
-con `BarcodeDetector` y suma, por DNI, solo a quien faltaba; se puede
-deshacer. El QR lo dibuja `vendor/qrcode-generator.js`, la única librería
-(MIT, autorizada; ver AGENTS.md §3).
+**Pasar datos a otro teléfono por QR** (`compartir-qr.js` puro, `ui-compartir.js`,
+`camara-qr.js`). Desde Tus datos se envía el padrón (sin notas), la asistencia
+de los días que se marquen o las entregas (configuración y lo anotado de cada
+una); desde Asistencia, la lista de hoy. El JSON va comprimido (deflate de
+`CompressionStream`) y en base45, en modo alfanumérico del QR; cada código
+lleva tipo, id del envío y parte/total, y si son varios se turnan cada 2 s
+(se pueden pausar). Los QR de antes (`lista-qr.js`, solo cifras) se siguen
+leyendo. **Quien recibe nunca guarda a ciegas:** `comparar*()` muestra qué se
+agrega, qué ya estaba, qué queda solo aquí y qué no coincide; lo que no
+coincide se queda como aquí salvo que se elija lo recibido (o que aquí esté
+vacío). Se marcan aparte los posibles cruces: mismo DNI con otro nombre, y
+mismo nombre con otro DNI (esa no se agrega sola). Las personas se emparejan
+por documento; la asistencia de alguien que no está en el padrón de aquí no
+se suma. `aplicar*()` devuelve objetos nuevos; se guarda en `localStorage` y
+se puede deshacer. El QR lo dibuja `vendor/qrcode-generator.js`, la única
+librería (MIT, autorizada; ver AGENTS.md §3), y se carga solo al mostrar uno.
 
 **Lector de DNI (en fase de muestras).** `escaneo-dni.js` (puro) lee la zona
 de lectura mecánica TD1 con sus dígitos de control y, sin verificar, el PDF417

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- allowBackup: a propósito. Android puede sumar los datos de la app a la
+         copia de seguridad de Google del teléfono, si la persona la tiene
+         activada. La app lo explica en «Tus datos» (web/datos.html). -->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"

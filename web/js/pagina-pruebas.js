@@ -7,7 +7,7 @@ import { crearElemento, montarCabecera } from './ui.js';
 
 montarCabecera('pruebas', 'Aserciones en el navegador, sin dependencias');
 
-const resultados = ejecutar();
+const resultados = await ejecutar();
 const fallan = resultados.filter((r) => r.estado === 'falla');
 
 const resumen = document.getElementById('resumen');
