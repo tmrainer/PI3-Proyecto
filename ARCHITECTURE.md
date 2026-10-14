@@ -122,15 +122,29 @@ arriba; «Ahora no» lo posterga 14 días.
 | Para qué | Dónde |
 | --- | --- |
 | El trabajo del día | La barra de abajo: Asistencia, Padrón, B-1, Entregas (y los atajos del Inicio) |
-| Configurar ese trabajo | En su página, debajo del trabajo: precio del menú (Asistencia), cada cuánto se entrega (Entregas), centro de atención (B-1, paso 1) |
+| Configurar ese trabajo | En su página, debajo de lo que se usa a diario: precio del menú (Asistencia), cada cuánto se entrega (Entregas, debajo de las próximas entregas), centro de atención (B-1, paso 1) |
 | Reportes | En su página, después de lo que se configura: resumen por fechas (Asistencia), reporte para el padrón (Padrón), el B-1 |
 | Traer y llevar datos | Tus datos: copia, pasar a otro teléfono por QR, traer un padrón de Excel (lleva a Padrón, donde se revisa), borrar todo. Atajo en Asistencia para juntar la lista de hoy |
 | Cómo se ve la app y quién la usa | Ajustes |
-| Ayuda | «¿Cómo se usa?» |
+| Ayuda | «¿Cómo se usa?», en el menú ⋮ de todas las páginas y en «Más» del Inicio (no en Ajustes: no es un ajuste) |
 
 Tus datos, Ajustes y «¿Cómo se usa?» están en el menú ⋮ de todas las páginas y
 en «Más», al pie del Inicio. Las secciones de cada página van en ese orden
 (trabajo, configurar, reportes, traer datos); `humo.mjs` lo comprueba.
+
+Criterios (de guías publicadas, no de gusto):
+- La barra de abajo, solo destinos principales y entre 3 y 5 (Material 3:
+  *navigation bar*); lo poco usado, en el menú ⋮ (Android: *overflow* para lo
+  que no se necesita «pronto ni seguido»).
+- Lo escondido en un menú se encuentra menos (NN/g, menús ocultos): por eso
+  Tus datos, Ajustes y la ayuda también se ven, sin abrir nada, en el Inicio.
+- Jerarquía plana, un solo nivel, y ayuda desde cualquier pantalla (guías
+  SARAL para personas con poca lectura: G7 y G8).
+- Una pantalla con varias entradas antes que el mismo control repetido en
+  varios lugares; lo más usado arriba; lo que borra, aparte (guía de ajustes
+  de Android).
+- La acción va junto a lo que afecta: pasar la lista de hoy por QR, en la
+  lista de hoy; inscribir con el DNI, en Inscribir.
 
 **Tus datos** (`datos.html`, `pagina-datos.js`; desde el menú ⋮, el Inicio y
 Ajustes). Todo lo que toca a los datos, separado de los ajustes, con las
@@ -142,7 +156,8 @@ el APK, también la copia de seguridad de Google del teléfono, porque
 y, al final, «Borrar todo». `ajustes.html#copia` redirige aquí.
 
 **Ajustes** (`ajustes.html`, `pagina-ajustes.js`; se llega desde el menú ⋮ y
-desde el Inicio). Al final, un paso a Tus datos para quien busque ahí la copia.
+desde el Inicio). Al final, un paso a Tus datos para quien busque ahí la copia,
+y en «Acerca de», el enlace del equipo a `probar-dni.html`.
 Lo que es del teléfono: quién lo usa, el modo
 (automático, claro u oscuro), el tamaño de letra (normal 16 px, grande 18,
 muy grande 20; todo el CSS va en rem), el botón 🔊 en la cabecera y la

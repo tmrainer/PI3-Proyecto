@@ -594,7 +594,9 @@ async function correr(base, cdp) {
     const ordenes = {
       'datos.html': 'Copia de tus datos|Qué va en la copia|Pasar a otro teléfono|Traer un padrón de Excel|Dónde se guardan|Borrar todo',
       'asistencia.html': 'Asistencia de hoy|Otros días|Precio del menú|Resumen por fechas',
-      'padron.html': 'Inscribir a una persona|Personas afiliadas|Reporte para el padrón|Cargar un padrón desde Excel'
+      'padron.html': 'Inscribir a una persona|Personas afiliadas|Reporte para el padrón|Cargar un padrón desde Excel',
+      'calendario.html': 'Próximas entregas|Cada cuánto entregas',
+      'ajustes.html': 'Quién usa este teléfono|Aspecto|Leer en voz alta|Acerca de'
     };
     for (const [pagina, esperado] of Object.entries(ordenes)) {
       const visto = (await titulos(pagina)).replace(/Asistencia de hoy.*?\|/, 'Asistencia de hoy|');

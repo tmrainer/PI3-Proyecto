@@ -156,7 +156,7 @@ function pintarAgenda() {
   if (!esIso(calendario.fechaLimiteBase)) {
     caja.append(estadoVacio({
       icono: 'calendario', titulo: 'Todavía no hay fechas',
-      texto: 'Pon arriba una fecha de entrega que conozcas y aquí verás las próximas.'
+      texto: 'Pon abajo, en «Cada cuánto entregas», una fecha de entrega que conozcas. Aquí verás las próximas.'
     }));
     return;
   }

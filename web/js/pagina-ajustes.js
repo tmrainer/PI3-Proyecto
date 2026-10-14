@@ -6,10 +6,10 @@
 // a los datos (dónde se guardan, la copia, borrar todo) está en datos.html.
 
 /** Versión que se muestra en «Acerca de». Subirla junto con versionName del APK. */
-const VERSION_APP = '1.2';
+const VERSION_APP = '1.3';
 import {
   buscar, crearElemento, montarCabecera, icono,
-  pintarAvisosAlmacenamiento, mostrarBienvenida, decir, puedeHablar, sincronizarBarras, avisoAbajo
+  pintarAvisosAlmacenamiento, decir, puedeHablar, sincronizarBarras, avisoAbajo
 } from './ui.js';
 import { leerPerfil, guardarPerfil, ROLES } from './perfil.js';
 
@@ -92,9 +92,6 @@ if (!hayVoz) {
   buscar('#voz-pista').textContent = 'Este equipo no puede leer en voz alta.';
   for (const control of document.querySelectorAll('#voz-boton, #opciones-velocidad input, #probar-voz')) control.disabled = true;
 }
-
-// ---- ayuda ----
-buscar('#como-se-usa').addEventListener('click', () => mostrarBienvenida());
 
 // ---- acerca de ----
 buscar('#version-app').textContent = `Versión ${VERSION_APP}`;
