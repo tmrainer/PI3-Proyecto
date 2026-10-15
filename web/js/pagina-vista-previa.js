@@ -11,7 +11,7 @@ import { totales } from './calculos.js';
 import { buscar, crearElemento, montarCabecera, pintarAvisosAlmacenamiento, avisoAbajo } from './ui.js';
 import { PLANTILLA_B1 } from './plantilla-b1.js';
 import { hojasDelB1 } from './hoja-b1.js';
-import { pdfDelB1 } from './pdf-b1.js';
+import { pdfDelB1, dibujarFormato } from './pdf-b1.js';
 import { compartirArchivo, paqueteWhatsapp } from './compartir-archivo.js';
 
 montarCabecera('b1', 'Cómo queda en la hoja oficial');
@@ -141,6 +141,42 @@ if (hojas.length > 1) {
 pintarHoja();
 escalar();
 
+// ------------------------------------------------- el formato dibujado
+// El mismo dibujo del PDF, en SVG (mm: viewBox 210 × 297): sin él solo se
+// veían los datos sueltos y parecía que el formato no terminaba de cargar.
+
+function lienzoSvg(svg) {
+  const NS = 'http://www.w3.org/2000/svg';
+  let color = '#000';
+  let ancho = 0.2;
+  let raya = null;
+  const pieza = (etiqueta, atributos) => {
+    const e = document.createElementNS(NS, etiqueta);
+    for (const [k, v] of Object.entries(atributos)) e.setAttribute(k, v);
+    svg.append(e);
+    return e;
+  };
+  const trazo = () => ({ stroke: color, 'stroke-width': ancho, ...(raya ? { 'stroke-dasharray': raya } : {}) });
+  return {
+    gris(g) { const v = Math.round(g * 255); color = `rgb(${v},${v},${v})`; },
+    grosor(mm) { ancho = mm; },
+    punteada(si) { raya = si ? '0.21 0.64' : null; },   // el [0.6 1.8] pt del PDF, en mm
+    linea(x1, y1, x2, y2) { pieza('line', { x1, y1, x2, y2, ...trazo() }); },
+    caja(x, y, w, h) { pieza('rect', { x, y, width: w, height: h, fill: 'none', ...trazo() }); },
+    relleno(x, y, w, h) { pieza('rect', { x, y, width: w, height: h, fill: color }); },
+    texto(t, x, yBase, pt, { negrita = false } = {}) {
+      if (!t) return;
+      const e = pieza('text', { x, y: yBase, 'font-size': pt / 2.8346, 'font-weight': negrita ? 700 : 400, fill: color,
+        'font-family': 'Arial, "Liberation Sans", Helvetica, sans-serif' });
+      e.textContent = t;
+    }
+  };
+}
+const formato = buscar('#hoja-formato');
+dibujarFormato(lienzoSvg(formato));
+const mostrarFormato = buscar('#mostrar-formato');
+mostrarFormato.addEventListener('change', () => { formato.style.display = mostrarFormato.checked ? '' : 'none'; });
+
 // ------------------------------------------------------- la foto de fondo
 
 const guia = buscar('#hoja-guia');
@@ -154,6 +190,9 @@ buscar('#archivo-guia').addEventListener('change', (ev) => {
   urlGuia = URL.createObjectURL(archivo);
   guia.src = urlGuia;
   guia.hidden = !mostrar.checked;
+  // Con la foto, el dibujo encima confunde: se esconde (se puede volver a mostrar).
+  mostrarFormato.checked = false;
+  formato.style.display = 'none';
   opacidad.disabled = false;
   mostrar.disabled = false;
 });

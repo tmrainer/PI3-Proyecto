@@ -26,7 +26,13 @@ import { decodificarParteQr } from './lista-qr.js';
 const ALFABETO = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
 const LETRA = { padron: 'P', asistencia: 'A', entregas: 'E' };
 const TIPO = { P: 'padron', A: 'asistencia', E: 'entregas' };
-const POR_PARTE = 700;          // ~QR versión 14 (nivel L): lo lee bien una cámara modesta desde otra pantalla
+// Medido en un moto g23 (gama de entrada) leyendo otra pantalla: hasta la
+// versión 24 (~1 700 car.) lee; la 27 ya no. 1 400 (versión ~22) deja margen
+// para un celular en la mano: la asistencia de un día entra siempre en uno.
+const POR_PARTE = 1400;
+// Si no entra en uno, va animado: cuadros más livianos, que una cámara modesta
+// agarra al vuelo mientras cambian (camara-qr.js).
+const POR_CUADRO = 900;
 const MAX_PARTES = 99;
 
 // ------------------------------------------------------------------ base45
@@ -80,23 +86,26 @@ function idCorto() {
 const dos = (n) => String(n).padStart(2, '0');
 
 /**
- * El texto de cada QR de un envío.
+ * El texto de cada QR de un envío. Si entra en un QR legible (POR_PARTE), uno
+ * solo. Si no, cuadros PAREJOS de hasta POR_CUADRO, que se muestran animados.
  * @param {'padron'|'asistencia'|'entregas'} tipo
  * @param {object} paquete  de paqueteDelPadron / paqueteDeAsistencia / paqueteDeEntregas
+ * @param {{porParte?: number}} [opciones]  máximo de caracteres por QR (pruebas)
  * @returns {Promise<string[]>}  [] si no cabe en 99 códigos
  */
-export async function codificarParaQr(tipo, paquete) {
+export async function codificarParaQr(tipo, paquete, { porParte = POR_PARTE } = {}) {
   const json = new TextEncoder().encode(JSON.stringify(paquete));
   let texto = 'J' + aBase45(json);
   if (typeof CompressionStream !== 'undefined') {
     const z = await pasarPor(new CompressionStream('deflate-raw'), json);
     if (z.length < json.length) texto = 'Z' + aBase45(z);
   }
-  const total = Math.ceil(texto.length / POR_PARTE);
+  const total = texto.length <= porParte ? 1 : Math.ceil(texto.length / Math.min(porParte, POR_CUADRO));
   if (total > MAX_PARTES) return [];
+  const largo = Math.ceil(texto.length / total);
   const id = idCorto();
   return Array.from({ length: total }, (_, i) =>
-    'P3' + LETRA[tipo] + id + dos(i + 1) + dos(total) + texto.slice(i * POR_PARTE, (i + 1) * POR_PARTE) + ':');
+    'P3' + LETRA[tipo] + id + dos(i + 1) + dos(total) + texto.slice(i * largo, (i + 1) * largo) + ':');
 }
 
 /**

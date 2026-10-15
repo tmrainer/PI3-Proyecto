@@ -1062,6 +1062,19 @@ export const casos = [
   },
   {
     grupo: 'Escaneo DNI',
+    nombre: 'Donde van letras, una cifra es una letra mal leída: «ERIKSS0N» es ERIKSSON',
+    fn: () => {
+      const ocr = ['I<UT0D231458907<<<<<<<<<<<<<<<', '7408122F1204159UT0<<<<<<<<<<<6', 'ER1KSS0N<<ANNA<MAR1A<<<<<<<<<<'];
+      const r = buscarMrzTd1(ocr, '2026-10-11');
+      ok(r, 'debía encontrarla');
+      igual(r.campos.apellidos.join(' '), 'ERIKSSON', '0 → O y 1 → I en el apellido');
+      igual(r.campos.nombres, 'ANNA MARIA');
+      igual(r.campos.pais, 'UTO', 'el país también es solo letras');
+      igual(r.campos.numeroDocumento, 'D23145890', 'el número no se toca');
+    }
+  },
+  {
+    grupo: 'Escaneo DNI',
     nombre: 'MRZ partida en pedazos y sin algunos «<» (así la leyó ML Kit en un moto g77)',
     fn: () => {
       // Lo que devolvió el reconocimiento de texto del APK con la MRZ de la
@@ -1659,8 +1672,11 @@ export const casos = [
         ...nuevoAfiliado(), apellidoPaterno: 'PRUEBA', apellidoMaterno: 'ÑANDÚ', nombres: `PERSONA ${i}`,
         numeroDocumento: String(10000000 + i), tipoAfiliado: 'habitual', grupoEtarioManual: 'adulto'
       })), atenciones: [] };
-      const partes = await codificarParaQr('padron', paqueteDelPadron(padron));
+      const partes = await codificarParaQr('padron', paqueteDelPadron(padron), { porParte: 300 });
       ok(partes.length > 1, 'varias partes');
+      const largos = partes.map((t) => t.length);
+      ok(Math.max(...largos) - Math.min(...largos) <= 1, 'partes parejas: se muestran juntas, del mismo tamaño');
+      ok(Math.max(...largos) <= 300 + 12, 'ninguna pasa del máximo pedido');
       ok(partes.every((t) => /^P3P[0-9A-Z]{4}\d{4}[0-9A-Z $%*+\-./:]*:$/.test(t)), 'solo el alfabeto del QR');
       const leidas = partes.map(leerParteQr).reverse();     // en cualquier orden
       const vuelta = await juntarPartesQr(leidas);
@@ -1898,6 +1914,23 @@ export const casos = [
       const xref = Number(texto.match(/startxref\n(\d+)/)[1]);
       ok(texto.slice(xref, xref + 4) === 'xref', 'la tabla xref está donde dice');
       ok(anchoMm('MMMM', 10) > anchoMm('iiii', 10), 'mide el ancho de las letras');
+    }
+  },
+  {
+    grupo: 'Pasar datos por QR',
+    nombre: 'Hasta 1 400 caracteres, un solo QR; si no, cuadros de hasta 900 para la animación',
+    fn: async () => {
+      const padron = (n) => ({ atenciones: [], afiliados: Array.from({ length: n }, (_, i) => ({
+        ...nuevoAfiliado(), apellidoPaterno: 'PRUEBA', nombres: `PERSONA ${i}`, numeroDocumento: String(10000000 + ((i * 7919) % 89999999)),
+        tipoAfiliado: 'habitual', grupoEtarioManual: 'adulto' })) });
+      let n = 10;
+      let una;
+      while ((una = await codificarParaQr('padron', paqueteDelPadron(padron(n)))).length === 1 && n < 2000) n += 10;
+      ok(n < 2000, 'en algún tamaño pasa a varias partes');
+      const previa = await codificarParaQr('padron', paqueteDelPadron(padron(n - 10)));
+      igual(previa.length, 1, 'justo antes, uno solo');
+      ok(previa[0].length <= 1400 + 12, 'el código solo no pasa de 1 400');
+      ok(una.every((t) => t.length <= 900 + 12), 'los cuadros animados no pasan de 900');
     }
   }
 ];

@@ -69,6 +69,9 @@
       <!-- Mide lo que ocupa la hoja ya escalada: con zoom, el marco se desliza de lado. -->
       <div class="hoja-tamano" id="hoja-tamano">
         <div class="hoja-b1" id="hoja-b1">
+          <!-- El formato dibujado (el mismo del PDF), para que se lea sin foto.
+               Solo en pantalla: al imprimir sobre la hoja oficial van solo los datos. -->
+          <svg class="hoja-formato" id="hoja-formato" viewBox="0 0 210 297" aria-hidden="true"></svg>
           <img class="hoja-guia" id="hoja-guia" alt="" hidden>
           <div class="hoja-datos" id="hoja-datos"></div>
         </div>
@@ -85,8 +88,9 @@
 
   <section class="bloque" aria-labelledby="titulo-guia">
     <h2 id="titulo-guia">Ver la hoja de fondo</h2>
-    <p class="pista">Elige una foto o un escaneo de la hoja en blanco para verla detrás de los datos. Solo se ve
-      aquí: no se guarda, no se manda a ninguna parte y no se imprime.</p>
+    <p class="pista">Detrás de tus datos se ve el formato dibujado. Para revisar si cada dato cae en su lugar,
+      puedes poner una foto o un escaneo de la hoja en blanco. Solo se ve aquí: no se guarda, no se manda a
+      ninguna parte y no se imprime.</p>
     <div class="acciones">
       <label class="boton secundario" for="archivo-guia">Elegir la foto de la hoja</label>
       <input type="file" id="archivo-guia" accept="image/*" class="oculto-visual">
@@ -96,7 +100,8 @@
       <input type="range" id="opacidad-guia" min="10" max="100" value="60" disabled>
     </div>
     <div class="opciones" style="margin-top:8px">
-      <label class="opcion"><input type="checkbox" id="mostrar-guia" checked disabled> Mostrar la hoja de fondo</label>
+      <label class="opcion"><input type="checkbox" id="mostrar-formato" checked> Mostrar el formato dibujado</label>
+      <label class="opcion"><input type="checkbox" id="mostrar-guia" checked disabled> Mostrar la foto de la hoja</label>
     </div>
   </section>
 

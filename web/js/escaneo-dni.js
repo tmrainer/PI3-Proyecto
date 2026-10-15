@@ -168,6 +168,12 @@ const CIFRAS_TD1 = [
   [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 29],
   []
 ];
+// Y al revés: donde la norma solo admite letras, una cifra es una letra mal
+// leída (un apellido salía «QUISP0»). La línea 3 (apellidos y nombres) es
+// toda letras; en las otras, el tipo, el país, el sexo y la nacionalidad.
+const A_LETRA = { 0: 'O', 1: 'I', 2: 'Z', 5: 'S', 6: 'G', 8: 'B' };
+const LETRAS_TD1 = [[0, 1, 2, 3, 4], [7, 15, 16, 17], null];   // null: toda la línea
+const soloLetras = (n, j) => LETRAS_TD1[n] === null || LETRAS_TD1[n].includes(j);
 
 function limpiarLineaMrz(texto) {
   return String(texto).toUpperCase().replace(/«/g, '<<').replace(/\s+/g, '').replace(/[^A-Z0-9<]/g, '');
@@ -235,8 +241,8 @@ export function buscarMrzTd1(lineasOcr, fechaRef) {
       const conCifras = [...l].map((c, j) => (CIFRAS_TD1[n].includes(j) && A_CIFRA[c]) || c).join('');
       const ajustada = ajustarLineaTd1(conCifras, n);
       if (ajustada === null) return null;
-      if (n === 1) return [...ajustada].map((c, j) => (CIFRAS_TD1[1].includes(j) && A_CIFRA[c]) || c).join('');
-      return ajustada;
+      const cifras = n === 1 ? [...ajustada].map((c, j) => (CIFRAS_TD1[1].includes(j) && A_CIFRA[c]) || c).join('') : ajustada;
+      return [...cifras].map((c, j) => (soloLetras(n, j) && A_LETRA[c]) || c).join('');
     });
     if (tres.includes(null)) continue;
     const r = leerMrzTd1(tres, fechaRef);

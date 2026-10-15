@@ -2,9 +2,8 @@
 // otro (formato en compartir-qr.js).
 //
 // Mostrar: el QR lo arma qrcode-generator (vendor/, MIT, copiado dentro de la
-// app: sin internet) y se dibuja en un lienzo. Si son varias partes, se pasa
-// de una a otra a mano («Siguiente»), cuando el otro teléfono ya vibró: así
-// nadie se apura ni se salta un código.
+// app: sin internet) y se dibuja en un lienzo. Si son varias partes, un solo
+// código que cambia solo; la otra cámara las junta mientras apunta.
 // Leer: con BarcodeDetector, del propio navegador (en el APK lo trae el
 // WebView). Se juntan las partes de un mismo envío hasta tenerlas todas.
 // Nada de esto sale del teléfono: el QR se ve en pantalla y nada más.
@@ -48,44 +47,74 @@ function dibujarQr(qrcode, lienzo, texto) {
 }
 
 /**
- * Muestra el o los QR de un envío.
+ * Muestra el QR de un envío. Si son varias partes, UN solo código que cambia
+ * solo (cada CADA_MS): quien recibe solo apunta y su teléfono junta las partes
+ * en cualquier orden. Nada de «1 de 3» ni botones: eso confundía. Si una
+ * cámara no alcanza a leerlo al vuelo, «¿No lo lee? Ver de a uno».
  * @param {{partes: string[], titulo: string, detalle: string}} opciones
  */
 export async function mostrarListaQr({ partes, titulo, detalle }) {
   const qrcode = await cargarGenerador();
-  const lienzo = crearElemento('canvas', { clase: 'qr-lienzo', role: 'img', 'aria-label': 'Código QR con los datos' });
-  const cual = crearElemento('p', { clase: 'qr-parte', role: 'status', 'aria-live': 'polite' });
   const varias = partes.length > 1;
-  const anterior = crearElemento('button', {
-    type: 'button', clase: 'boton secundario', texto: 'Anterior', hidden: !varias, onclick: () => ir(-1)
+  let deAUno = false;
+  let i = 0;
+  let reloj = 0;
+
+  // Cada cuadro se dibuja una vez y después solo se alternan: en un teléfono
+  // modesto, rehacer el QR cada 0,8 s gastaba procesador y batería.
+  const cuadros = partes.map((parte) => {
+    const c = crearElemento('canvas', { clase: 'qr-lienzo', role: 'img', 'aria-label': 'Código QR con los datos' });
+    dibujarQr(qrcode, c, parte);
+    return c;
   });
-  const siguiente = crearElemento('button', {
-    type: 'button', clase: 'boton', texto: 'Siguiente', hidden: !varias, onclick: () => ir(1)
+  const caja = crearElemento('div', { clase: 'qr-caja' }, [cuadros[0]]);
+  const pista = crearElemento('p', { clase: 'camara-pista' });
+  const cual = crearElemento('p', { clase: 'qr-parte', role: 'status', 'aria-live': 'polite' });
+  const anterior = crearElemento('button', { type: 'button', clase: 'boton secundario', texto: 'Anterior', hidden: true, onclick: () => ir(-1) });
+  const siguiente = crearElemento('button', { type: 'button', clase: 'boton', texto: 'Siguiente', hidden: true, onclick: () => ir(1) });
+  const deAUnoBoton = crearElemento('button', {
+    type: 'button', clase: 'enlace-ir qr-de-a-uno', hidden: !varias, texto: '¿No lo lee? Ver de a uno',
+    onclick: () => { deAUno = true; detener(); pintar(); deAUnoBoton.hidden = true; }
   });
   const dialogo = crearElemento('dialog', { clase: 'camara-dni', 'aria-labelledby': 'qr-titulo' }, [
     crearElemento('h2', { id: 'qr-titulo', texto: titulo }),
-    crearElemento('p', { clase: 'camara-pista', texto: varias
-      ? `${detalle} Son ${partes.length} códigos: pasa al siguiente cuando el otro teléfono vibre.` : detalle }),
-    crearElemento('div', { clase: 'qr-caja' }, [lienzo]),
+    pista,
+    caja,
     cual,
+    deAUnoBoton,
     crearElemento('div', { clase: 'acciones' }, [
-      anterior,
-      siguiente,
+      anterior, siguiente,
       crearElemento('button', { type: 'button', clase: 'boton secundario', texto: 'Listo', onclick: () => cerrar() })
     ])
   ]);
-  let i = 0;
+
   function pintar() {
-    dibujarQr(qrcode, lienzo, partes[i]);
-    cual.textContent = varias ? `Código ${i + 1} de ${partes.length}` : '';
-    anterior.disabled = i === 0;
-    siguiente.disabled = i === partes.length - 1;
+    caja.replaceChildren(cuadros[i]);
+    anterior.hidden = siguiente.hidden = !deAUno;
+    if (deAUno) {
+      cual.textContent = `Código ${i + 1} de ${partes.length}`;
+      anterior.disabled = i === 0;
+      siguiente.disabled = i === partes.length - 1;
+      pista.textContent = `${detalle} Son ${partes.length} códigos: pasa al siguiente cuando el otro teléfono vibre.`;
+    } else {
+      cual.textContent = '';
+      pista.textContent = `${detalle} Apunta la otra cámara a este código${varias ? ' y espera: cambia solo hasta que el otro teléfono vibre' : ''}.`;
+    }
   }
   function ir(paso) {
     i = Math.min(partes.length - 1, Math.max(0, i + paso));
     pintar();
   }
+  function detener() { clearInterval(reloj); reloj = 0; }
+  // Que la pantalla no se apague mientras el otro teléfono lee: a medio
+  // envío animado, quedaba incompleto.
+  let cerrojo = null;
+  if ('wakeLock' in navigator) {
+    navigator.wakeLock.request('screen').then((c) => { cerrojo = c; if (!dialogo.open) c.release(); }).catch(() => {});
+  }
   function cerrar() {
+    detener();
+    if (cerrojo) cerrojo.release().catch(() => {});
     dialogo.close();
     dialogo.remove();
   }
@@ -93,6 +122,15 @@ export async function mostrarListaQr({ partes, titulo, detalle }) {
   dialogo.addEventListener('cancel', (e) => { e.preventDefault(); cerrar(); });
   dialogo.showModal();
   pintar();
+  if (varias) reloj = setInterval(() => { i = (i + 1) % partes.length; caja.replaceChildren(cuadros[i]); }, CADA_MS);
+}
+
+// Cada cuánto cambia el código animado. El moto g23 (gama de entrada) lee un
+// cuadro en ~0,4 s: así cada uno queda a la vista para dos o tres intentos.
+const CADA_MS = 800;
+
+function vibrar(ms) {
+  if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) { /* sin vibración */ } }
 }
 
 // Enfoque continuo si la cámara lo permite (de cerca, a una pantalla, el fijo
@@ -119,10 +157,13 @@ export async function leerListaQr({ alRecibir }) {
   ]);
   video.addEventListener('playing', () => { cargando.hidden = true; }, { once: true });
   const estado = crearElemento('p', { clase: 'camara-estado', role: 'status', 'aria-live': 'polite' });
+  // Si el código viene animado (varias partes), una barra: cuánto falta.
+  const avance = crearElemento('progress', { clase: 'qr-avance', max: '100', value: '0', hidden: true, 'aria-label': 'Cuánto se recibió' });
   const dialogo = crearElemento('dialog', { clase: 'camara-dni', 'aria-labelledby': 'qrl-titulo' }, [
     crearElemento('h2', { id: 'qrl-titulo', texto: 'Recibir de otro teléfono' }),
     crearElemento('p', { clase: 'camara-pista', texto: 'En el otro teléfono muestra el código y apunta la cámara a su pantalla. Antes de guardar verás qué cambia.' }),
     crearElemento('div', { clase: 'camara-visor' }, [video, cargando]),
+    avance,
     estado,
     crearElemento('button', { type: 'button', clase: 'boton secundario', texto: 'Cancelar', onclick: () => cerrar() })
   ]);
@@ -184,7 +225,8 @@ export async function leerListaQr({ alRecibir }) {
           if (p.id !== envio || p.total !== total) { partes.clear(); envio = p.id; total = p.total; }
           if (!partes.has(p.parte)) {
             partes.set(p.parte, p);
-            if (navigator.vibrate) { try { navigator.vibrate(40); } catch (e) { /* sin vibración */ } }
+            // Un toque corto por parte (lo necesita «Ver de a uno») y uno largo al final.
+            vibrar(partes.size === total ? 120 : 25);
           }
         }
         if (total && partes.size === total && !juntando) {
@@ -198,8 +240,14 @@ export async function leerListaQr({ alRecibir }) {
           }
           partes.clear();
           total = 0;
-          estado.textContent = 'El código no se pudo leer bien. Vuelve a mostrarlo desde el principio.';
-        } else if (total > 1) estado.textContent = `Leídos ${partes.size} de ${total} códigos…`;
+          avance.value = 0;
+          estado.textContent = 'No se leyó bien. Sigue apuntando: se vuelve a leer.';
+        } else if (total > 1) {
+          const pct = Math.round((partes.size / total) * 100);
+          avance.hidden = false;
+          avance.value = pct;
+          estado.textContent = `Recibiendo… ${pct} %. Sigue apuntando.`;
+        }
       }
     } catch (e) {
       /* un fotograma que no se pudo leer: se prueba con el siguiente */

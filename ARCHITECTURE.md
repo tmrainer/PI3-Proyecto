@@ -267,8 +267,14 @@ sin estar en el padrón, por menú: esa cuenta no se suma a la de aquí, se elig
 una, porque pueden ser las mismas personas) o las entregas (configuración y lo anotado de cada
 una); desde Asistencia, la lista de hoy. El JSON va comprimido (deflate de
 `CompressionStream`) y en base45, en modo alfanumérico del QR; cada código
-lleva tipo, id del envío y parte/total, y si son varios se pasan a mano
-(«Siguiente», cuando el otro teléfono vibró). Los QR de antes (`lista-qr.js`, solo cifras) se siguen
+lleva tipo, id del envío y parte/total. Hasta 1 400 caracteres (QR versión
+~22) va en **un solo QR fijo**: medido en un moto g23, la cámara lee hasta la
+versión 24 desde otra pantalla y la 27 ya no; así la asistencia de un día
+entra siempre en uno. Si no entra, va en **un QR animado**: cuadros parejos de
+hasta 900 caracteres que cambian solos cada 0,8 s (calculados una vez); quien
+recibe solo apunta, ve una barra de avance y vibra fuerte al terminar (120
+personas: ~4 s). «¿No lo lee? Ver de a uno» vuelve a «Siguiente». Mientras se
+muestra el QR, la pantalla no se apaga (Wake Lock). Los QR de antes (`lista-qr.js`, solo cifras) se siguen
 leyendo. **Quien recibe nunca guarda a ciegas:** `comparar*()` muestra qué se
 agrega, qué ya estaba, qué queda solo aquí y qué no coincide; lo que no
 coincide se queda como aquí salvo que se elija lo recibido (o que aquí esté
@@ -284,7 +290,14 @@ de lectura mecánica TD1 con sus dígitos de control y, sin verificar, el PDF417
 del DNI azul. `camara-dni.js` abre la cámara y busca a la vez el PDF417
 (`BarcodeDetector`, del navegador) y, en el APK, la MRZ (complemento nativo
 `LectorTexto`, ML Kit). `probar-dni.html` es solo para el equipo: muestra lo
-leído y copia una plantilla anónima. La inscripción lee el DNI «en prueba»
+leído y copia una plantilla anónima. Cada intento arma la imagen con
+`toDataURL` (no `toBlob`: en el WebView de Android `toBlob` espera a que el
+teléfono «esté libre» y tardaba ~4 s por fotograma) y, en el reverso, solo la
+franja de las tres líneas (1 200 px): ~0,3 s por intento, uno tras otro. Con
+poca luz, «Prender la linterna» (si la cámara lo permite). Donde la norma solo
+admite letras (apellidos y nombres, país, sexo, nacionalidad) una cifra se lee
+como la letra parecida (0→O, 1→I, 5→S, 8→B, 2→Z, 6→G); donde exige cifras, al
+revés, y los dígitos de control deciden. La inscripción lee el DNI «en prueba»
 (solo APK, `montarLecturaDni()` en `ui-personas.js`): reverso y anverso, sin
 el PDF417; llena el formulario, marca qué revisar, ofrece las dos opciones si
 hay una letra dudosa y no inscribe sin «quién revisó» (`verificadoPor`,
@@ -294,6 +307,13 @@ lista leyendo el DNI» (solo en el APK) abre la cámara en modo continuo
 (`modo: 'asistencia'`), lee solo el reverso y marca a quien tenga ese número
 en el padrón; usa solo el número, que lleva dígito de control y se exige igual
 en dos lecturas.
+
+**Logo.** La figura (olla y portapapeles) es el ícono del APK (adaptativo,
+fondo blanco, y monocromo para Android 13), el ícono de la pantalla de carga
+de Android 12+ (círculo blanco sobre el verde de la marca) y va junto al nombre
+en la cabecera del Inicio (`img/ollaconecta-icono.webp`). El logo completo,
+con el nombre, solo en la pantalla de carga de Android 11 o más viejo
+(`res/drawable*/splash.png`). En ningún otro lugar.
 
 **App Android y avisos con la app cerrada.** `mobile/` empaqueta la app
 web con Capacitor (ver su `LEEME.md`); `copiar-web.mjs` copia los archivos de

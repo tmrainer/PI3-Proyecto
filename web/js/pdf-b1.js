@@ -120,7 +120,12 @@ function datoEnCaja(l, texto, { xMm, yMm, anchoMm: w, altoMm: h, align }, ptBase
 const P = PLANTILLA_B1;
 const ROTULO = 6.5; // pt
 
-function dibujarFormato(l) {
+/**
+ * Rótulos, líneas y recuadros del formato, en gris, sobre cualquier lienzo que
+ * sepa gris/grosor/punteada/linea/caja/relleno/texto en mm: el del PDF y el de
+ * la vista previa en pantalla (SVG, en pagina-vista-previa.js).
+ */
+export function dibujarFormato(l) {
   const e = P.egresos;
   const c = e.columnas;
   const cols = Object.values(c);

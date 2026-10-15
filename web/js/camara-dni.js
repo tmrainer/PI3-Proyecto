@@ -65,6 +65,22 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
     crearElemento('span', { texto: 'Abriendo la cámara…' })
   ]);
   video.addEventListener('playing', () => { cargando.hidden = true; }, { once: true });
+  // Con poca luz (un comedor de noche) casi ninguna foto sale legible: la
+  // linterna del teléfono, si deja usarla desde la app. Se apaga al cerrar.
+  let linternaPrendida = false;
+  const linterna = crearElemento('button', {
+    type: 'button', clase: 'boton secundario', texto: 'Prender la linterna', hidden: true, 'aria-pressed': 'false',
+    onclick: async () => {
+      const pista = flujo && flujo.getVideoTracks()[0];
+      if (!pista) return;
+      try {
+        await pista.applyConstraints({ advanced: [{ torch: !linternaPrendida }] });
+        linternaPrendida = !linternaPrendida;
+        linterna.textContent = linternaPrendida ? 'Apagar la linterna' : 'Prender la linterna';
+        linterna.setAttribute('aria-pressed', String(linternaPrendida));
+      } catch (e) { linterna.hidden = true; /* este teléfono no deja */ }
+    }
+  });
   const omitir = crearElemento('button', {
     type: 'button', clase: 'boton secundario', texto: 'Omitir este paso', hidden: true,
     onclick: () => entregar({ tipo: 'mrz', mrz: mrzLeida, anverso: null })
@@ -78,7 +94,7 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
       cargando
     ]),
     estado,
-    crearElemento('div', { clase: 'acciones' }, [omitir,
+    crearElemento('div', { clase: 'acciones' }, [linterna, omitir,
       crearElemento('button', {
         type: 'button', clase: 'boton secundario', texto: enAsistencia ? 'Terminar' : 'Cancelar', onclick: () => cerrar()
       })])
@@ -134,13 +150,16 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
     return;
   }
   if (!abierto) { flujo.getTracks().forEach((t) => t.stop()); return; }
+  try {
+    const pistaVideo = flujo.getVideoTracks()[0];
+    linterna.hidden = !(pistaVideo.getCapabilities && pistaVideo.getCapabilities().torch);
+  } catch (e) { linterna.hidden = true; }
   video.srcObject = flujo;
   try { await video.play(); } catch (e) { /* autoplay: se reintenta en el bucle */ }
   estado.textContent = 'Buscando…';
 
   const detector = codigo ? new window.BarcodeDetector({ formats: ['pdf417'] }) : null;
   const lector = texto ? lectorDeTexto() : null;
-  let vuelta = 0;
   let fase = 'reverso';
   let mrzLeida = null;
   let anterior = '';                         // la lectura previa, para exigir dos iguales
@@ -151,7 +170,9 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
   // Solo el recuadro del DNI, y ampliado: más píxeles por letra, menos
   // confusiones (B por S, O por 0). El visor recorta el video (object-fit:
   // cover), así que se calcula qué parte del video cae dentro del recuadro.
-  function fotogramaDelRecuadro() {
+  // En el reverso basta la FRANJA de abajo, la de las tres líneas con «<»:
+  // menos de un tercio de la imagen, y el reconocimiento tarda la mitad.
+  function fotogramaDelRecuadro(soloFranja) {
     const visor = video.parentElement;
     const W = visor.clientWidth;
     const H = visor.clientHeight;
@@ -160,19 +181,19 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
     const escala = Math.max(W / vw, H / vh);
     const ancho = Math.min(vw, (0.86 * W * 1.1) / escala);
     const alto = Math.min(vh, ancho * (54 / 85.6));
-    const destino = 1600;
+    // La franja: el 45 % de abajo de la tarjeta (las líneas ocupan ~35 %; el
+    // resto es margen para un DNI un poco corrido dentro del recuadro).
+    const desde = soloFranja ? 0.55 : 0;
+    const altoFuente = alto * (1 - desde);
+    const destino = soloFranja ? 1200 : 1400;
     lienzo.width = destino;
-    lienzo.height = Math.round(destino * (alto / ancho));
-    lienzo.getContext('2d', { alpha: false }).drawImage(video, (vw - ancho) / 2, (vh - alto) / 2, ancho, alto, 0, 0, lienzo.width, lienzo.height);
-    // toBlob comprime el JPEG fuera del hilo principal (toDataURL lo hacía en
-    // él y trababa el visor en un teléfono modesto, una vez cada 750 ms).
-    return new Promise((ok, mal) => lienzo.toBlob((jpeg) => {
-      if (!jpeg) return mal(new Error('sin fotograma'));
-      const lectura = new FileReader();
-      lectura.onload = () => ok(String(lectura.result).split(',')[1]);
-      lectura.onerror = () => mal(lectura.error);
-      lectura.readAsDataURL(jpeg);
-    }, 'image/jpeg', 0.85));
+    lienzo.height = Math.round(destino * (altoFuente / ancho));
+    lienzo.getContext('2d', { alpha: false }).drawImage(video, (vw - ancho) / 2, (vh - alto) / 2 + alto * desde, ancho, altoFuente,
+      0, 0, lienzo.width, lienzo.height);
+    // toDataURL y no toBlob: en el WebView de Android toBlob espera a que el
+    // teléfono «esté libre» y tardaba ~4 s por fotograma (medido en un moto g77
+    // y un g23); con una imagen de este tamaño, toDataURL tarda ~15 ms.
+    return lienzo.toDataURL('image/jpeg', 0.75).split(',')[1];
   }
 
   function pasarAlAnverso(mrz) {
@@ -194,9 +215,9 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
           const pdf = hallados.find((h) => h.format === 'pdf417' && h.rawValue);
           if (pdf) return entregar({ tipo: 'pdf417', cadena: pdf.rawValue });
         }
-        // El texto cuesta más: una de cada tres vueltas (en el anverso, todas).
-        if (lector && (fase === 'anverso' || vuelta % 3 === 0)) {
-          const { fragmentos } = await lector.leer({ imagen: await fotogramaDelRecuadro() });
+        // Cada vuelta: con la franja chica, un intento cuesta ~0,2 s.
+        if (lector) {
+          const { fragmentos } = await lector.leer({ imagen: fotogramaDelRecuadro(fase === 'reverso') });
           const filas = unirFilasOcr(fragmentos);
           if (fase === 'reverso') {
             const mrz = buscarMrzTd1(filas);
@@ -237,8 +258,8 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
         /* un fotograma que no se pudo leer: se prueba con el siguiente */
       }
     }
-    vuelta += 1;
-    temporizador = setTimeout(buscar, 250);
+    // El siguiente intento enseguida: la espera ya la pone el reconocimiento.
+    temporizador = setTimeout(buscar, lector ? 60 : 250);
   }
   buscar();
 }
