@@ -7,7 +7,7 @@ import { pdfDeAsistencia } from './pdf-reportes.js';
 import { compartirPdf, selloAhora, nombreDelCentro } from './ui-reportes.js';
 import { validarAtenciones, validarPreciosMenu } from './validaciones.js';
 import {
-  estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, periodoPorDefecto, vigilarPestanas
+  estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, hoySigueAlPrecio, periodoPorDefecto, vigilarPestanas
 } from './estado.js';
 import { pintarAsistenciaDeHoy, pintarOtrosDias } from './ui-asistencia.js';
 import {
@@ -127,8 +127,7 @@ for (const [id, prop] of CAMPOS_PRECIO) {
   const el = buscar('#' + id);
   el.addEventListener('input', () => {
     estado.config[prop] = aCentimos(el.value);
-    const hoy = estado.padron.atenciones.find((a) => a.fecha === hoyIso() && a.precioTomadoDeConfig);
-    if (hoy) { hoy[prop] = estado.config[prop]; repintarHoy(); }
+    if (hoySigueAlPrecio()) repintarHoy();
     ctx.onCambio();
   });
 }

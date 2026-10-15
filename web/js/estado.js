@@ -25,7 +25,19 @@ export function cargar() {
   estado.padron = p;
   estado.config = Object.assign(configVacia(), leer(CLAVES.config, {}));
   estado.calendario = leer(CLAVES.calendario, calendarioVacio());
+  hoySigueAlPrecio();
   return estado;
+}
+
+/**
+ * El día de HOY, mientras no tenga precio propio, lleva los DOS precios de
+ * arriba (normal y ayuda social), no solo el que se acaba de tocar. Al cargar,
+ * también repara un hoy que quedó con un precio viejo. Devuelve ese día o null.
+ */
+export function hoySigueAlPrecio() {
+  const hoy = estado.padron.atenciones.find((a) => a.fecha === hoyIso() && a.precioTomadoDeConfig);
+  if (hoy) Object.assign(hoy, preciosActuales());
+  return hoy || null;
 }
 
 let avisarGuardado = () => {};
