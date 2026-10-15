@@ -10,6 +10,7 @@
 
 import { crearElemento } from './ui.js';
 import { leerParteQr, juntarPartesQr } from './compartir-qr.js';
+import { abrirCamaraTrasera } from './camara-trasera.js';
 
 /** ¿Puede este teléfono leer QR con la cámara? */
 export async function puedeLeerQr() {
@@ -133,16 +134,6 @@ function vibrar(ms) {
   if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) { /* sin vibración */ } }
 }
 
-// Enfoque continuo si la cámara lo permite (de cerca, a una pantalla, el fijo
-// suele quedar borroso). Si no se puede, sigue igual.
-function enfocarSolo(flujo) {
-  try {
-    const pista = flujo.getVideoTracks()[0];
-    const modos = (pista.getCapabilities && pista.getCapabilities().focusMode) || [];
-    if (modos.includes('continuous')) pista.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
-  } catch (e) { /* sin control de enfoque */ }
-}
-
 /**
  * Abre la cámara y lee los QR de un envío hasta tener todas sus partes.
  * @param {{alRecibir: (paquete: object) => void}} opciones  paquete ya
@@ -198,17 +189,13 @@ export async function leerListaQr({ alRecibir }) {
   try {
     // Sin tamaño, Android abre la cámara a 640×480: muy poco para un QR denso
     // en otra pantalla, y tardaba mucho en leerlo.
-    flujo = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
-    });
+    flujo = await abrirCamaraTrasera(1280, 720);
   } catch (e) {
     cargando.hidden = true;
     estado.textContent = 'No se pudo abrir la cámara. Revisa que la app tenga permiso para usarla.';
     return;
   }
   if (!abierto) { flujo.getTracks().forEach((t) => t.stop()); return; }
-  enfocarSolo(flujo);
   video.srcObject = flujo;
   try { await video.play(); } catch (e) { /* se reintenta en el bucle */ }
   estado.textContent = 'Buscando el código…';

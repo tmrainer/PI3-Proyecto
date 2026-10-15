@@ -16,6 +16,7 @@
 
 import { crearElemento, icono } from './ui.js';
 import { buscarMrzTd1, unirFilasOcr, combinarMrzYAnverso } from './escaneo-dni.js';
+import { abrirCamaraTrasera } from './camara-trasera.js';
 
 const PISTA_REVERSO = 'Pon el reverso del DNI dentro del recuadro, con buena luz, y mantén el teléfono quieto.';
 const PISTA_ASISTENCIA = 'Muestra el reverso del DNI (el lado de las tres líneas con «<»). Puedes pasar uno tras otro.';
@@ -140,10 +141,7 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
     return;
   }
   try {
-    flujo = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-    });
+    flujo = await abrirCamaraTrasera(1920, 1080);
   } catch (e) {
     estado.textContent = 'No se pudo abrir la cámara. Revisa que la app tenga permiso para usarla.';
     cargando.hidden = true;
