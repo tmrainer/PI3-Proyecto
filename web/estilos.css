@@ -792,7 +792,7 @@ body.por-pasos [data-paso]:not(.paso-actual) { display: none; }
 .pasos-texto { margin: 2px 0 0; color: var(--tinta-suave); font-size: .9rem; }
 
 .pie-pasos {
-  position: sticky; bottom: var(--alto-nav-abajo, 68px); z-index: 12; display: flex; gap: 10px;
+  position: sticky; bottom: var(--alto-nav-abajo, 68px); z-index: 12; display: flex; flex-wrap: wrap; gap: 10px;
   margin: var(--e2) calc(-1 * var(--e4)) 0; padding: 10px var(--e4);
   background: linear-gradient(transparent, var(--fondo) 30%);
 }
@@ -1099,3 +1099,6 @@ pre.plantilla {
 .dato-center { justify-content: center; }
 .dato-right { justify-content: flex-end; }
 .dato.no-entra { outline: 0.4mm solid #c00; color: #c00; }
+
+/* B-1: por qué no se puede pasar al paso siguiente. */
+.aviso-pasos { flex-basis: 100%; margin: 0; padding: var(--e3) var(--e4); border-radius: var(--r-m); background: var(--error-fondo); color: var(--error); font-weight: 600; }

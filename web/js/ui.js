@@ -1051,9 +1051,12 @@ export function marcarCampo(elemento, hallazgos) {
   // línea solo aparece en los campos por los que ya se pasó. El panel de
   // arriba sigue listando todo, para repasar antes de entregar.
   let msg = caja.querySelector(':scope > .campo-error');
+  // La indicación del campo («8 cifras», «Ej.: …») se lee siempre; el error, antes.
+  const pistas = [...caja.querySelectorAll(':scope > .pista[id]')].map((p) => p.id);
   if (propios.length === 0 || !tocado) {
     if (msg) {
-      control.removeAttribute('aria-describedby');
+      if (pistas.length) control.setAttribute('aria-describedby', pistas.join(' '));
+      else control.removeAttribute('aria-describedby');
       msg.remove();
     }
     return;
@@ -1065,7 +1068,7 @@ export function marcarCampo(elemento, hallazgos) {
   }
   msg.textContent = propios[0].mensaje;
   msg.classList.toggle('es-error', error);
-  control.setAttribute('aria-describedby', msg.id);
+  control.setAttribute('aria-describedby', [msg.id, ...pistas].join(' '));
 }
 
 // ---------------------------------------------- sugerencias (AGENTS.md §2)

@@ -3,6 +3,8 @@
 
 import { hoyIso, aCentimos, formatearSoles, nuevaAtencion, fechaLarga, debounce } from './modelo.js';
 import { resumenEconomicoRaciones } from './calculos.js';
+import { pdfDeAsistencia } from './pdf-reportes.js';
+import { compartirPdf, selloAhora, nombreDelCentro } from './ui-reportes.js';
 import { validarAtenciones, validarPreciosMenu } from './validaciones.js';
 import {
   estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, periodoPorDefecto, vigilarPestanas
@@ -107,14 +109,28 @@ fIni.value = periodo.inicio;
 fFin.value = periodo.fin;
 fIni.addEventListener('input', () => { periodo.inicio = fIni.value || periodo.inicio; refrescar(); });
 fFin.addEventListener('input', () => { periodo.fin = fFin.value || periodo.fin; refrescar(); });
+buscar('#pdf-asistencia').addEventListener('click', () => {
+  const bytes = pdfDeAsistencia(estado.padron, { inicio: periodo.inicio, fin: periodo.fin, centro: nombreDelCentro(), generado: selloAhora() });
+  compartirPdf(bytes, `Asistencia ${periodo.inicio} a ${periodo.fin}.pdf`, 'Asistencia (copia de referencia)');
+});
 
 const CAMPOS_PRECIO = [['precioNormal', 'precioMenuNormalCent'], ['precioAyuda', 'precioMenuAyudaSocialCent']];
 function pintarPrecios() {
   for (const [id, prop] of CAMPOS_PRECIO) buscar('#' + id).value = formatearSoles(estado.config[prop]);
 }
+// El precio se copia a cada día al crearlo y los días anteriores guardan el
+// suyo (un aumento en octubre no reescribe lo recaudado en setiembre). El de
+// HOY sí sigue al de arriba mientras no se le haya puesto un precio propio:
+// quien cambia el precio, lo cambia para hoy.
+const repintarHoy = debounce(() => ctx.onRepintar(), 400);
 for (const [id, prop] of CAMPOS_PRECIO) {
   const el = buscar('#' + id);
-  el.addEventListener('input', () => { estado.config[prop] = aCentimos(el.value); ctx.onCambio(); });
+  el.addEventListener('input', () => {
+    estado.config[prop] = aCentimos(el.value);
+    const hoy = estado.padron.atenciones.find((a) => a.fecha === hoyIso() && a.precioTomadoDeConfig);
+    if (hoy) { hoy[prop] = estado.config[prop]; repintarHoy(); }
+    ctx.onCambio();
+  });
 }
 pintarPrecios();
 

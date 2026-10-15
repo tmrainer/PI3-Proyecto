@@ -317,7 +317,7 @@ function fichaAtencion(at, ctx) {
         crearElemento('p', {
           clase: 'pista',
           texto: at.precioTomadoDeConfig
-            ? 'Tomado del precio que fijaste arriba. Cámbialo solo si ese día fue distinto.'
+            ? 'Se copió del precio de arriba el día que se creó. Cámbialo solo si ese día fue distinto.'
             : 'Precio propio de este día.'
         }),
         crearElemento('div', { clase: 'rejilla dos' }, [

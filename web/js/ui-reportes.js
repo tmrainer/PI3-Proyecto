@@ -1,7 +1,8 @@
 // ui-reportes.js — el padrón listo para copiar a un formato municipal.
 // Solo ordena y numera lo ya ingresado: no completa ni deduce ningún dato.
 
-import { nombreCompleto, hoyIso, cuantos } from './modelo.js';
+import { nombreCompleto, hoyIso, cuantos, aDdMmAa, CLAVES, leer } from './modelo.js';
+import { pdfDelPadron } from './pdf-reportes.js';
 import { compartirArchivo } from './compartir-archivo.js';
 import {
   filasPadron, asistenciaPorAfiliado, afiliadosSinAsistencia, TRAMOS_ETARIOS
@@ -126,6 +127,12 @@ export function montarControlesReporte(ctx, alCambiarPeriodo) {
     }
   });
 
+  buscar('#pdf-padron').addEventListener('click', () => {
+    const bytes = pdfDelPadron(estado.padron, { fechaRef: ctx.fechaRef, inicio: ctx.inicio, fin: ctx.fin,
+      centro: nombreDelCentro(), generado: selloAhora() });
+    compartirPdf(bytes, `Padron ${hoyIso()}.pdf`, 'Padrón (copia de referencia)');
+  });
+
   buscar('#copiar-padron').addEventListener('click', async () => {
     const texto = filasComoTexto(ctx, '\t');
     try {
@@ -139,4 +146,32 @@ export function montarControlesReporte(ctx, alCambiarPeriodo) {
       area.select();
     }
   });
+}
+
+// ------------------------------------------------------------- los PDF
+
+const dos = (n) => String(n).padStart(2, '0');
+
+/** «15-10-26 01:10»: cuándo se generó, para el aviso de cada hoja. */
+export function selloAhora(d = new Date()) {
+  return `${aDdMmAa(`${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`)} ${dos(d.getHours())}:${dos(d.getMinutes())}`;
+}
+
+/** El nombre del centro que se escribió en el último B-1, si hay. */
+export function nombreDelCentro() {
+  const c = leer(CLAVES.config, {}).ultimoCentro;
+  return String((c && c.nombreCentro) || '').trim();
+}
+
+/**
+ * Entrega un PDF: el menú «Compartir» de Android (WhatsApp, Drive…) o, en la
+ * computadora, la descarga. Avisa abajo cómo terminó.
+ */
+export async function compartirPdf(bytes, nombre, titulo) {
+  try {
+    const r = await compartirArchivo({ nombre, tipo: 'application/pdf', bytes, titulo });
+    if (r === 'descargado') avisoAbajo('PDF descargado.');
+  } catch (e) {
+    avisoAbajo('No se pudo abrir el menú para compartir el PDF.');
+  }
 }

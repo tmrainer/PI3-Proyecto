@@ -8,6 +8,7 @@
 
 import { CLAVES, leer, guardar, aDdMmAa, formatearSoles, cuantos } from './modelo.js';
 import { totales } from './calculos.js';
+import { validarRendicion } from './validaciones.js';
 import { buscar, crearElemento, montarCabecera, pintarAvisosAlmacenamiento, avisoAbajo } from './ui.js';
 import { PLANTILLA_B1 } from './plantilla-b1.js';
 import { hojasDelB1 } from './hoja-b1.js';
@@ -260,6 +261,13 @@ paqueteWhatsapp().then((p) => { whatsapp = p; buscar('#pdf-whatsapp').hidden = !
 
 async function entregarPdf(app) {
   if (!rendicion) { avisoAbajo('Todavía no hay un B-1 llenado.'); return; }
+  // Con un dato obligatorio pendiente no se genera: se dice cuál y dónde.
+  const pendientes = validarRendicion(rendicion).filter((h) => h.severidad === 'error');
+  if (pendientes.length) {
+    avisoAbajo(`Antes del PDF, completa el B-1: ${pendientes.slice(0, 2).map((h) => h.mensaje.replace(/\.$/, '').replace(/^Faltan? /, 'falta ')).join('; ')}` +
+      `${pendientes.length > 2 ? ` y ${pendientes.length - 2} más` : ''}.`);
+    return;
+  }
   const ahora = new Date();
   const bytes = pdfDelB1(hojas, { generado: sello(ahora), titulo: `Formato B-1 ${etiquetaDe(rendicion)}` });
   let r;

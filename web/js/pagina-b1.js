@@ -213,6 +213,7 @@ function montarPeriodo() {
 }
 
 function mostrarPropuestaPeriodo() {
+  // Ayudas, no datos: se usan solo si se tocan (AGENTS.md §2).
   const caja = buscar('#sugerencia-periodo');
   caja.textContent = '';
   const ref = rendicion.fechaRendicion || hoyIso();
@@ -221,7 +222,7 @@ function mostrarPropuestaPeriodo() {
   if (yaIgual && rendicion.periodo.etiqueta) return;
 
   const fila = crearElemento('div', { clase: 'sugerencia' }, [
-    crearElemento('span', { clase: 'sugerencia-etiqueta', texto: 'Sugerencia' }),
+    crearElemento('span', { clase: 'sugerencia-etiqueta', texto: 'Fechas del periodo' }),
     crearElemento('span', { clase: 'sugerencia-valor', texto: `${aDdMmAa(p.inicio)} a ${aDdMmAa(p.fin)}` }),
     crearElemento('button', {
       type: 'button', clase: 'boton diminuto', texto: 'Usar estas fechas',
@@ -238,7 +239,7 @@ function mostrarPropuestaPeriodo() {
   caja.append(fila);
 
   const etiquetas = crearElemento('div', { clase: 'sugerencia' }, [
-    crearElemento('span', { clase: 'sugerencia-etiqueta', texto: 'Texto sugerido' })
+    crearElemento('span', { clase: 'sugerencia-etiqueta', texto: 'Escríbelo así (toca uno)' })
   ]);
   for (const alt of p.alternativas) {
     etiquetas.append(crearElemento('button', {
@@ -264,10 +265,11 @@ const ORIGENES = [
 ];
 
 function campo(etiqueta, control, pista) {
+  if (pista) control.setAttribute('aria-describedby', `pista-${control.id}`);
   return crearElemento('div', { clase: 'campo' }, [
     crearElemento('label', { for: control.id, texto: etiqueta }),
     control,
-    pista ? crearElemento('span', { clase: 'pista', texto: pista }) : null
+    pista ? crearElemento('span', { clase: 'pista', id: `pista-${control.id}`, texto: pista }) : null
   ]);
 }
 
@@ -386,8 +388,8 @@ function fichaEgreso(fila, indice) {
       })
     ]),
     crearElemento('div', { clase: 'rejilla dos' }, [
-      campo('Fecha de la compra', fFecha),
-      campo('Descripción de la compra', fDesc)
+      campo('Fecha de la compra', fFecha, 'La fecha que dice la boleta.'),
+      campo('Descripción de la compra', fDesc, 'Qué compraste. Ej.: Arroz superior.')
     ]),
     crearElemento('div', { clase: 'rejilla dos', style: 'margin-top:10px' }, [
       crearElemento('div', { clase: 'rejilla par' }, [
@@ -400,16 +402,16 @@ function fichaEgreso(fila, indice) {
       campo('Origen del dinero', fOrigen, 'No va al formato. El subsidio municipal es solo para alimentos.')
     ]),
     crearElemento('div', { clase: 'rejilla tres', style: 'margin-top:10px' }, [
-      campo('RUC del proveedor', fRuc),
+      campo('RUC del proveedor', fRuc, '11 cifras; está arriba en la boleta.'),
       campo('Nombre del proveedor', fProv, 'No va al formato.'),
       crearElemento('div', { clase: 'rejilla par' }, [
-        campo('Serie', fSerie),
-        campo('Correlativo', fCorr)
+        campo('Serie', fSerie, 'Ej.: B001'),
+        campo('Correlativo', fCorr, 'Ej.: 000143')
       ])
     ]),
     crearElemento('div', { clase: 'rejilla par', style: 'margin-top:10px' }, [
-      campo('Precio unitario (S/)', fPrecio),
-      campo('Monto total (S/)', fMonto),
+      campo('Precio unitario (S/)', fPrecio, 'Precio de uno. Si no aparece, marca «varios».'),
+      campo('Monto total (S/)', fMonto, 'Lo que pagaste por esta compra.'),
       crearElemento('label', { clase: 'opcion a-lo-ancho' }, [chkPrecio, 'La boleta dice «varios» en el precio'])
     ])
   ]);
@@ -545,7 +547,7 @@ function pintarPasos(hallazgos) {
       type: 'button', clase: `paso-segmento ${estadoPaso}`,
       'aria-label': `Paso ${n}: ${nombre}${pendientes.has(n) ? ', le falta algo' : ''}`,
       'aria-current': n === pasoActual ? 'step' : null,
-      onclick: () => irAPaso(n)
+      onclick: () => avanzarA(n)
     }));
   });
   // El nombre del paso lo dice el título de la sección, justo debajo.
@@ -554,9 +556,47 @@ function pintarPasos(hallazgos) {
   ]));
 }
 
+// No se avanza con un dato obligatorio pendiente: se dice cuál, se marca en
+// rojo y se lleva el cursor ahí. «Atrás» siempre se puede.
+function bloqueoHasta(n) {
+  const pendientes = validarRendicion(rendicion)
+    .filter((h) => h.severidad === 'error' && pasoDe(h) >= pasoActual && pasoDe(h) < n)
+    .sort((a, b) => pasoDe(a) - pasoDe(b));
+  if (!pendientes.length) return false;
+  const paso = pasoDe(pendientes[0]);
+  for (const c of document.querySelectorAll(`[data-paso="${paso}"] input, [data-paso="${paso}"] select, [data-paso="${paso}"] textarea`)) {
+    c.dataset.tocado = '1';
+  }
+  if (paso !== pasoActual) irAPaso(paso, { enfocar: false });
+  refrescarValidacion();
+  const delPaso = pendientes.filter((h) => pasoDe(h) === paso);
+  const aviso = buscar('#aviso-pasos');
+  // «Falta el código de PCA.» → «el código de PCA»; lo mal escrito va aparte.
+  const enLista = (xs) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}` : xs[0];
+  const faltan = delPaso.filter((h) => /^Faltan? /.test(h.mensaje)).map((h) => h.mensaje.replace(/^Faltan? /, '').replace(/\.$/, ''));
+  const revisar = delPaso.filter((h) => !/^Faltan? /.test(h.mensaje)).map((h) => h.mensaje.replace(/\.$/, ''));
+  const partes = [];
+  if (faltan.length) partes.push(`Para seguir, falta: ${enLista(faltan.length > 3 ? [...faltan.slice(0, 3), `${faltan.length - 3} más`] : faltan)}.`);
+  if (revisar.length) partes.push(`${faltan.length ? 'Y revisa' : 'Para seguir, revisa'}: ${revisar.slice(0, 2).join('; ')}.`);
+  aviso.textContent = partes.join(' ');
+  aviso.hidden = false;
+  vibrar([30, 60, 30]);
+  irACampo(pendientes[0].campo);
+  return true;
+}
+
+function avanzarA(n) {
+  if (n > pasoActual && bloqueoHasta(n)) return;
+  buscar('#aviso-pasos').hidden = true;
+  irAPaso(n);
+}
+
 function pintarPiePasos() {
   const pie = buscar('#pie-pasos');
+  // El aviso va dentro de la barra fija de abajo: si no, quedaba tapado por ella.
+  const aviso = buscar('#aviso-pasos');
   pie.textContent = '';
+  pie.append(aviso);
   pie.append(crearElemento('button', {
     type: 'button', clase: 'boton secundario', texto: 'Atrás',
     disabled: pasoActual === 1, onclick: () => irAPaso(pasoActual - 1)
@@ -564,7 +604,7 @@ function pintarPiePasos() {
   if (pasoActual < PASOS.length) {
     pie.append(crearElemento('button', {
       type: 'button', clase: 'boton', texto: `Siguiente: ${PASOS[pasoActual].replace(/ \(.*\)$/, '')}`,
-      onclick: () => irAPaso(pasoActual + 1)
+      onclick: () => avanzarA(pasoActual + 1)
     }));
   }
 }

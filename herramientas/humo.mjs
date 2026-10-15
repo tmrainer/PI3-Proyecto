@@ -718,16 +718,27 @@ async function correr(base, cdp) {
     await p.ir(`${base}/formato-b1.html`);
     const pasos = await p.actuar(`(() => {
       const visibles = () => [...document.querySelectorAll('[data-paso]')].filter((s) => s.offsetParent !== null).map((s) => s.dataset.paso);
+      const siguiente = () => [...document.querySelectorAll('#pie-pasos button')].find((b) => /Siguiente/.test(b.textContent)).click();
       const r = { inicio: visibles(), texto: document.querySelector('.pasos-texto').textContent };
-      [...document.querySelectorAll('#pie-pasos button')].find((b) => /Siguiente/.test(b.textContent)).click();
+      // Vacío: no pasa, dice qué falta y lleva el cursor al primer dato.
+      siguiente();
+      r.vacio = visibles();
+      r.aviso = !document.getElementById('aviso-pasos').hidden && /Para seguir/.test(document.getElementById('aviso-pasos').textContent);
+      r.foco = document.activeElement && document.activeElement.id;
+      // Con el paso 1 completo, sí.
+      document.querySelector('input[name="tipoCentro"][value="olla_comun"]').click();
+      const poner = (id, v) => { const el = document.getElementById(id); el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); };
+      poner('nombreCentro', 'Centro de prueba'); poner('codigoPca', '0123'); poner('nombrePresidenta', 'Nombre Ficticio');
+      poner('dniPresidenta', '00000001'); poner('celular', '900000000');
+      siguiente();
       r.siguiente = visibles();
       document.querySelector('#panel .enlace-ir')?.click();
       r.alDato = visibles();
       return r;
     })()`);
-    comprobar('B-1 por pasos: uno a la vez, «Siguiente» avanza y «Ir al dato» lleva a su paso',
-      pasos.inicio.join() === '1' && /Paso 1 de 6/.test(pasos.texto) && pasos.siguiente.join() === '2' && pasos.alDato.length === 1,
-      JSON.stringify(pasos));
+    comprobar('B-1 por pasos: con datos faltantes no avanza y dice qué falta; completo, «Siguiente» avanza',
+      pasos.inicio.join() === '1' && /Paso 1 de 6/.test(pasos.texto) && pasos.vacio.join() === '1' && pasos.aviso &&
+      pasos.siguiente.join() === '2' && pasos.alDato.length === 1, JSON.stringify(pasos));
 
     await p.eval(`(() => {
       const iso = (d) => \`\${d.getFullYear()}-\${String(d.getMonth() + 1).padStart(2, '0')}-\${String(d.getDate()).padStart(2, '0')}\`;

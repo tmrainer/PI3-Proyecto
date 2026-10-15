@@ -182,7 +182,15 @@ también: `avisoAbajo()` (aviso con «Deshacer», en vez de `confirm()`),
 `avatarPersona()` (iniciales del color del grupo de edad) y
 `mostrarBienvenida()` (primer uso). El B-1 va por pasos (`irAPaso()` en
 `pagina-b1.js`; cada sección lleva `data-paso`) y Entregas abre con la cuenta
-regresiva. Preferencias del equipo, fuera de los respaldos: las de Ajustes,
+regresiva. **No se avanza con un dato obligatorio pendiente**: «Siguiente» (y
+saltar a un paso más adelante desde la barra) revisa con `validarRendicion()`
+los errores de los pasos que se dejan atrás; si hay, no avanza, marca esos
+campos en rojo, lleva el cursor al primero y dice cuáles en `#aviso-pasos`
+(dentro de la barra fija de abajo). «Atrás» siempre. El PDF del B-1 tampoco se
+genera con errores pendientes. Inscribir en el padrón frena lo vacío y también
+lo mal escrito (los errores de `validarAfiliado()`). Cada campo del B-1 lleva
+una indicación corta (`.pista`, enlazada con `aria-describedby`; el mensaje de
+error se suma, no la reemplaza) y, donde ayuda, un ejemplo en el placeholder. Preferencias del equipo, fuera de los respaldos: las de Ajustes,
 `pi3.bienvenidaVista`, `pi3.instalar.postergadoHasta`.
 
 **Sistema visual** (`estilos.css`). Colores con nombre de uso (`--fondo`,
@@ -258,6 +266,20 @@ usa el mismo camino: dentro del WebView no hay `navigator.share` y una descarga
 no llegaba a ninguna parte. **Historial**: cada rendición guarda
 `generaciones` (fecha, hojas, total y cómo se entregó; las últimas 20), y la
 vista previa lista todos los B-1 con su último PDF.
+
+**PDF del padrón y de la asistencia** (`pdf-reportes.js`, puro, sobre
+`pdf.js`, el mismo escritor de PDF que el B-1). No hay formato oficial a la
+vista para estos dos (AGENTS.md §12.2): son tablas de guía que dicen «Copia de
+referencia», con «Hoja i de n». Padrón: las personas activas numeradas por
+apellido, documento, grupo de edad, edad, tipo y días que vinieron en el
+periodo del reporte; al final, los totales por grupo y de ayuda social
+(botón en «Reporte para el padrón»). Asistencia: el resumen por día (menú
+normal, ayuda social, sin inscribir —ya incluidos en los dos anteriores—,
+raciones y recaudado, con total) y, si el periodo tiene hasta 31 días con
+atención, la planilla por persona en hojas horizontales (X: menú normal; A:
+ayuda social) con el total del día (botón en «Resumen por fechas»). Solo
+ordenan y suman lo registrado. Se entregan con el menú «Compartir» de Android
+(`compartirPdf()` en `ui-reportes.js`).
 
 **Pasar datos a otro teléfono por QR** (`compartir-qr.js` puro, `ui-compartir.js`,
 `camara-qr.js`). Desde Tus datos se envía el padrón (sin notas; con el tipo,

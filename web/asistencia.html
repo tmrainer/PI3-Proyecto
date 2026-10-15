@@ -68,7 +68,7 @@
 
   <section class="bloque apoyo">
     <h2>Precio del menú</h2>
-    <p class="pista">Se copia a cada día nuevo. Si un día fue distinto, se cambia en ese día.</p>
+    <p class="pista">Vale para hoy y los días nuevos. Los días anteriores guardan el precio que tenían; si uno fue distinto, se cambia en ese día.</p>
     <div class="rejilla dos">
       <div class="campo" data-campo="precio.normal">
         <label for="precioNormal">Menú normal (S/)</label>
@@ -96,6 +96,10 @@
     </div>
     <div id="resumen-raciones" class="resumen-chips" style="margin-top:12px"></div>
     <p class="nota-calculo" id="nota-precio"></p>
+    <div class="acciones" style="margin-top:12px">
+      <button type="button" class="boton secundario" id="pdf-asistencia">Guardar o compartir PDF</button>
+    </div>
+    <p class="pista">Un resumen por día y, si son 31 días o menos, una planilla con una fila por persona. Sirve de guía; no es un formato oficial.</p>
   </section>
 
   <p class="estado-guardado barra-estado" id="estado-guardado">Se guarda solo, mientras tocas.</p>

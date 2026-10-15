@@ -38,6 +38,7 @@ import {
 } from './compartir-qr.js';
 import { hojasDelB1 } from './hoja-b1.js';
 import { pdfDelB1, anchoMm } from './pdf-b1.js';
+import { pdfDelPadron, pdfDeAsistencia } from './pdf-reportes.js';
 import { PLANTILLA_B1, FILAS_EGRESOS } from './plantilla-b1.js';
 
 // Ejemplo de MRZ TD1 de la norma ICAO 9303-5 (persona y país inventados).
@@ -1931,6 +1932,35 @@ export const casos = [
       igual(previa.length, 1, 'justo antes, uno solo');
       ok(previa[0].length <= 1400 + 12, 'el código solo no pasa de 1 400');
       ok(una.every((t) => t.length <= 900 + 12), 'los cuadros animados no pasan de 900');
+    }
+  },
+  {
+    grupo: 'PDF del padrón y la asistencia',
+    nombre: 'Padrón y asistencia en PDF: páginas, totales y planilla horizontal solo hasta 31 días',
+    fn: () => {
+      const comoTexto = (b) => Array.from(b, (x) => String.fromCharCode(x)).join('');
+      const paginas = (t) => (t.match(/\/Type \/Page /g) || []).length;
+      const apaisadas = (t) => (t.match(/MediaBox \[0 0 841\.89 595\.28\]/g) || []).length;
+      const a = (i) => ({ ...nuevoAfiliado(), apellidoPaterno: 'PRUEBA', nombres: `PERSONA ${i}`, numeroDocumento: String(10000000 + i),
+        tipoAfiliado: i % 2 ? 'habitual' : 'caso_social', grupoEtarioManual: 'adulto', altaEn: '2026-01-01' });
+      const padron = { afiliados: Array.from({ length: 45 }, (_, i) => a(i)), atenciones: [] };
+      for (let d = 1; d <= 5; d++) {
+        padron.atenciones.push({ ...nuevaAtencion({ precioMenuNormalCent: 300, precioMenuAyudaSocialCent: 0 }), fecha: `2026-09-0${d}`,
+          asistencias: padron.afiliados.slice(0, 10 + d).map((x) => ({ afiliadoId: x.id, tipoMenu: x.tipoAfiliado === 'caso_social' ? 'ayuda_social' : 'normal' })) });
+      }
+      const p = comoTexto(pdfDelPadron(padron, { fechaRef: '2026-09-30', inicio: '2026-09-01', fin: '2026-09-30', generado: 'x' }));
+      ok(p.startsWith('%PDF-1.4') && p.trimEnd().endsWith('%%EOF'), 'es un PDF');
+      igual(paginas(p), 2, '45 personas: dos hojas');
+      ok(p.includes('(Total: 45 personas)'), 'con el total');
+      ok(p.includes('COPIA DE REFERENCIA'), 'dice que es copia de referencia');
+      const as = comoTexto(pdfDeAsistencia(padron, { inicio: '2026-09-01', fin: '2026-09-30', generado: 'x' }));
+      igual(apaisadas(as), 2, 'planilla por persona: 45 personas y el total, en dos hojas horizontales');
+      ok(as.includes('(65)'), 'total de raciones: 11+12+13+14+15');
+      const largo = { ...padron, atenciones: Array.from({ length: 40 }, (_, k) => ({ ...nuevaAtencion(null),
+        fecha: new Date(Date.UTC(2026, 7, 1 + k)).toISOString().slice(0, 10), asistencias: [] })) };
+      igual(apaisadas(comoTexto(pdfDeAsistencia(largo, { inicio: '2026-08-01', fin: '2026-09-30', generado: 'x' }))), 0,
+        'más de 31 días: sin planilla por persona');
+      igual(paginas(comoTexto(pdfDelPadron({ afiliados: [], atenciones: [] }, { fechaRef: '2026-09-30', inicio: '2026-09-01', fin: '2026-09-30', generado: 'x' }))), 1, 'vacío: una hoja');
     }
   }
 ];

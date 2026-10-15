@@ -174,6 +174,13 @@ function inscribir(ctx) {
     msg.textContent = 'Falta: ' + faltan.join(', ') + '.';
     return;
   }
+  // Lleno no es lo mismo que bien escrito: un DNI de 7 cifras o una fecha de
+  // nacimiento futura tampoco pasan. Las mismas reglas que «Les faltan datos».
+  const malEscritos = validarAfiliado(a, estado.padron).filter((x) => x.severidad === 'error');
+  if (malEscritos.length) {
+    msg.textContent = 'Revisa: ' + malEscritos.slice(0, 3).map((x) => x.mensaje.replace(/\.$/, '')).join('; ') + '. No se inscribió a nadie.';
+    return;
+  }
 
   // Duplicado por documento: se avisa ANTES de inscribir, no después.
   const repetido = estado.padron.afiliados.find(
