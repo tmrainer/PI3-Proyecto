@@ -384,6 +384,9 @@ let soloSinMarcar = false;
 function asegurarHoyGuardado() {
   if (!atencionDeHoy) return;
   if (!estado.padron.atenciones.some((o) => o.id === atencionDeHoy.id)) {
+    // Se armó al abrir la página: si el precio de arriba cambió desde
+    // entonces, el día nace con el de ahora, no con el de hace un rato.
+    if (atencionDeHoy.precioTomadoDeConfig) Object.assign(atencionDeHoy, preciosActuales());
     estado.padron.atenciones.push(atencionDeHoy);
   }
 }
