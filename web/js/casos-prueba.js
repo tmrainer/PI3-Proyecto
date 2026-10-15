@@ -36,6 +36,9 @@ import {
   aBase45, deBase45, codificarParaQr, leerParteQr, juntarPartesQr, paqueteDelPadron, paqueteDeAsistencia,
   paqueteDeEntregas, compararPadron, aplicarPadron, compararAsistencia, aplicarAsistencia, compararEntregas, aplicarEntregas
 } from './compartir-qr.js';
+import { hojasDelB1 } from './hoja-b1.js';
+import { pdfDelB1, anchoMm } from './pdf-b1.js';
+import { PLANTILLA_B1, FILAS_EGRESOS } from './plantilla-b1.js';
 
 // Ejemplo de MRZ TD1 de la norma ICAO 9303-5 (persona y país inventados).
 const MRZ_ICAO = [
@@ -1814,6 +1817,87 @@ export const casos = [
       igual(nuevo.entregas.length, 2);
       igual(nuevo.entregas[0].estado, 'pendiente');
       igual(aqui.entregas.length, 1, 'no toca el original');
+    }
+  },
+  // ------------------------------------------------- la hoja oficial del B-1
+  {
+    grupo: 'Hoja oficial del B-1',
+    nombre: 'Los datos se escriben como en el papel (DD-MM-AA, soles, «varios», una X)',
+    fn: () => {
+      const [h] = hojasDelB1(rendicionDelEjemplar());
+      igual(h.campos.marcaOllaComun, 'X');
+      igual(h.campos.marcaComedor, '', 'el otro recuadro queda vacío');
+      igual(h.campos.fechaRendicion, '14-09-26');
+      igual(h.campos.montoSubsidio, '200.00', 'sin «S/»: ya está impreso');
+      igual(h.filas.length, 2);
+      igual(h.filas[0].boleta, 'E001-143');
+      igual(h.filas[1].cantidad, 'varios');
+      igual(h.filas[1].precioUnitario, 'varios');
+      igual(h.filas[1].montoTotal, '141.85');
+      igual(h.campos.totalConSubsidio, '200.00');
+      igual(h.campos.totalAporte, '9.85');
+      igual(h.campos.totalRendicion, '209.85');
+    }
+  },
+  {
+    grupo: 'Hoja oficial del B-1',
+    nombre: 'Aporte en cero: renglón vacío; compra vacía: no ocupa renglón',
+    fn: () => {
+      const r = rendicionDelEjemplar();
+      r.egresos = [r.egresos[0], nuevoEgreso()];
+      const [h] = hojasDelB1(r);
+      igual(h.filas.length, 1, 'la ficha vacía no se imprime');
+      igual(h.campos.totalAporte, '', '«registrar de corresponder»');
+      igual(h.campos.totalRendicion, '68.00');
+    }
+  },
+  {
+    grupo: 'Hoja oficial del B-1',
+    nombre: 'Más compras que renglones: otra hoja, encabezado repetido y totales solo en la última',
+    fn: () => {
+      const r = rendicionDelEjemplar();
+      r.egresos = Array.from({ length: FILAS_EGRESOS + 3 }, () => Object.assign(nuevoEgreso(), {
+        fechaCompra: '2026-09-10', descripcion: 'Arroz', cantidad: 1, unidadMedida: 'Kg', montoTotalCent: 100 }));
+      const hojas = hojasDelB1(r);
+      igual(hojas.length, 2);
+      igual(hojas[0].filas.length, FILAS_EGRESOS);
+      igual(hojas[1].filas.length, 3);
+      igual(hojas[1].campos.nombreCentro, 'Centro de prueba', 'encabezado repetido');
+      ok(!('totalRendicion' in hojas[0].campos), 'la primera hoja no lleva totales');
+      igual(hojas[1].campos.totalRendicion, '20.00');
+    }
+  },
+  {
+    grupo: 'Hoja oficial del B-1',
+    nombre: 'Cada dato de la hoja tiene su lugar en la plantilla, dentro de la hoja A4',
+    fn: () => {
+      const [h] = hojasDelB1(rendicionDelEjemplar());
+      for (const k of Object.keys(h.campos)) ok(PLANTILLA_B1.campos[k], `falta la posición de ${k}`);
+      for (const k of Object.keys(h.filas[0])) ok(PLANTILLA_B1.egresos.columnas[k], `falta la columna ${k}`);
+      for (const [k, c] of Object.entries(PLANTILLA_B1.campos)) {
+        ok(c.xMm >= 0 && c.xMm + c.anchoMm <= 210 && c.yMm >= 0 && c.yMm + c.altoMm <= 297, `${k} se sale de la hoja`);
+      }
+      const e = PLANTILLA_B1.egresos;
+      ok(e.primeraFilaYMm + e.filas * e.altoFilaMm < PLANTILLA_B1.campos.totalConSubsidio.yMm + 0.5, 'las filas pisan los totales');
+    }
+  },
+  {
+    grupo: 'Hoja oficial del B-1',
+    nombre: 'El PDF de referencia es un PDF válido, con una página por hoja y los datos adentro',
+    fn: () => {
+      const r = rendicionDelEjemplar();
+      r.egresos = Array.from({ length: FILAS_EGRESOS + 1 }, () => r.egresos[1]);
+      const bytes = pdfDelB1(hojasDelB1(r), { generado: '14-10-26 19:05' });
+      const texto = Array.from(bytes, (b) => String.fromCharCode(b)).join('');
+      ok(texto.startsWith('%PDF-1.4'), 'empieza como PDF');
+      ok(texto.trimEnd().endsWith('%%EOF'), 'termina como PDF');
+      igual((texto.match(/\/Type \/Page /g) || []).length, 2, 'dos hojas, dos páginas');
+      ok(texto.includes('(141.85)'), 'lleva el monto de la compra');
+      ok(texto.includes('(2553.30)'), 'lleva el total (18 × 141.85)');
+      ok(texto.includes('COPIA DE REFERENCIA'), 'avisa que es una copia de referencia');
+      const xref = Number(texto.match(/startxref\n(\d+)/)[1]);
+      ok(texto.slice(xref, xref + 4) === 'xref', 'la tabla xref está donde dice');
+      ok(anchoMm('MMMM', 10) > anchoMm('iiii', 10), 'mide el ancho de las letras');
     }
   }
 ];

@@ -2,11 +2,12 @@
 // Ver AGENTS.md §3. Ninguna lógica de cálculo ni de validación vive aquí.
 
 import {
-  CLAVES, leer, guardar, borrarTodo, descargarJson, avisosAlmacenamiento, hoyIso,
+  CLAVES, leer, guardar, borrarTodo, avisosAlmacenamiento, hoyIso,
   cifrarRespaldo, descifrarRespaldo, esRespaldoCifrado, revisarRespaldo, restaurarRespaldo,
   usoAlmacenamiento
 } from './modelo.js';
 import { esAppNativa, reprogramarAvisos, abrirEntregasAlTocarAviso } from './avisos-nativos.js';
+import { compartirArchivo } from './compartir-archivo.js';
 
 /**
  * El primer elemento que coincide con un selector CSS (querySelector).
@@ -914,19 +915,16 @@ export async function exportarTodo(contrasena) {
     datos = await cifrarRespaldo(datos, contrasena);
     nombre = `respaldo-b1-${hoyIso()}-protegido.json`;
   }
-  let entregado = false;
-  if (esPantallaTactil() && typeof File !== 'undefined' && navigator.canShare) {
-    const archivo = new File([JSON.stringify(datos, null, 2)], nombre, { type: 'application/json' });
-    if (navigator.canShare({ files: [archivo] })) {
-      try {
-        await navigator.share({ files: [archivo], title: 'Copia de OllaConecta' });
-        entregado = true;
-      } catch (e) {
-        if (e && e.name === 'AbortError') return;   // cerró el menú: no hubo respaldo
-      }
-    }
+  // En el APK, el menú «Compartir» de Android (complemento propio); en el
+  // navegador del celular, el de la web; si no, se descarga.
+  try {
+    const bytes = new TextEncoder().encode(JSON.stringify(datos, null, 2));
+    const r = await compartirArchivo({ nombre, tipo: 'application/json', bytes, titulo: 'Copia de OllaConecta' });
+    if (r === 'cancelado') return;   // cerró el menú: no hubo respaldo
+  } catch (e) {
+    avisoAbajo('No se pudo abrir el menú para guardar la copia. Inténtalo de nuevo.');
+    return;
   }
-  if (!entregado) descargarJson(nombre, datos);
   guardar(CLAVES.respaldo, { ultimoEn: hoyIso() });
   const recordatorio = document.getElementById('recordatorio-respaldo');
   if (recordatorio) recordatorio.remove();
@@ -975,29 +973,47 @@ export function pintarPanel(contenedor, hallazgos, { alIrA } = {}) {
   // En el celular, siempre plegado: el panel se queda arriba y cada línea de
   // detalle es una persona menos a la vista en la lista.
   const muchos = hallazgos.length > (esAnchoCelular() ? 0 : 3);
+  // De a 50: con miles de avisos (un año de asistencia con una fecha de alta
+  // mal puesta, p. ej.) armarlos todos eran decenas de miles de elementos y
+  // la página se trababa, aunque el detalle estuviera plegado.
   const lista = crearElemento('ul', { clase: 'panel-lista' });
-  for (const hall of [...errores, ...faltan, ...avisos]) {
-    const tipo = hall.severidad !== 'error' ? 'Revisar:' : hall.falta ? 'Completar:' : 'Corregir:';
-    const item = crearElemento('li', { clase: `panel-item ${hall.falta ? 'falta' : hall.severidad}` }, [
-      icono(hall.falta ? 'lapiz' : ICONO_HALLAZGO[hall.severidad], { tam: 15, clase: 'icono panel-icono' }),
-      crearElemento('span', { clase: 'panel-tipo', texto: tipo }),
-      crearElemento('span', { clase: 'panel-mensaje', texto: ' ' + hall.mensaje })
-    ]);
-    if (alIrA) {
-      item.append(crearElemento('button', {
-        type: 'button', clase: 'enlace-ir',
-        texto: 'Ir al dato',
-        onclick: () => alIrA(hall.campo)
-      }));
-    }
-    lista.append(item);
+  const todos = [...errores, ...faltan, ...avisos];
+  let mostrados = 0;
+  const mas = crearElemento('button', { type: 'button', clase: 'boton diminuto secundario panel-mas', onclick: () => tanda() });
+  function tanda() {
+    for (const hall of todos.slice(mostrados, mostrados + POR_TANDA_PANEL)) lista.append(itemDelPanel(hall, alIrA));
+    mostrados = Math.min(todos.length, mostrados + POR_TANDA_PANEL);
+    const quedan = todos.length - mostrados;
+    mas.hidden = quedan === 0;
+    mas.textContent = `Ver ${Math.min(quedan, POR_TANDA_PANEL)} más (quedan ${quedan})`;
   }
+  tanda();
+  const cuerpo = [lista, mas];
 
-  if (!muchos) { contenedor.append(lista); return; }
+  if (!muchos) { contenedor.append(...cuerpo); return; }
   contenedor.append(crearElemento('details', { clase: 'panel-detalle' }, [
     crearElemento('summary', { texto: `Ver qué falta (${hallazgos.length})` }),
-    lista
+    ...cuerpo
   ]));
+}
+
+const POR_TANDA_PANEL = 50;
+
+function itemDelPanel(hall, alIrA) {
+  const tipo = hall.severidad !== 'error' ? 'Revisar:' : hall.falta ? 'Completar:' : 'Corregir:';
+  const item = crearElemento('li', { clase: `panel-item ${hall.falta ? 'falta' : hall.severidad}` }, [
+    icono(hall.falta ? 'lapiz' : ICONO_HALLAZGO[hall.severidad], { tam: 15, clase: 'icono panel-icono' }),
+    crearElemento('span', { clase: 'panel-tipo', texto: tipo }),
+    crearElemento('span', { clase: 'panel-mensaje', texto: ' ' + hall.mensaje })
+  ]);
+  if (alIrA) {
+    item.append(crearElemento('button', {
+      type: 'button', clase: 'enlace-ir',
+      texto: 'Ir al dato',
+      onclick: () => alIrA(hall.campo)
+    }));
+  }
+  return item;
 }
 
 let contadorMensaje = 0;

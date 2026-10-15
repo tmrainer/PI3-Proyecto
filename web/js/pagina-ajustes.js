@@ -6,7 +6,7 @@
 // a los datos (dónde se guardan, la copia, borrar todo) está en datos.html.
 
 /** Versión que se muestra en «Acerca de». Subirla junto con versionName del APK. */
-const VERSION_APP = '1.3';
+const VERSION_APP = '1.4';
 import {
   buscar, crearElemento, montarCabecera, icono,
   pintarAvisosAlmacenamiento, decir, puedeHablar, sincronizarBarras, avisoAbajo

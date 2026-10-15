@@ -1,13 +1,14 @@
 // ui-reportes.js — el padrón listo para copiar a un formato municipal.
 // Solo ordena y numera lo ya ingresado: no completa ni deduce ningún dato.
 
-import { nombreCompleto, hoyIso, descargarTexto, cuantos } from './modelo.js';
+import { nombreCompleto, hoyIso, cuantos } from './modelo.js';
+import { compartirArchivo } from './compartir-archivo.js';
 import {
   filasPadron, asistenciaPorAfiliado, afiliadosSinAsistencia, TRAMOS_ETARIOS
 } from './calculos.js';
 import { estado } from './estado.js';
 import { celdaParaHoja } from './importar.js';
-import { buscar, crearElemento, chip } from './ui.js';
+import { buscar, crearElemento, chip, avisoAbajo } from './ui.js';
 
 // ctx: { fechaRef, inicio, fin }
 
@@ -114,8 +115,15 @@ export function montarControlesReporte(ctx, alCambiarPeriodo) {
   rIni.addEventListener('input', () => { ctx.inicio = rIni.value || ctx.inicio; alCambiarPeriodo(); });
   rFin.addEventListener('input', () => { ctx.fin = rFin.value || ctx.fin; alCambiarPeriodo(); });
 
-  buscar('#descargar-padron').addEventListener('click', () => {
-    descargarTexto(`padron-${hoyIso()}.csv`, filasComoTexto(ctx, ','));
+  // En el APK, el menú «Compartir» de Android (una descarga no llegaba a
+  // ninguna parte); en la computadora, la descarga. BOM: tildes en Excel.
+  buscar('#descargar-padron').addEventListener('click', async () => {
+    const bytes = new TextEncoder().encode('\ufeff' + filasComoTexto(ctx, ','));
+    try {
+      await compartirArchivo({ nombre: `padron-${hoyIso()}.csv`, tipo: 'text/csv', bytes, titulo: 'Padrón para Excel' });
+    } catch (e) {
+      avisoAbajo('No se pudo abrir el menú para guardar el archivo.');
+    }
   });
 
   buscar('#copiar-padron').addEventListener('click', async () => {

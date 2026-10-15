@@ -223,6 +223,42 @@ sugiere una vez («Ahora no» lo descarta). El B-1 lo usa como otra fuente de
 `sugerencias.js` (`sugerenciasPerfil`: se propone, no se aplica solo) y la
 inscripción con DNI escribe ese nombre en «quién revisó».
 
+**Vista previa del B-1 sobre la hoja oficial** (fase 4 de AGENTS.md §8;
+`vista-previa.html`, `pagina-vista-previa.js`, `hoja-b1.js` puro y
+`plantilla-b1.js`). La app no dibuja el formato: pone solo los datos, cada uno
+en una caja absoluta en milímetros sobre un contenedor de 210 × 297 mm,
+escalado al ancho de la pantalla. `hojasDelB1(rendicion)` escribe los textos
+como en el papel (DD-MM-AA, soles sin «S/», «varios», una X en Comedor u Olla
+común), reparte las compras en hojas de `FILAS_EGRESOS` (17) con el
+encabezado repetido y los totales solo en la última, y deja vacío el aporte en
+cero. `plantilla-b1.js` es la única fuente de coordenadas: medidas sobre una
+foto de la hoja en blanco enderezada a A4 (perspectiva corregida por las cuatro
+esquinas del papel), por eso `estimado: true` y un aviso de no imprimir sobre la
+hoja oficial. Lo que no entra se aprieta (`letter-spacing`) y, si igual no
+entra, se marca en rojo y se lista. La foto de fondo la elige quien mira y queda
+solo en memoria (`URL.createObjectURL`): no se guarda, no se versiona, no se
+imprime. Un panel para el equipo mueve las cajas en vivo y copia el objeto
+`PLANTILLA_B1` para pegarlo en el archivo. Se abre desde el paso «Revisar» del
+B-1 («Ver cómo queda en la hoja», con `?ver=<id>`). Todavía no imprime (fase 5).
+
+Desde la vista previa: **zoom** (de 100 % a 400 % sobre el ancho de la
+pantalla; el marco se desliza de lado) y **PDF de referencia**
+(`pdf-b1.js`, puro, sin librerías: texto, líneas y recuadros con Helvetica y
+WinAnsi, escrito a mano). El PDF no es para superponer: dibuja la estructura
+del formato con rótulos en gris y los datos en negro en las mismas posiciones,
+para que se lea solo cuando no se puede imprimir; arriba dice «Copia de
+referencia» y cuándo se generó. Lo que no entra se achica hasta 2 pt, después
+va en dos renglones, después más chico y, al final, con «…». Se entrega con
+`compartir-archivo.js`: en el APK, el complemento nativo `CompartirArchivo`
+(`CompartirArchivoPlugin.java`) escribe el archivo en la caché de la app y abre
+el menú «Compartir» de Android con `FileProvider` (o directo a WhatsApp, si
+está instalado: `<queries>` en el manifiesto); en el navegador,
+`navigator.share`, o una descarga. La copia de los datos («Guardar una copia»)
+usa el mismo camino: dentro del WebView no hay `navigator.share` y una descarga
+no llegaba a ninguna parte. **Historial**: cada rendición guarda
+`generaciones` (fecha, hojas, total y cómo se entregó; las últimas 20), y la
+vista previa lista todos los B-1 con su último PDF.
+
 **Pasar datos a otro teléfono por QR** (`compartir-qr.js` puro, `ui-compartir.js`,
 `camara-qr.js`). Desde Tus datos se envía el padrón (sin notas; con el tipo,
 habitual o caso social), la asistencia de los días que se marquen (cada marca con

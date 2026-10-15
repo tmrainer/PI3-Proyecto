@@ -48,9 +48,26 @@ function validar() {
   }));
 }
 
+// El reporte va al final de la página y, con cientos de personas, es la mitad
+// de lo que hay en pantalla. En un padrón grande se arma recién cuando se baja
+// hasta él (y desde entonces, con cada cambio).
+let reporteALaVista = estado.padron.afiliados.length <= 60;
+function pintarReporte() {
+  if (reporteALaVista) pintarReportePadron(buscar('#reporte-padron'), ctx);
+}
+if (!reporteALaVista) {
+  const mirar = new IntersectionObserver((vistas) => {
+    if (!vistas.some((v) => v.isIntersecting)) return;
+    mirar.disconnect();
+    reporteALaVista = true;
+    pintarReporte();
+  }, { rootMargin: '800px 0px' });
+  mirar.observe(buscar('#reporte-padron'));
+}
+
 function refrescar() {
   pintarResumenEtario(buscar('#resumen-etario'), ctx);
-  pintarReportePadron(buscar('#reporte-padron'), ctx);
+  pintarReporte();
   validar();
 }
 

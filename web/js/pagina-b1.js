@@ -701,6 +701,11 @@ buscar('#agregar-egreso').addEventListener('click', () => {
   }
 });
 
+// La vista previa lee lo guardado: lo último que se escribió se guarda antes.
+const verEnHoja = buscar('#ver-en-hoja');
+verEnHoja.href = `./vista-previa.html?ver=${encodeURIComponent(rendicion.id)}`;
+verEnHoja.addEventListener('click', escribirPendiente);
+
 montarEncabezado();
 montarPeriodo();
 pintarMeses();

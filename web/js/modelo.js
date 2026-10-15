@@ -556,19 +556,6 @@ export function borrarTodo() {
   return ok;
 }
 
-/** Descarga local de texto plano (CSV, TSV). No sube nada a ninguna parte. */
-export function descargarTexto(nombreArchivo, texto, tipo = 'text/csv;charset=utf-8') {
-  const blob = new Blob(['\ufeff' + texto], { type: tipo });   // BOM: tildes en Excel
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = nombreArchivo;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 // ------------------------------------------------------ restaurar un respaldo
 
 /**
@@ -711,15 +698,3 @@ export async function descifrarRespaldo(sobre, contrasena) {
   return JSON.parse(new TextDecoder().decode(plano));
 }
 
-/** Descarga local de un objeto como .json. No sube nada a ninguna parte. */
-export function descargarJson(nombreArchivo, datos) {
-  const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = nombreArchivo;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}

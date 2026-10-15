@@ -482,7 +482,8 @@ body[data-pagina="asistencia"] .panel { position: static; }
   cursor: pointer; font-size: .86rem; font-weight: 600; color: var(--acento-texto);
   padding-block: 6px; border-radius: var(--r-s);   /* 24 px o más para tocarlo (WCAG 2.5.8) */
 }
-.panel-lista { list-style: none; margin: var(--e2) 0 0; padding: 0; max-height: 26vh; overflow-y: auto; display: grid; gap: 6px; }
+.panel-lista { list-style: none; margin: var(--e2) 0 0; padding: 0; max-height: 26vh; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 6px; }
+.panel-mas { margin-top: var(--e2); }
 .panel-item {
   display: flex; flex-wrap: wrap; gap: 6px var(--e2); align-items: center;
   padding: var(--e2) var(--e3); border-radius: var(--r-s); font-size: .88rem;
@@ -1059,3 +1060,37 @@ pre.plantilla {
 .elegir-lado .opcion, .lista-dias .opcion, .comparar-seccion .opciones .opcion {
   border-radius: var(--r-m); padding-block: var(--e2); overflow-wrap: anywhere;
 }
+
+/* ---------- Vista previa del B-1 sobre la hoja oficial (AGENTS.md §8) ---------- */
+/* La hoja es papel: blanca y con tinta negra también en modo oscuro. Cada dato
+   es una caja absoluta en mm (plantilla-b1.js); sin flujo, tablas ni flexbox. */
+.hoja-marco {
+  position: relative; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+  margin-top: var(--e3); border-radius: var(--r-s); box-shadow: var(--sombra-1);
+}
+.hoja-tamano { position: relative; }
+.zoom-hoja { display: flex; align-items: center; gap: var(--e2); margin-top: var(--e3); flex-wrap: wrap; }
+.zoom-hoja .boton { min-width: 48px; }
+.zoom-valor { font-variant-numeric: tabular-nums; color: var(--tinta-suave); }
+.historial-b1 { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--e3); }
+.historial-b1 li { padding: var(--e3) var(--e4); border-radius: var(--r-m); background: var(--superficie-2); }
+.historial-b1 .historial-titulo { font-weight: 700; }
+.historial-b1 .acciones { margin-top: var(--e2); }
+.hoja-b1 {
+  position: absolute; top: 0; left: 0; width: 210mm; height: 297mm; transform-origin: 0 0;
+  background: #fff; color: #000;
+  /* Se pellizca y se arrastra para agrandar: que mantener el dedo no abra el
+     menú de copiar texto encima de la hoja. */
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.hoja-guia { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
+.hoja-datos { position: absolute; inset: 0; }
+.dato {
+  position: absolute; overflow: hidden; white-space: nowrap; line-height: 1;
+  display: flex; align-items: flex-end; padding: 0 0.8mm 0.4mm; box-sizing: border-box;
+  font-family: Arial, 'Liberation Sans', Helvetica, sans-serif; color: #000;
+}
+.dato-left { justify-content: flex-start; }
+.dato-center { justify-content: center; }
+.dato-right { justify-content: flex-end; }
+.dato.no-entra { outline: 0.4mm solid #c00; color: #c00; }

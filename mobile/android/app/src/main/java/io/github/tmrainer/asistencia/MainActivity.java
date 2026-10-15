@@ -11,6 +11,8 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // Complemento propio, sin paquete npm: leer el texto del DNI (ver LectorTextoPlugin).
         registerPlugin(LectorTextoPlugin.class);
+        // Y abrir el menú «Compartir» de Android con un archivo (ver CompartirArchivoPlugin).
+        registerPlugin(CompartirArchivoPlugin.class);
         super.onCreate(savedInstanceState);
         // Mientras la página carga, el WebView se veía negro un instante entre
         // la pantalla de inicio y la app. Con el fondo de la app (claro u

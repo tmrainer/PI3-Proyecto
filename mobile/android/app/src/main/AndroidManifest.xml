@@ -53,4 +53,11 @@
          abre el lector; si se niega, se sigue escribiendo a mano. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- Android 11+ esconde las demás apps: para ofrecer «Enviar por WhatsApp»
+         directo hay que poder ver si está instalado (CompartirArchivoPlugin). -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+    </queries>
 </manifest>
