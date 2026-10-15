@@ -293,7 +293,13 @@ async function correr(base, cdp) {
       comprobar(`${nombre}.html ${sembrado ? 'con padrón' : 'vacía'}: sin errores de consola`,
         p.errores.length === 0, p.errores.join(' | '));
       if (nombre === 'pruebas') {
-        const r = await p.eval(TEXTO('#resumen'));
+        // Espera a que terminen todas (en CI la máquina es más lenta): hasta 20 s.
+        let r = '';
+        for (let k = 0; k < 40; k++) {
+          r = await p.eval(TEXTO('#resumen'));
+          if (/\d+ de \d+/.test(r)) break;
+          await pausa(500);
+        }
         comprobar('pruebas.html: todas las aserciones pasan', /✓ (\d+) de \1 pasan/.test(r), r);
       }
       if (sembrado && nombre === 'asistencia') {

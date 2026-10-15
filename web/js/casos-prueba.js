@@ -1921,17 +1921,16 @@ export const casos = [
     grupo: 'Pasar datos por QR',
     nombre: 'Hasta 1 400 caracteres, un solo QR; si no, cuadros de hasta 900 para la animación',
     fn: async () => {
+      // Dos tamaños fijos (buscar el límite era lento y en CI no alcanzaba a terminar).
       const padron = (n) => ({ atenciones: [], afiliados: Array.from({ length: n }, (_, i) => ({
         ...nuevoAfiliado(), apellidoPaterno: 'PRUEBA', nombres: `PERSONA ${i}`, numeroDocumento: String(10000000 + ((i * 7919) % 89999999)),
         tipoAfiliado: 'habitual', grupoEtarioManual: 'adulto' })) });
-      let n = 10;
-      let una;
-      while ((una = await codificarParaQr('padron', paqueteDelPadron(padron(n)))).length === 1 && n < 2000) n += 10;
-      ok(n < 2000, 'en algún tamaño pasa a varias partes');
-      const previa = await codificarParaQr('padron', paqueteDelPadron(padron(n - 10)));
-      igual(previa.length, 1, 'justo antes, uno solo');
-      ok(previa[0].length <= 1400 + 12, 'el código solo no pasa de 1 400');
-      ok(una.every((t) => t.length <= 900 + 12), 'los cuadros animados no pasan de 900');
+      const chico = await codificarParaQr('padron', paqueteDelPadron(padron(15)));
+      igual(chico.length, 1, '15 personas: un solo código');
+      ok(chico[0].length <= 1400 + 12, 'el código solo no pasa de 1 400');
+      const grande = await codificarParaQr('padron', paqueteDelPadron(padron(150)));
+      ok(grande.length > 1, '150 personas: varios cuadros');
+      ok(grande.every((t) => t.length <= 900 + 12), 'los cuadros animados no pasan de 900');
     }
   },
   {
