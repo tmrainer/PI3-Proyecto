@@ -142,8 +142,14 @@ export function leerMrzTd1(lineas, fechaRef = new Date().toISOString().slice(0, 
     vencimiento: controlOk(vence, l2[14]),
     general: controlOk(l1.slice(5, 30) + l2.slice(0, 7) + l2.slice(8, 15) + l2.slice(18, 29), l2[29])
   };
-  const [primario, ...resto] = l3.split('<<');
   const partes = (s) => s.split('<').filter(Boolean);
+  // Entre apellido y nombres va «<<». El reconocimiento a veces se come un
+  // «<» (medido en un DNI azul): sin ningún «<<» antes del relleno, el primer
+  // bloque es el apellido y el resto son los nombres (el DNI peruano trae un
+  // solo apellido en la MRZ). El anverso lo confirma o no.
+  const nombre = l3.replace(/<+$/, '');
+  const [primario, ...resto] = nombre.includes('<<') ? nombre.split('<<')
+    : [partes(nombre)[0] || '', partes(nombre).slice(1).join('<')];
   const sexo = l2[7] === 'M' || l2[7] === 'F' ? l2[7] : '';
   return {
     estructura: true,
@@ -302,6 +308,22 @@ function cruzar(valorMrz, filas) {
   return { valor: valorMrz, estado: 'sin-confirmar' };
 }
 
+// Rótulos del anverso que no son nombres. Se quitan palabra por palabra:
+// «FECHA DE EMISIÓN», «ESTADO CIVIL», «SEXO», «UBIGEO»…
+const OTRAS_PALABRAS = new Set(['FECHA', 'EMISION', 'CADUCIDAD', 'NACIMIENTO', 'VENCIMIENTO', 'INSCRIPCION',
+  'SEXO', 'UBIGEO', 'ESTADO', 'CIVIL', 'DNI', 'REPUBLICA', 'PERU', 'DOCUMENTO', 'NACIONAL', 'IDENTIDAD']);
+function sinOtrosRotulos(impreso) {
+  const palabras = textoImpreso(impreso).split(' ').filter(Boolean);
+  const quedan = palabras.filter((w, j) => {
+    const n = normalizarLetras(w);
+    if (OTRAS_PALABRAS.has(n)) return false;
+    // «DE»/«DEL» entre dos palabras de un rótulo («FECHA DE EMISIÓN»).
+    return !((n === 'DE' || n === 'DEL') && OTRAS_PALABRAS.has(normalizarLetras(palabras[j - 1] || '')));
+  });
+  const impresoLimpio = quedan.join(' ');
+  return { impreso: impresoLimpio, normal: normalizarLetras(impresoLimpio) };
+}
+
 /**
  * Cruza los nombres de la MRZ con las filas leídas del anverso. NUNCA lanza.
  * Estados por campo: «confirmado» (anverso igual a la MRZ: se usa como está
@@ -318,17 +340,51 @@ export function combinarMrzYAnverso(camposMrz, filasAnverso) {
   if (!camposMrz || !Array.isArray(filasAnverso)) return null;
   const filas = filasAnverso.map((t) => ({ impreso: textoImpreso(t), normal: normalizarLetras(t) }))
     .filter((f) => f.normal);
-  const paterno = cruzar(normalizarLetras((camposMrz.apellidos || []).join(' ')), filas);
-  const nombres = cruzar(normalizarLetras(camposMrz.nombres), filas);
+  let paterno = cruzar(normalizarLetras((camposMrz.apellidos || []).join(' ')), filas);
+  let nombres = cruzar(normalizarLetras(camposMrz.nombres), filas);
+
+  // Por rótulo: el valor va en la misma fila, después del rótulo, o en la
+  // siguiente que no sea otro rótulo. En el DNI azul, la columna de al lado
+  // («Fecha de Emisión»…) cae casi a la misma altura y se mete entre el
+  // rótulo y su valor: esos rótulos se quitan.
+  const ROTULO = /PRIMER ?APELLIDO|SEGUNDO ?APELLIDO|PRE ?NOMBRES|NOMBRES/;
+  const porRotulo = (re) => {
+    const i = filas.findIndex((f) => re.test(f.normal));
+    if (i < 0) return null;
+    const enLaFila = sinOtrosRotulos(filas[i].impreso.replace(/^.*?(NOMBRES|APELLIDO)\s*/u, ''));
+    if (enLaFila.normal && !ROTULO.test(enLaFila.normal)) return enLaFila;
+    for (const f of filas.slice(i + 1)) {
+      if (ROTULO.test(f.normal)) return null;
+      const limpia = sinOtrosRotulos(f.impreso);
+      if (limpia.normal) return limpia;
+    }
+    return null;
+  };
+  // Las letras de la MRZ sin ningún separador: un «<» perdido o de más no
+  // cambia nada. Lo del rótulo vale si coincide ahí, letra por letra.
+  // El reconocimiento también lee un «<» como «K» (visto en un DNI azul:
+  // «AAAAAA<<» salió «AAAAAAA<»). Si no coincide tal cual, se compara sin las K.
+  const letras = normalizarLetras([...(camposMrz.apellidos || []), camposMrz.nombres].join(' ')).replace(/ /g, '');
+  const sinEspacios = (f) => f.normal.replace(/ /g, '');
+  const sinK = (t) => t.replace(/K/g, '');
+  const empieza = (v) => letras.startsWith(v) || sinK(letras).startsWith(sinK(v));
+  const termina = (v) => letras.length > v.length && (letras.endsWith(v) || sinK(letras).endsWith(sinK(v)));
+  const primero = porRotulo(/PRIMER ?APELLIDO/);
+  if (paterno.estado !== 'confirmado' && primero && sinK(sinEspacios(primero)) && empieza(sinEspacios(primero))) {
+    paterno = { valor: primero.impreso, estado: 'confirmado' };
+  }
+  const pre = porRotulo(/PRE ?NOMBRES/);
+  if (nombres.estado !== 'confirmado' && pre && sinK(sinEspacios(pre)) && termina(sinEspacios(pre))) {
+    nombres = { valor: pre.impreso, estado: 'confirmado' };
+  }
   // Sin ninguna fila que coincida, no es este DNI o no se leyó todavía.
   if (paterno.estado !== 'confirmado' && nombres.estado !== 'confirmado' &&
     paterno.estado !== 'dudoso' && nombres.estado !== 'dudoso') return null;
 
-  // El segundo apellido solo está en el anverso: la fila que sigue a su rótulo.
+  // El segundo apellido solo está en el anverso.
   let materno = { valor: '', estado: 'no-leido' };
-  const i = filas.findIndex((f) => /SEGUNDO ?APELLIDO/.test(f.normal));
-  const siguiente = i >= 0 ? filas.slice(i + 1).find((f) => !/APELLIDO|NOMBRE/.test(f.normal)) : null;
-  if (siguiente) materno = { valor: siguiente.impreso, estado: 'sin-confirmar' };
+  const segundo = porRotulo(/SEGUNDO ?APELLIDO/);
+  if (segundo) materno = { valor: segundo.impreso, estado: 'sin-confirmar' };
   return { apellidoPaterno: paterno, apellidoMaterno: materno, nombres };
 }
 

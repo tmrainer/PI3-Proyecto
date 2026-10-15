@@ -79,7 +79,7 @@ function montarLecturaDni() {
     crearElemento('label', { for: 'altaVerifica', clase: 'obligatoria', texto: 'Quién revisó los datos con el DNI' }), fVerifica
   ]);
   caja.append(
-    crearElemento('p', { clase: 'pista', texto: 'En prueba: lee el reverso y luego el lado de la foto. Revisa todo antes de inscribir.' }),
+    crearElemento('p', { clase: 'pista', texto: 'En prueba: lee las tres líneas con «<» y los nombres del lado de la foto (en el DNI azul están en la misma cara). Revisa todo antes de inscribir.' }),
     boton, nota, verifica
   );
   buscar('#bloque-alta .pista').after(caja);

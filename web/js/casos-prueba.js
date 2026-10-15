@@ -1118,6 +1118,54 @@ export const casos = [
       igual(r.campos.nombres, 'FERNANDO ALBERTO');
     }
   },
+  // DNI azul (forma medida en un Samsung A56, plantilla anónima
+  // «AAAAAAA<AAAAAAAAAAAAA<<<<<<<<<»): el reconocimiento se comió un «<» del
+  // «<<» entre apellido y nombres. Nombres inventados.
+  {
+    grupo: 'Escaneo DNI',
+    nombre: 'DNI azul: sin «<<» en la línea 3, el primer bloque es el apellido y el resto los nombres',
+    fn: () => {
+      const r = leerMrzTd1([
+        'I<PER12345678<8<<<<<<<<<<<<<<<',
+        '9001158M3001156PER<<<<<<<<<<<6',
+        'VILLANUEVA<FERNANDO<ALBERTO<<<'
+      ], '2026-10-12');
+      igual(r.campos.apellidos.join(' '), 'VILLANUEVA');
+      igual(r.campos.nombres, 'FERNANDO ALBERTO');
+    }
+  },
+  {
+    grupo: 'Escaneo DNI',
+    nombre: 'DNI azul: los rótulos del anverso confirman aunque la MRZ haya perdido un «<»',
+    fn: () => {
+      // El «<» perdido entre dos nombres junta las letras: la MRZ no sabe dónde cortar.
+      const mrz = { apellidos: ['VILLANUEVA'], nombres: 'FERNANDOALBERTO' };
+      const enFilas = combinarMrzYAnverso(mrz, ['Primer Apellido', 'VILLANUEVA', 'Segundo Apellido', 'QUIÑONES',
+        'Pre Nombres', 'FERNANDO ALBERTO']);
+      igual(enFilas.apellidoPaterno.estado, 'confirmado');
+      igual(enFilas.nombres.valor, 'FERNANDO ALBERTO');
+      igual(enFilas.nombres.estado, 'confirmado');
+      igual(enFilas.apellidoMaterno.valor, 'QUIÑONES');
+      // Rótulo y valor en la misma fila.
+      const juntos = combinarMrzYAnverso(mrz, ['Primer Apellido VILLANUEVA', 'Pre Nombres FERNANDO ALBERTO']);
+      igual(juntos.nombres.valor, 'FERNANDO ALBERTO');
+      // La columna de al lado («Fecha de Emisión») se mete entre el rótulo y el
+      // segundo apellido, o queda en su misma fila: no es el apellido.
+      const conFecha = combinarMrzYAnverso(mrz, ['Primer Apellido', 'VILLANUEVA', 'Segundo Apellido',
+        'Fecha de Emisión', 'QUIÑONES', 'Pre Nombres', 'FERNANDO ALBERTO']);
+      igual(conFecha.apellidoMaterno.valor, 'QUIÑONES');
+      const pegada = combinarMrzYAnverso(mrz, ['Primer Apellido', 'VILLANUEVA', 'Segundo Apellido',
+        'QUIÑONES Fecha de Emisión 12/03/2015', 'Pre Nombres', 'FERNANDO ALBERTO']);
+      igual(pegada.apellidoMaterno.valor, 'QUIÑONES');
+      // Un «<» leído como «K»: VILLANUEVAK<FERNANDO… también se confirma.
+      const conK = combinarMrzYAnverso({ apellidos: ['VILLANUEVAK'], nombres: 'FERNANDOKALBERTO' },
+        ['Primer Apellido', 'VILLANUEVA', 'Pre Nombres', 'FERNANDO ALBERTO']);
+      igual(conK.apellidoPaterno.valor, 'VILLANUEVA');
+      igual(conK.nombres.estado, 'confirmado');
+      // Otro DNI frente a la cámara: no se confirma nada.
+      igual(combinarMrzYAnverso(mrz, ['Primer Apellido', 'QUISPE', 'Pre Nombres', 'ROSA']), null);
+    }
+  },
   // Un anverso inventado, como lo devuelve el reconocimiento de texto.
   {
     grupo: 'Escaneo DNI',

@@ -18,8 +18,8 @@ import { crearElemento, icono } from './ui.js';
 import { buscarMrzTd1, unirFilasOcr, combinarMrzYAnverso } from './escaneo-dni.js';
 import { abrirCamaraTrasera } from './camara-trasera.js';
 
-const PISTA_REVERSO = 'Pon el reverso del DNI dentro del recuadro, con buena luz, y mantén el teléfono quieto.';
-const PISTA_ASISTENCIA = 'Muestra el reverso del DNI (el lado de las tres líneas con «<»). Puedes pasar uno tras otro.';
+const PISTA_REVERSO = 'Pon dentro del recuadro el lado del DNI con tres líneas de «<», con buena luz, y mantén el teléfono quieto.';
+const PISTA_ASISTENCIA = 'Muestra el lado del DNI con tres líneas de «<». Puedes pasar uno tras otro.';
 const PISTA_ANVERSO = 'Ahora voltea el DNI: el lado de la foto, dentro del recuadro. De ahí salen las tildes, la ñ y el segundo apellido.';
 
 function lectorDeTexto() {
@@ -194,13 +194,24 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
     return lienzo.toDataURL('image/jpeg', 0.75).split(',')[1];
   }
 
+  // En el DNI azul las líneas con «<» están en la MISMA cara que la foto; en
+  // el electrónico, atrás. Primero se buscan los nombres sin voltear: si en
+  // unas vueltas no aparecen, recién se pide el lado de la foto.
+  const VUELTAS_MISMA_CARA = 3;
+  let vueltasMismaCara = 0;
+
   function pasarAlAnverso(mrz) {
     mrzLeida = mrz;
     fase = 'anverso';
     anterior = '';
+    vueltasMismaCara = 0;
     if (navigator.vibrate) { try { navigator.vibrate(40); } catch (e) { /* sin vibración */ } }
+    estado.textContent = 'Listas las tres líneas. Buscando los nombres…';
+  }
+
+  function pedirVoltear() {
     pista.textContent = PISTA_ANVERSO;
-    estado.textContent = 'Listo el reverso. Ahora el lado de la foto…';
+    estado.textContent = 'Ahora el lado de la foto…';
     omitir.hidden = false;
   }
 
@@ -235,6 +246,8 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
               }
             } else anterior = clave;
           } else {
+            vueltasMismaCara += 1;
+            if (vueltasMismaCara === VUELTAS_MISMA_CARA) pedirVoltear();
             const anverso = combinarMrzYAnverso(mrzLeida.campos, filas);
             const clave = anverso ? JSON.stringify(anverso) : '';
             if (anverso) {
