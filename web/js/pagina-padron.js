@@ -94,19 +94,22 @@ montarFiltrosPersonas(buscar('#lista-afiliados'), ctx);
 montarControlesReporte(ctx, refrescar);
 
 montarAltaPersona(ctx);
-// Inscribir es de vez en cuando; consultar la lista, de todos los días. El alta
-// va plegada en una línea arriba, salvo cuando todavía no hay nadie.
-buscar('#bloque-alta').open = estado.padron.afiliados.length === 0;
 
-// Inscribir, a un toque desde cualquier punto de la lista (y desde el Inicio,
-// que llega con #inscribir).
+// Inscribir es de vez en cuando; consultar la lista, de todos los días. El alta
+// es una ventana flotante: se abre con el botón verde de abajo (o desde el
+// Inicio, que llega con #inscribir) y se queda abierta para inscribir a varias
+// seguidas hasta «Cerrar». Escape también cierra (lo da <dialog>).
+const alta = buscar('#bloque-alta');
 function abrirInscripcion() {
-  const alta = buscar('#bloque-alta');
-  alta.open = true;
-  alta.scrollIntoView({ block: 'start' });
+  if (!alta.open) alta.showModal();
   const primero = buscar('#altaPaterno');
-  if (primero) primero.focus({ preventScroll: true });
+  if (primero) primero.focus();
 }
+buscar('#cerrar-alta').addEventListener('click', () => alta.close());
+alta.addEventListener('close', () => {
+  if (location.hash === '#inscribir') history.replaceState(null, '', location.pathname);
+  buscar('.fab').focus();
+});
 document.body.classList.add('con-fab');
 document.body.append(crearElemento('button', {
   type: 'button', clase: 'fab', 'aria-label': 'Inscribir a una persona', onclick: abrirInscripcion

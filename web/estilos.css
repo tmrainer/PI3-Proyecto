@@ -987,6 +987,9 @@ dialog.camara-dni {
   background: var(--superficie); color: var(--tinta); box-shadow: var(--sombra-2);
 }
 dialog.camara-dni::backdrop { background: rgba(10, 18, 12, .75); }
+/* Inscribir: el formulario en la ventana; los botones no van a lo ancho. */
+.ventana-alta .acciones .boton { width: auto; flex: 1; }
+.ventana-alta #alta-mensaje:empty { display: none; }
 .camara-dni h2 { margin: 0 0 var(--e2); }
 .camara-pista { margin: 0 0 var(--e3); }
 .camara-visor { position: relative; border-radius: var(--r-m); overflow: hidden; background: #000; aspect-ratio: 4 / 3; }

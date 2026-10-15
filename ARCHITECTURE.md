@@ -187,7 +187,7 @@ saltar a un paso más adelante desde la barra) revisa con `validarRendicion()`
 los errores de los pasos que se dejan atrás; si hay, no avanza, marca esos
 campos en rojo, lleva el cursor al primero y dice cuáles en `#aviso-pasos`
 (dentro de la barra fija de abajo). «Atrás» siempre. El PDF del B-1 tampoco se
-genera con errores pendientes. Inscribir en el padrón frena lo vacío y también
+genera con errores pendientes. Inscribir en el padrón es una ventana flotante (`<dialog id="bloque-alta">`) que abre solo el botón verde de abajo (o `#inscribir` desde el Inicio) y queda abierta para inscribir a varias seguidas hasta «Cerrar»; frena lo vacío y también
 lo mal escrito (los errores de `validarAfiliado()`). Cada campo del B-1 lleva
 una indicación corta (`.pista`, enlazada con `aria-describedby`; el mensaje de
 error se suma, no la reemplaza) y, donde ayuda, un ejemplo en el placeholder. Preferencias del equipo, fuera de los respaldos: las de Ajustes,

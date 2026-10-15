@@ -48,8 +48,10 @@
   <div id="banner"></div>
   <div id="panel" class="panel" role="status" aria-live="polite" aria-label="Resumen de revisión"></div>
 
-  <details class="bloque desplegable" id="bloque-alta">
-    <summary><h2>Inscribir a una persona</h2></summary>
+  <!-- Inscribir: una ventana flotante que abre solo el botón verde de abajo
+       (y el Inicio, con #inscribir). La lista queda para consultar. -->
+  <dialog class="camara-dni ventana-alta" id="bloque-alta" aria-labelledby="titulo-alta">
+    <h2 id="titulo-alta">Inscribir a una persona</h2>
     <p class="pista">Los campos con * son obligatorios.</p>
     <div class="rejilla tres">
       <div class="campo">
@@ -91,11 +93,12 @@
       <legend class="obligatoria">Tipo</legend>
       <div class="opciones" id="alta-tipo"></div>
     </fieldset>
+    <p class="estado-guardado" id="alta-mensaje" role="status" aria-live="polite"></p>
     <div class="acciones" style="margin-top:12px">
       <button type="button" class="boton" id="agregar-afiliado">Inscribir</button>
-      <span class="estado-guardado" id="alta-mensaje" role="status" aria-live="polite"></span>
+      <button type="button" class="boton secundario" id="cerrar-alta">Cerrar</button>
     </div>
-  </details>
+  </dialog>
 
   <section class="bloque">
     <h2>Personas afiliadas</h2>

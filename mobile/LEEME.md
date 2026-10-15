@@ -40,6 +40,8 @@ export ANDROID_HOME=$HOME/Android/Sdk
 cd mobile
 npm install          # la primera vez
 npm run apk          # copia la app web, sincroniza y compila
+npm run apk:publicar # lo mismo, desde cero: para el APK de un release
+                     # (el armado rápido deja huecos y el APK pesa más)
 # → android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
