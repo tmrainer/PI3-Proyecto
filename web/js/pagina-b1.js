@@ -10,6 +10,7 @@ import { validarRendicion } from './validaciones.js';
 import { sugerenciasEncabezado, sugerenciasPerfil, instantaneaCentro } from './sugerencias.js';
 import { leerPerfil } from './perfil.js';
 import { alertaProximaEntrega } from './alertas.js';
+import { botonesExportar, selloAhora } from './ui-reportes.js';
 import {
   buscar, crearElemento, montarCabecera, pintarPanel,
   marcarCampo, cajaSugerencia, bannerAlerta, pintarAvisosAlmacenamiento,
@@ -745,6 +746,44 @@ buscar('#agregar-egreso').addEventListener('click', () => {
 const verEnHoja = buscar('#ver-en-hoja');
 verEnHoja.href = `./vista-previa.html?ver=${encodeURIComponent(rendicion.id)}`;
 verEnHoja.addEventListener('click', escribirPendiente);
+
+// ----------------------------------------------------------- exportar
+// Con un dato obligatorio pendiente no se exporta: el B-1 es una declaración
+// jurada. Se dice qué falta y se lleva ahí (como «Siguiente»).
+
+const etiquetaB1 = () => (rendicion.periodo && rendicion.periodo.etiqueta) || 'en curso';
+
+function listoParaExportar() {
+  const pendientes = validarRendicion(rendicion).filter((h) => h.severidad === 'error');
+  if (!pendientes.length) { escribirPendiente(); return true; }
+  avisoAbajo(`Antes de exportar, completa el B-1: ${pendientes.slice(0, 2).map((h) => h.mensaje.replace(/\.$/, '').replace(/^Faltan? /, 'falta ')).join('; ')}` +
+    `${pendientes.length > 2 ? ` y ${pendientes.length - 2} más` : ''}.`);
+  irACampo(pendientes[0].campo);
+  return false;
+}
+
+/** Cuándo se exportó cada B-1 (los últimos 20): va en la copia de los datos. */
+function registrarExportacion(formato, como) {
+  const t = totales(rendicion);
+  rendicion.generaciones = [...(Array.isArray(rendicion.generaciones) ? rendicion.generaciones : []),
+    { en: new Date().toISOString(), formato, totalCent: t.total, como }].slice(-20);
+  pendiente = true;
+  escribir();
+}
+
+botonesExportar(buscar('#exportar-b1'), {
+  // PDF y Excel se cargan al tocar: abrir el B-1 no los espera.
+  pdf: async () => (listoParaExportar() ? {
+    bytes: (await import('./pdf-b1.js')).pdfDelB1((await import('./hoja-b1.js')).hojasDelB1(rendicion),
+      { generado: selloAhora(), titulo: `Formato B-1 ${etiquetaB1()}` }),
+    nombre: `B-1 ${etiquetaB1()}`, titulo: `Formato B-1 ${etiquetaB1()} (copia de referencia)`,
+    alEntregar: (como) => registrarExportacion('pdf', como)
+  } : null),
+  excel: async () => (listoParaExportar() ? {
+    bytes: (await import('./excel-reportes.js')).excelDelB1(rendicion), nombre: `B-1 ${etiquetaB1()}`, titulo: `Formato B-1 ${etiquetaB1()}`,
+    alEntregar: (como) => registrarExportacion('excel', como)
+  } : null)
+});
 
 montarEncabezado();
 montarPeriodo();

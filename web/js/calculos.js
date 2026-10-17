@@ -76,9 +76,14 @@ export function descuadreFila(fila) {
 
 // --------------------------------------------------------- §6.2 / §6.3 Padrón
 
-/** ¿Estaba activa esta persona en la fecha `ref` ('AAAA-MM-DD' válida)? */
+/**
+ * ¿Estaba activa esta persona en la fecha `ref` ('AAAA-MM-DD' válida)?
+ * Una baja (activo = false con bajaEn) no toca el historial: antes de esa
+ * fecha la persona sigue contando, en los reportes y en los días pasados.
+ * Solo activo = false sin fecha de baja la deja fuera de todas las fechas.
+ */
 export function activoEn(a, ref) {
-  if (!a.activo) return false;
+  if (!a.activo && !esIso(a.bajaEn)) return false;
   if (esIso(a.altaEn) && a.altaEn > ref) return false;
   if (esIso(a.bajaEn) && a.bajaEn <= ref) return false;
   return true;
@@ -357,8 +362,8 @@ export function conteoAsistenciaDelDia(at) {
  *
  * Lee `padron.atenciones` del periodo (atencionesDelPeriodo) y, de cada día,
  * `at.asistencias` (asistenciasDelDia). No escribe nada. Es el punto donde el
- * reporte del padrón y su CSV leen lo que se marcó en la pantalla de asistencia
- * (ui-reportes.js: pintarReportePadron y filasComoTexto).
+ * padrón exportado (PDF y Excel) lee lo que se marcó en la pantalla de asistencia
+ * (excel-reportes.js y pdf-reportes.js, al exportar el padrón).
  *
  * Solo aparece quien asistió al menos un día: los demás no tienen fila.
  * Los días migrados con `legado` no suman, porque no dicen quién vino.

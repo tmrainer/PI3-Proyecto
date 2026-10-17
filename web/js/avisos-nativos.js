@@ -9,7 +9,6 @@
 // tiene sus pruebas. Este módulo solo los entrega a Android.
 
 import { hoyIso } from './modelo.js';
-import { programaDeAvisos } from './alertas.js';
 
 const HORA_DEL_AVISO = 9;   // 9 de la mañana
 
@@ -58,6 +57,8 @@ export async function reprogramarAvisos(calendario) {
     if ((await LN.checkPermissions()).display !== 'granted') return 0;
     const pendientes = (await LN.getPending()).notifications || [];
     if (pendientes.length) await LN.cancel({ notifications: pendientes.map((n) => ({ id: n.id })) });
+    // Solo en el APK y con permiso: en el navegador ni se carga.
+    const { programaDeAvisos } = await import('./alertas.js');
     const avisos = programaDeAvisos(calendario, hoyIso());
     if (!avisos.length) return 0;
     await LN.schedule({

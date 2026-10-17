@@ -233,7 +233,9 @@ inscripción con DNI escribe ese nombre en «quién revisó».
 
 **Vista previa del B-1 sobre la hoja oficial** (fase 4 de AGENTS.md §8;
 `vista-previa.html`, `pagina-vista-previa.js`, `hoja-b1.js` puro y
-`plantilla-b1.js`). La app no dibuja el formato: pone solo los datos, cada uno
+`plantilla-b1.js`). Se abre desde el paso «Revisar» del B-1 («Ver cómo queda
+en la hoja», con `?ver=<id>`); solo muestra: exportar (PDF o Excel) está en el
+propio B-1, al lado. La app no dibuja el formato: pone solo los datos, cada uno
 en una caja absoluta en milímetros sobre un contenedor de 210 × 297 mm,
 escalado al ancho de la pantalla. `hojasDelB1(rendicion)` escribe los textos
 como en el papel (DD-MM-AA, soles sin «S/», «varios», una X en Comedor u Olla
@@ -246,11 +248,17 @@ hoja oficial. Lo que no entra se aprieta (`letter-spacing`) y, si igual no
 entra, se marca en rojo y se lista. La foto de fondo la elige quien mira y queda
 solo en memoria (`URL.createObjectURL`): no se guarda, no se versiona, no se
 imprime. Un panel para el equipo mueve las cajas en vivo y copia el objeto
-`PLANTILLA_B1` para pegarlo en el archivo. Se abre desde el paso «Revisar» del
-B-1 («Ver cómo queda en la hoja», con `?ver=<id>`). Todavía no imprime (fase 5).
+`PLANTILLA_B1` para pegarlo en el archivo. Tiene **zoom** (de 100 % a 400 % sobre el ancho de la pantalla; el
+marco se desliza de lado). Todavía no imprime (fase 5).
 
-Desde la vista previa: **zoom** (de 100 % a 400 % sobre el ancho de la
-pantalla; el marco se desliza de lado) y **PDF de referencia**
+**Exportar: PDF o Excel**, los mismos dos botones en Asistencia («Resumen y
+exportar»), Padrón («Exportar el padrón») y el paso «Revisar» del B-1
+(`botonesExportar()` en `ui-reportes.js`). El archivo se arma al tocar; solo
+el B-1 tiene vista previa en pantalla (la de arriba). El B-1 solo se exporta
+sin datos obligatorios pendientes (es declaración jurada); si falta algo, se
+dice qué y se lleva ahí.
+
+**PDF de referencia del B-1**
 (`pdf-b1.js`, puro, sin librerías: texto, líneas y recuadros con Helvetica y
 WinAnsi, escrito a mano). El PDF no es para superponer: dibuja la estructura
 del formato con rótulos en gris y los datos en negro en las mismas posiciones,
@@ -259,27 +267,32 @@ referencia» y cuándo se generó. Lo que no entra se achica hasta 2 pt, despué
 va en dos renglones, después más chico y, al final, con «…». Se entrega con
 `compartir-archivo.js`: en el APK, el complemento nativo `CompartirArchivo`
 (`CompartirArchivoPlugin.java`) escribe el archivo en la caché de la app y abre
-el menú «Compartir» de Android con `FileProvider` (o directo a WhatsApp, si
-está instalado: `<queries>` en el manifiesto); en el navegador,
+el menú «Compartir» de Android con `FileProvider`; en el navegador,
 `navigator.share`, o una descarga. La copia de los datos («Guardar una copia»)
 usa el mismo camino: dentro del WebView no hay `navigator.share` y una descarga
 no llegaba a ninguna parte. **Historial**: cada rendición guarda
-`generaciones` (fecha, hojas, total y cómo se entregó; las últimas 20), y la
-vista previa lista todos los B-1 con su último PDF.
+`generaciones` (fecha, formato, total y cómo se entregó; las últimas 20); va en
+la copia de los datos.
 
 **PDF del padrón y de la asistencia** (`pdf-reportes.js`, puro, sobre
 `pdf.js`, el mismo escritor de PDF que el B-1). No hay formato oficial a la
 vista para estos dos (AGENTS.md §12.2): son tablas de guía que dicen «Copia de
 referencia», con «Hoja i de n». Padrón: las personas activas numeradas por
 apellido, documento, grupo de edad, edad, tipo y días que vinieron en el
-periodo del reporte; al final, los totales por grupo y de ayuda social
-(botón en «Reporte para el padrón»). Asistencia: el resumen por día (menú
+periodo del reporte; al final, los totales por grupo y de ayuda social. Asistencia: el resumen por día (menú
 normal, ayuda social, sin inscribir —ya incluidos en los dos anteriores—,
 raciones y recaudado, con total) y, si el periodo tiene hasta 31 días con
 atención, la planilla por persona en hojas horizontales (X: menú normal; A:
-ayuda social) con el total del día (botón en «Resumen por fechas»). Solo
-ordenan y suman lo registrado. Se entregan con el menú «Compartir» de Android
-(`compartirPdf()` en `ui-reportes.js`).
+ayuda social) con el total del día. Solo ordenan y suman lo registrado.
+
+**Excel** (`excel-reportes.js`, puro, sobre `armarXlsx()` de `xlsx.js`: un
+.xlsx escrito a mano, ZIP sin compresión, texto en la celda, negrita y soles
+con dos decimales). Las mismas cifras que los PDF, en celdas: los números son
+números y los DNI, texto (no pierden el 0). Padrón: hoja «Padrón» con los
+títulos que entiende la importación (se puede volver a cargar en otro
+teléfono) y hoja «Resumen» con los totales. Asistencia: «Resumen por día» y
+«Por persona» (esta, con cualquier cantidad de días). B-1: una hoja en el orden
+del formato. Un texto que empieza con `=` va como texto, nunca como fórmula.
 
 **Pasar datos a otro teléfono por QR** (`compartir-qr.js` puro, `ui-compartir.js`,
 `camara-qr.js`). Desde Tus datos se envía el padrón (sin notas; con el tipo,
@@ -352,11 +365,9 @@ nombre y fecha; `validarAfiliados()` y `validarAtenciones()` lo reciben y cada
 página valida solo lo suyo. Antes, con 300 personas y un año, cada toque
 tardaba segundos en un celular modesto; `humo.mjs` (6c) lo vigila.
 
-En el **reporte del padrón**, la lectura es:
-`pintarReportePadron()` → `asistenciaPorAfiliado(estado.padron, ctx.inicio, ctx.fin)`
-(`ui-reportes.js:17-18`) → `atencionesDelPeriodo()` + `asistenciasDelDia(at)`
-(`calculos.js:374-375`). Lo mismo hace `filasComoTexto()` para exportar
-(`ui-reportes.js:83-84`).
+Al **exportar el padrón**, la lectura es:
+`excelDelPadron()` / `pdfDelPadron()` → `asistenciaPorAfiliado(estado.padron, ctx.inicio, ctx.fin)`
+→ `atencionesDelPeriodo()` + `asistenciasDelDia(at)` (`calculos.js`).
 
 ### `padron.atenciones`
 
@@ -432,13 +443,11 @@ asistencia.html (pagina-asistencia.js)
         ↓  (otra página, otra carga)
 padron.html (pagina-padron.js)
   cargar()                                                    estado.js:20
-  refrescar() → pintarReportePadron(caja, ctx)                pagina-padron.js:54
-    filasPadron(padron, ctx.fechaRef)       activos + edad + grupo    ui-reportes.js:16
-    asistenciaPorAfiliado(padron, ctx.inicio, ctx.fin)  días asistidos  ui-reportes.js:18
-    afiliadosSinAsistencia(padron, ctx.inicio, ctx.fin, ctx.fechaRef) ui-reportes.js:71
+  «Exportar en Excel / PDF» (montarExportarPadron)           ui-reportes.js
+    filasPadron(padron, ctx.fechaRef)       activos + edad + grupo    excel-reportes.js, pdf-reportes.js
+    asistenciaPorAfiliado(padron, ctx.inicio, ctx.fin)  días asistidos
         ↓
-  «Descargar CSV»  → filasComoTexto(ctx, ',')  → descargarTexto()   ui-reportes.js:118
-  «Copiar»         → filasComoTexto(ctx, '\t') → portapapeles       ui-reportes.js:122-124
+  compartirArchivo() → menú «Compartir» (APK, celular) o descarga
 ```
 
 Dos detalles que conviene saber:
@@ -447,11 +456,8 @@ Dos detalles que conviene saber:
   activos a `ctx.fechaRef`, y los días asistidos se cuentan entre `ctx.inicio`
   y `ctx.fin` (por defecto, el mes en curso: `periodoPorDefecto()`,
   `estado.js:129-132`).
-- La lista de «personas sin ninguna asistencia» toma las activas a
-  `ctx.fechaRef`, igual que la tabla (`ui-reportes.js:71`): son exactamente las
-  filas con 0 días. Fuera del reporte, `afiliadosSinAsistencia()` sigue mirando
-  las activas al cierre del periodo si no se le pasa la fecha
-  (`calculos.js:393-397`).
+- Quienes no vinieron ningún día son las filas con 0 días del archivo
+  exportado (la hoja «Resumen» del Excel los cuenta).
 
 ---
 
@@ -462,7 +468,7 @@ Dos detalles que conviene saber:
 | Asistencia (hoy y días pasados) | la fecha del día de atención, `at.fecha`; si falta, `ctx.fechaRef` = hoy | `ui-asistencia.js:26`, `pagina-asistencia.js:25` |
 | Padrón: lista de personas | `ctx.fechaRef`, editable en el campo `#fechaRef`; por defecto hoy | `ui-personas.js:256-257`, `pagina-padron.js:30`, L78-80 |
 | Padrón: resumen por grupos | `ctx.fechaRef` | `ui-personas.js:365` |
-| Padrón: reporte y CSV | `ctx.fechaRef` (no el periodo `inicio`/`fin`) | `ui-reportes.js:16`, L81 → `calculos.js:422-432` |
+| Padrón: exportar (PDF y Excel) | `ctx.fechaRef` (no el periodo `inicio`/`fin`) | `ui-reportes.js` → `calculos.js:filasPadron` |
 | Alta de afiliados | hoy (`hoyIso()`), tanto en la pista como en la validación | `ui-personas.js:39`, L73; `validaciones.js:317` |
 | Importación | **ninguna**. Con fecha de nacimiento, se guarda la fecha y el grupo se calcula después en cada pantalla. Con solo una columna «edad», el grupo se calcula con `grupoPorEdad(edad)` y se **guarda fijo** en `grupoEtarioManual`: no cambia cuando la persona cumple años. La revisión de la importación lo avisa en esa fila | `importar.js:259-272`, `calculos.js:122-126` |
 
@@ -478,7 +484,7 @@ Capas, de abajo hacia arriba. Ningún módulo importa a uno de una capa superior
 ```
 modelo.js        forma de los datos, dinero, fechas, localStorage. Sin imports.
 escaneo-dni.js   parser del DNI (stub). Sin imports.
-xlsx.js          primera hoja de un .xlsx como texto con tabuladores. Sin imports.
+xlsx.js          leer la primera hoja de un .xlsx; escribir un .xlsx. Sin imports.
    ↑
 calculos.js      funciones puras                         ← modelo
 alertas.js       fechas de entrega y avisos              ← modelo
@@ -492,7 +498,8 @@ importar.js      lectura de Excel/CSV                    ← modelo, calculos
    ↑
 ui-asistencia.js                                          ← modelo, calculos, estado, ui
 ui-personas.js                                            ← modelo, calculos, validaciones, estado, ui
-ui-reportes.js                                            ← modelo, calculos, importar, estado, ui
+excel-reportes.js reportes en .xlsx                       ← modelo, calculos, xlsx
+ui-reportes.js   botones de exportar (PDF y Excel)        ← modelo, pdf-reportes, excel-reportes, xlsx, compartir-archivo, estado, ui
 ui-importar.js                                            ← modelo, calculos, importar, xlsx, estado, ui
    ↑
 pagina-inicio.js      (index.html)       ← modelo, calculos, alertas, ui
@@ -530,7 +537,8 @@ las páginas en un Chromium sin ventana (ver README, «Pruebas»).
 - **Pantalla de consumo por origen de fondo**: el dato se captura
   (`egreso.origenFondo`) y `gastoPorOrigen()` existe (`calculos.js:55`), pero no
   hay pantalla.
-- **Vista previa de impresión e impresión sobre la plantilla oficial del B-1.**
+- **Impresión sobre la plantilla oficial del B-1.** La vista previa en pantalla ya
+  existe; falta medir la hoja física (`plantilla-b1.js` sigue con `estimado: true`).
 - **Columnas del formato municipal de padrón**: el reporte usa columnas propias
   hasta conseguir el formato oficial.
 - **Fórmula de «gastos con el subsidio»** sin verificar. La RM D000064-2026-MIDIS

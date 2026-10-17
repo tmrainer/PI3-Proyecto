@@ -228,6 +228,23 @@ function comprobar(nombre, condicion, detalle = '') {
 }
 
 const TEXTO = (sel) => `(document.querySelector(${JSON.stringify(sel)})?.textContent || '').replace(/\\s+/g, ' ').trim()`;
+// Toca un botón de exportar y devuelve el archivo que entrega (el tipo, sus
+// primeros bytes y, si es un Excel, el texto de su primera hoja), o null.
+const EXPORTAR = (boton) => `new Promise((ok) => {
+  const original = URL.createObjectURL;
+  URL.createObjectURL = (b) => {
+    URL.createObjectURL = original;
+    (async () => {
+      const buf = await b.arrayBuffer();
+      const cabeza = String.fromCharCode(...new Uint8Array(buf.slice(0, 5)));
+      const texto = b.type.includes('sheet') ? await (await import('./js/xlsx.js')).leerXlsx(buf) : '';
+      ok({ tipo: b.type, cabeza, texto });
+    })();
+    return original.call(URL, b);
+  };
+  document.querySelector(${JSON.stringify(boton)}).click();
+  setTimeout(() => ok(null), 4000);
+})`;
 // Leído con leer() de la app: en localStorage la asistencia va compacta.
 const PADRON_GUARDADO = `(await import('./js/modelo.js')).leer('b1.padron.v1', null)`;
 const IDS_HOY = `(async () => (${PADRON_GUARDADO}).atenciones.find((a) => a.fecha === '${hoyLocal()}').asistencias.map((x) => x.afiliadoId).sort())()`;
@@ -307,16 +324,17 @@ async function correr(base, cdp) {
         comprobar('asistencia de hoy: «1 de 3»', r === '1 de 3', r);
       }
       if (sembrado && nombre === 'padron') {
-        const filas = await p.eval(`document.querySelectorAll('#reporte-padron tbody tr').length`);
-        const aus = await p.eval(TEXTO('#reporte-padron .asistencia-resumen'));
-        comprobar('reporte del padrón: 3 filas', filas === 3, String(filas));
-        comprobar('reporte: los ausentes son las 2 filas con 0 días', aus.startsWith('2 personas no vinieron'), aus);
-        // Sin permiso de portapapeles (como aquí) aparece el texto para copiar a mano.
-        await p.actuar(`document.querySelector('#copiar-padron').click()`);
-        await pausa(200);
-        const tsv = await p.eval(`document.querySelector('#reporte-padron textarea')?.value || ''`);
-        comprobar('reporte: «Copiar» da las 3 filas separadas por tabulador',
-          tsv.split('\n').length === 4 && tsv.startsWith('N°\tApellido paterno'), JSON.stringify(tsv.slice(0, 60)));
+        // Exportar, sin tabla en pantalla: el Excel trae las 3 personas, y 2 con 0 días.
+        comprobar('padrón: ya no muestra la tabla del reporte',
+          await p.eval(`!document.querySelector('#reporte-padron, #copiar-padron, #descargar-padron')`), '');
+        const x = await p.eval(EXPORTAR('#exportar-excel'));
+        const filas = x ? x.texto.split('\n').slice(4) : [];
+        comprobar('exportar el padrón en Excel: un .xlsx con las 3 personas',
+          !!x && x.tipo.includes('spreadsheetml') && x.cabeza.startsWith('PK') && filas.length === 3, JSON.stringify(x && x.texto.slice(0, 120)));
+        comprobar('Excel del padrón: las 2 que no vinieron tienen 0 días',
+          filas.filter((f) => f.endsWith('\t0')).length === 2, JSON.stringify(filas));
+        const pdf = await p.eval(EXPORTAR('#exportar-pdf'));
+        comprobar('exportar el padrón en PDF: un PDF', !!pdf && pdf.tipo === 'application/pdf' && pdf.cabeza === '%PDF-', JSON.stringify(pdf));
       }
       await p.cerrar();
     }
@@ -599,8 +617,8 @@ async function correr(base, cdp) {
     };
     const ordenes = {
       'datos.html': 'Copia de tus datos|Qué va en la copia|Pasar a otro teléfono|Traer un padrón de Excel|Dónde se guardan|Borrar todo',
-      'asistencia.html': 'Asistencia de hoy|Otros días|Precio del menú|Resumen por fechas',
-      'padron.html': 'Inscribir a una persona|Personas afiliadas|Reporte para el padrón|Cargar un padrón desde Excel',
+      'asistencia.html': 'Asistencia de hoy|Otros días|Precio del menú|Resumen y exportar',
+      'padron.html': 'Inscribir a una persona|Personas afiliadas|Exportar el padrón|Cargar un padrón desde Excel',
       'calendario.html': 'Próximas entregas|Cada cuánto entregas',
       'ajustes.html': 'Quién usa este teléfono|Aspecto|Leer en voz alta|Acerca de'
     };
@@ -831,14 +849,20 @@ async function correr(base, cdp) {
     await a.ir(`${base}/asistencia.html`);
     await a.actuar(TOCAR('Beta'));
     await pausa(700);                          // b recibe el storage y repinta
-    const vista = await b.eval(`({
+    const vista = await b.eval(`(async () => ({
       abierta: document.querySelector('#ficha-alfa0001 .persona-fila').getAttribute('aria-expanded'),
       foco: document.activeElement.id, cursor: document.activeElement.selectionStart,
-      dias: document.querySelector('#reporte-padron tbody tr:nth-child(2) td:last-child').textContent })`);
+      // Lo que exportaría ahora: los días de Beta según el padrón ya recargado.
+      dias: await import('./js/estado.js').then(async ({ estado }) => {
+        const { asistenciaPorAfiliado } = await import('./js/calculos.js');
+        const hoy = new Date(); const iso = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
+        const x = asistenciaPorAfiliado(estado.padron, '2000-01-01', iso).find((y) => y.afiliadoId === 'beta0002');
+        return String(x ? x.dias : 0);
+      }) }))()`);
     comprobar('otra pestaña guarda: la ficha abierta sigue abierta', vista.abierta === 'true', JSON.stringify(vista));
     comprobar('otra pestaña guarda: el foco y el cursor siguen donde estaban',
       vista.foco.startsWith('a-nombres-alfa0001') && vista.cursor === 2, JSON.stringify(vista));
-    comprobar('otra pestaña guarda: el reporte muestra lo nuevo', vista.dias === '1', JSON.stringify(vista));
+    comprobar('otra pestaña guarda: lo que se exporta trae lo nuevo', vista.dias === '1', JSON.stringify(vista));
     await a.cerrar();
     await b.cerrar();
   }

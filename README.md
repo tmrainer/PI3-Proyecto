@@ -150,8 +150,6 @@ sin un servidor. Cómo armarla, instalarla y firmarla: `mobile/LEEME.md`.
 
 ### Por construir
 
-- [ ] **Vista previa de impresión**: ver los datos colocados sobre un lienzo A4,
-      para corregir posiciones sin gastar hojas. No está bloqueada.
 - [ ] **Impresión sobre la plantilla oficial** y página de calibración.
 - [ ] **Histórico de precios de compra** por insumo, con aviso de desviación.
 - [ ] **Consumo por origen de fondo**: el dato ya se captura, falta la pantalla.
@@ -160,9 +158,9 @@ sin un servidor. Cómo armarla, instalarla y firmarla: `mobile/LEEME.md`.
 
 ### Por decidir
 
-- [ ] **Quien come sin estar inscrito no tiene dónde anotarse.** Las raciones se
-      cuentan de la asistencia, así que un visitante no registrado suma cero.
-      ¿Se le inscribe, o hace falta una cuenta aparte?
+- [x] **Quien come sin estar inscrito**: se cuenta aparte, por menú, en
+      «Comieron sin estar en el padrón» (Asistencia). Suma raciones y recaudado
+      sin inscribir a nadie.
 
 ### Probar con una usuaria real
 

@@ -56,31 +56,14 @@ export function parsearTabla(texto, separador) {
     .filter((f) => f.some((c) => c !== ''));
 }
 
-// ------------------------------------------- celdas hacia una hoja de cálculo
+// ------------------------------------------- celdas de un CSV de versiones anteriores
 
 /**
- * Prepara un valor para una celda de CSV o de texto pegado en una hoja.
- * - `comoTexto`: los números de documento van como ="01234567". Si no, Excel
- *   los toma por números y se come los ceros de adelante (01234567 → 1234567).
- * - Un texto que empieza con = + - @ (o tabulador o retorno) se abre como
- *   fórmula en Excel: se le antepone ' para que quede como texto.
- * - Con separador ',', lo que lleva comas, comillas o saltos va entre comillas.
- * desarmarCelda() hace el camino de vuelta al importar.
- * @param {*} valor
- * @param {string} separador  ',' (CSV) o '\t' (pegar)
- * @param {{ comoTexto?: boolean }} [opciones]
- * @returns {string}
+ * Las versiones anteriores exportaban el padrón como CSV: los documentos iban
+ * como ="01234567" (para que Excel no se coma el 0) y lo que parecía fórmula,
+ * con ' adelante. Al importar uno de esos archivos se deshace: ="0123" → 0123,
+ * '=algo → =algo. Hoy se exporta en .xlsx, que no necesita nada de esto.
  */
-export function celdaParaHoja(valor, separador, { comoTexto = false } = {}) {
-  let s = String(valor === null || valor === undefined ? '' : valor);
-  if (comoTexto && s !== '') s = `="${s.replace(/"/g, '""')}"`;
-  else if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
-  if (separador === ',' && /[",\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
-  if (separador === '\t') s = s.replace(/[\t\n]/g, ' ');
-  return s;
-}
-
-/** Deshace lo que celdaParaHoja() agrega: ="0123" → 0123, '=algo → =algo. */
 export function desarmarCelda(texto) {
   const t = String(texto || '');
   const formula = t.match(/^="(.*)"$/);
@@ -149,7 +132,10 @@ export function parsearFechaFlexible(texto) {
   const m = t.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})$/);
   if (!m) return '';
   const [, d, mes, a] = m;
-  const anio = a.length === 2 ? (Number(a) > 40 ? '19' + a : '20' + a) : a;
+  // Dos cifras: lo que pasa del año en curso es del siglo pasado (es una
+  // fecha de nacimiento: «40» es 1940, no 2040).
+  const pivote = Number(String(new Date().getFullYear()).slice(2));
+  const anio = a.length === 2 ? (Number(a) > pivote ? '19' + a : '20' + a) : a;
   return `${anio}-${String(mes).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
@@ -158,7 +144,8 @@ export function parsearGrupoEtario(texto) {
   if (!t) return null;
   if (/^(nino|nina|ninos|menor|infante)/.test(t)) return 'nino';
   if (/^adolescente/.test(t)) return 'adolescente';
-  if (/^adulto mayor|^tercera edad|^anciano/.test(t)) return 'adulto_mayor';
+  // «Adulto/a mayor» es como la app escribe el grupo al exportar.
+  if (/^adulto(\/a)? mayor|^tercera edad|^anciano/.test(t)) return 'adulto_mayor';
   if (/^adulto|^joven/.test(t)) return 'adulto';
   return null;
 }

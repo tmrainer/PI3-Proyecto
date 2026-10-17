@@ -14,7 +14,7 @@
 // reutiliza: ningún fotograma se guarda ni sale del teléfono (§7.2). Quien
 // llama recibe la cadena y decide; esta pieza no guarda nada.
 
-import { crearElemento, icono } from './ui.js';
+import { crearElemento, icono, destelloLeido } from './ui.js';
 import { buscarMrzTd1, unirFilasOcr, combinarMrzYAnverso } from './escaneo-dni.js';
 import { abrirCamaraTrasera } from './camara-trasera.js';
 
@@ -84,16 +84,17 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
   });
   const omitir = crearElemento('button', {
     type: 'button', clase: 'boton secundario', texto: 'Omitir este paso', hidden: true,
-    onclick: () => entregar({ tipo: 'mrz', mrz: mrzLeida, anverso: null })
+    onclick: () => entregar({ tipo: 'mrz', mrz: mrzLeida, anverso: null }, { leido: false })
   });
+  const visor = crearElemento('div', { clase: 'camara-visor' }, [
+    video,
+    crearElemento('div', { clase: 'camara-marco', 'aria-hidden': 'true' }),
+    cargando
+  ]);
   const dialogo = crearElemento('dialog', { clase: 'camara-dni', 'aria-labelledby': 'camara-titulo' }, [
     crearElemento('h2', { id: 'camara-titulo', texto: enAsistencia ? 'Pasar lista con el DNI' : 'Leer el DNI' }),
     crearElemento('p', { clase: 'camara-pista', texto: enAsistencia ? PISTA_ASISTENCIA : PISTA_REVERSO }),
-    crearElemento('div', { clase: 'camara-visor' }, [
-      video,
-      crearElemento('div', { clase: 'camara-marco', 'aria-hidden': 'true' }),
-      cargando
-    ]),
+    visor,
     estado,
     crearElemento('div', { clase: 'acciones' }, [linterna, omitir,
       crearElemento('button', {
@@ -128,9 +129,15 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
   function alOcultar() { if (document.hidden && flujo) cerrar(); }
   document.addEventListener('visibilitychange', alOcultar);
 
-  function entregar(resultado) {
-    if (!abierto) return;
+  // Leído: el visor se pone verde un instante y recién entonces se cierra.
+  // «Omitir» no leyó nada: cierra sin destello.
+  let entregando = false;
+  async function entregar(resultado, { leido = true } = {}) {
+    if (!abierto || entregando) return;
+    entregando = true;
     if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) { /* sin vibración */ } }
+    if (leido) await destelloLeido(visor);
+    if (!abierto) return;                   // se canceló durante el destello
     cerrar();
     alLeer(resultado);
   }
@@ -206,6 +213,7 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
     anterior = '';
     vueltasMismaCara = 0;
     if (navigator.vibrate) { try { navigator.vibrate(40); } catch (e) { /* sin vibración */ } }
+    destelloLeido(visor);                   // sin esperar: sigue buscando los nombres
     estado.textContent = 'Listas las tres líneas. Buscando los nombres…';
   }
 
@@ -225,8 +233,11 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
           if (pdf) return entregar({ tipo: 'pdf417', cadena: pdf.rawValue });
         }
         // Cada vuelta: con la franja chica, un intento cuesta ~0,2 s.
-        if (lector) {
+        // Si se cerró mientras se buscaba el código, el lienzo ya está vacío:
+        // pedir la lectura con una imagen en blanco solo dejaba un error en la consola.
+        if (lector && abierto) {
           const { fragmentos } = await lector.leer({ imagen: fotogramaDelRecuadro(fase === 'reverso') });
+          if (!abierto) return;
           const filas = unirFilasOcr(fragmentos);
           if (fase === 'reverso') {
             const mrz = buscarMrzTd1(filas);
@@ -238,6 +249,7 @@ export async function abrirCamaraDni({ alLeer, alCerrar = () => {}, modo = 'comp
                 const dni = mrz.campos.numeroDocumento;
                 if (dni !== ultimoDni || Date.now() - ultimoEn > 5000) {
                   if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) { /* sin vibración */ } }
+                  destelloLeido(visor);     // sin esperar: el siguiente DNI ya puede ir
                   estado.textContent = alLeer({ tipo: 'mrz', mrz }) || '';
                 }
                 ultimoDni = dni;

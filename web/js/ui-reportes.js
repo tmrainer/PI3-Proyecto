@@ -1,154 +1,90 @@
-// ui-reportes.js — el padrón listo para copiar a un formato municipal.
-// Solo ordena y numera lo ya ingresado: no completa ni deduce ningún dato.
+// ui-reportes.js — exportar: los mismos dos botones, «PDF» y «Excel», en
+// Asistencia, Padrón y B-1. Nada se muestra antes en pantalla: el archivo se
+// arma al tocar y va al menú «Compartir» del teléfono (o a Descargas).
+// Solo ordena y suma lo ya ingresado: no completa ni deduce ningún dato.
 
-import { nombreCompleto, hoyIso, cuantos, aDdMmAa, CLAVES, leer } from './modelo.js';
-import { pdfDelPadron } from './pdf-reportes.js';
+import { hoyIso, aDdMmAa, CLAVES, leer } from './modelo.js';
 import { compartirArchivo } from './compartir-archivo.js';
-import {
-  filasPadron, asistenciaPorAfiliado, afiliadosSinAsistencia, TRAMOS_ETARIOS
-} from './calculos.js';
 import { estado } from './estado.js';
-import { celdaParaHoja } from './importar.js';
-import { buscar, crearElemento, chip, avisoAbajo } from './ui.js';
+import { buscar, crearElemento, icono, avisoAbajo } from './ui.js';
 
-// ctx: { fechaRef, inicio, fin }
-
-export function pintarReportePadron(caja, ctx) {
-  caja.textContent = '';
-  const filas = filasPadron(estado.padron, ctx.fechaRef);
-  const asistencias = new Map(
-    asistenciaPorAfiliado(estado.padron, ctx.inicio, ctx.fin).map((x) => [x.afiliadoId, x]));
-
-  if (filas.length === 0) {
-    caja.append(crearElemento('p', {
-      clase: 'vacio-mensaje',
-      texto: 'El reporte sale del padrón. Inscribe personas o carga un archivo y aparecerán aquí.'
-    }));
-    return;
-  }
-
-  const cuerpo = crearElemento('tbody');
-  for (const f of filas) {
-    const as = asistencias.get(f.afiliadoId);
-    cuerpo.append(crearElemento('tr', {}, [
-      crearElemento('td', { clase: 'num', texto: String(f.n) }),
-      crearElemento('td', { texto: f.apellidoPaterno }),
-      crearElemento('td', { texto: f.apellidoMaterno }),
-      crearElemento('td', { texto: f.nombres }),
-      crearElemento('td', { texto: f.tipoDocumento }),
-      crearElemento('td', { texto: f.numeroDocumento }),
-      crearElemento('td', { texto: f.grupoEtarioEtiqueta || '—' }),
-      crearElemento('td', { texto: f.edad === null ? '—' : String(f.edad) }),
-      crearElemento('td', { texto: f.tipoAfiliadoEtiqueta || '—' }),
-      crearElemento('td', { clase: 'num', texto: as ? String(as.dias) : '0' })
-    ]));
-  }
-
-  caja.append(crearElemento('div', { clase: 'tabla-desplazable' }, [
-    crearElemento('table', { clase: 'tabla' }, [
-      crearElemento('thead', {}, [crearElemento('tr', {}, [
-        'N°', 'Ap. paterno', 'Ap. materno', 'Nombres', 'Doc.', 'Número',
-        'Grupo de edad', 'Edad', 'Tipo', 'Días'
-      ].map((t) => crearElemento('th', { texto: t })))]),
-      cuerpo
-    ])
-  ]));
-
-  const porGrupo = {};
-  for (const t of TRAMOS_ETARIOS) porGrupo[t.clave] = 0;
-  let ayudaSocial = 0;
-  for (const f of filas) {
-    if (f.grupoEtario) porGrupo[f.grupoEtario] += 1;
-    if (f.tipoAfiliado === 'caso_social') ayudaSocial += 1;
-  }
-  const chips = crearElemento('div', { clase: 'resumen-chips', style: 'margin-top:10px' }, [
-    chip(`Total`, `${filas.length}`)
-  ]);
-  for (const t of TRAMOS_ETARIOS) {
-    chips.append(chip(`${t.etiqueta}`, `${porGrupo[t.clave]}`));
-  }
-  chips.append(chip(`Ayuda social`, `${ayudaSocial}`));
-  caja.append(chips);
-
-  const ausentes = afiliadosSinAsistencia(estado.padron, ctx.inicio, ctx.fin, ctx.fechaRef);
-  if (ausentes.length) {
-    caja.append(crearElemento('p', {
-      clase: 'asistencia-resumen',
-      texto: `${ausentes.length === 1 ? '1 persona no vino' : `${ausentes.length} personas no vinieron`} ningún día en estas fechas: ` +
-        ausentes.slice(0, 8).map(nombreCompleto).join(', ') + (ausentes.length > 8 ? '…' : '')
-    }));
-  }
-}
-
-export function filasComoTexto(ctx, separador) {
-  const filas = filasPadron(estado.padron, ctx.fechaRef);
-  const asistencias = new Map(
-    asistenciaPorAfiliado(estado.padron, ctx.inicio, ctx.fin).map((x) => [x.afiliadoId, x]));
-  // Títulos sin ambigüedad: así lo exportado se puede volver a importar (§6.9).
-  const cab = ['N°', 'Apellido paterno', 'Apellido materno', 'Nombres',
-    'Tipo de documento', 'Número de documento', 'Grupo de edad', 'Edad', 'Tipo',
-    'Días asistidos'];
-  const lineas = [cab.join(separador)];
-  for (const f of filas) {
-    const as = asistencias.get(f.afiliadoId);
-    lineas.push([
-      celdaParaHoja(f.n, separador), celdaParaHoja(f.apellidoPaterno, separador),
-      celdaParaHoja(f.apellidoMaterno, separador), celdaParaHoja(f.nombres, separador),
-      celdaParaHoja(f.tipoDocumento, separador),
-      celdaParaHoja(f.numeroDocumento, separador, { comoTexto: true }),
-      celdaParaHoja(f.grupoEtarioEtiqueta, separador),
-      celdaParaHoja(f.edad === null ? '' : f.edad, separador),
-      celdaParaHoja(f.tipoAfiliadoEtiqueta, separador), celdaParaHoja(as ? as.dias : 0, separador)
-    ].join(separador));
-  }
-  return lineas.join('\n');
-}
+const FORMATOS = {
+  pdf: { texto: 'Exportar en PDF', tipo: 'application/pdf', ext: 'pdf', nombre: 'PDF' },
+  excel: { texto: 'Exportar en Excel', tipo: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', ext: 'xlsx', nombre: 'Excel' }
+};
 
 /**
- * Controles del reporte: el periodo de los días asistidos, y exportar como CSV
- * o copiar para pegar en una hoja de cálculo. `alCambiarPeriodo` repinta.
+ * Los dos botones de exportar, iguales en todas las pantallas. Cada función
+ * arma el archivo al tocar (puede ser async: así lo que arma el PDF o el
+ * Excel se carga recién entonces y no demora abrir la pantalla). Devuelve
+ * { bytes, nombre (sin extensión), titulo, alEntregar? }, o null si no se
+ * puede (y ya dijo por qué).
+ * @param {HTMLElement} caja
+ * @param {{pdf: () => ?object, excel: () => ?object}} armar
  */
-export function montarControlesReporte(ctx, alCambiarPeriodo) {
+export function botonesExportar(caja, armar) {
+  caja.textContent = '';
+  caja.classList.add('acciones', 'exportar');
+  for (const formato of ['pdf', 'excel']) {
+    const f = FORMATOS[formato];
+    caja.append(crearElemento('button', {
+      type: 'button', clase: 'boton secundario', id: `exportar-${formato}`,
+      onclick: () => entregar(armar[formato], f)
+    }, [icono('archivo', { tam: 20 }), f.texto]));
+  }
+}
+
+async function entregar(armar, f) {
+  let a;
+  try { a = await armar(); } catch (e) { avisoAbajo('No se pudo armar el archivo. Inténtalo de nuevo.'); return; }
+  if (!a) return;
+  // El nombre, solo con letras sin tilde, números, guion y punto: así lo acepta
+  // Android y se lee bien en WhatsApp.
+  const nombre = a.nombre.normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^\w.\- ]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 70) + '.' + f.ext;
+  try {
+    const r = await compartirArchivo({ nombre, tipo: f.tipo, bytes: a.bytes, titulo: a.titulo });
+    if (r === 'cancelado') return;
+    if (r === 'descargado') avisoAbajo(`${f.nombre} descargado.`);
+    if (a.alEntregar) a.alEntregar(r);
+  } catch (e) {
+    avisoAbajo('No se pudo abrir el menú para guardar o compartir el archivo.');
+  }
+}
+
+// ------------------------------------------------------------- el padrón
+
+/**
+ * Exportar el padrón: las fechas de los días asistidos y los dos botones.
+ * Las personas son las activas a ctx.fechaRef («Edades a la fecha», arriba).
+ * @param {{fechaRef: string, inicio: string, fin: string}} ctx
+ */
+export function montarExportarPadron(ctx) {
   const rIni = buscar('#repInicio');
   const rFin = buscar('#repFin');
   rIni.value = ctx.inicio;
   rFin.value = ctx.fin;
-  rIni.addEventListener('input', () => { ctx.inicio = rIni.value || ctx.inicio; alCambiarPeriodo(); });
-  rFin.addEventListener('input', () => { ctx.fin = rFin.value || ctx.fin; alCambiarPeriodo(); });
+  rIni.addEventListener('input', () => { ctx.inicio = rIni.value || ctx.inicio; });
+  rFin.addEventListener('input', () => { ctx.fin = rFin.value || ctx.fin; });
 
-  // En el APK, el menú «Compartir» de Android (una descarga no llegaba a
-  // ninguna parte); en la computadora, la descarga. BOM: tildes en Excel.
-  buscar('#descargar-padron').addEventListener('click', async () => {
-    const bytes = new TextEncoder().encode('\ufeff' + filasComoTexto(ctx, ','));
-    try {
-      await compartirArchivo({ nombre: `padron-${hoyIso()}.csv`, tipo: 'text/csv', bytes, titulo: 'Padrón para Excel' });
-    } catch (e) {
-      avisoAbajo('No se pudo abrir el menú para guardar el archivo.');
-    }
-  });
-
-  buscar('#pdf-padron').addEventListener('click', () => {
-    const bytes = pdfDelPadron(estado.padron, { fechaRef: ctx.fechaRef, inicio: ctx.inicio, fin: ctx.fin,
-      centro: nombreDelCentro(), generado: selloAhora() });
-    compartirPdf(bytes, `Padron ${hoyIso()}.pdf`, 'Padrón (copia de referencia)');
-  });
-
-  buscar('#copiar-padron').addEventListener('click', async () => {
-    const texto = filasComoTexto(ctx, '\t');
-    try {
-      await navigator.clipboard.writeText(texto);
-      buscar('#estado-guardado').textContent = 'Padrón copiado. Pégalo en tu hoja de cálculo.';
-    } catch (e) {
-      const area = crearElemento('textarea', { rows: '10', style: 'width:100%;margin-top:10px' });
-      area.value = texto;
-      buscar('#reporte-padron').append(
-        crearElemento('p', { clase: 'pista', texto: 'Tu navegador no dejó copiar solo. Selecciona y copia:' }), area);
-      area.select();
-    }
+  const datos = () => ({ fechaRef: ctx.fechaRef, inicio: ctx.inicio, fin: ctx.fin, centro: nombreDelCentro() });
+  const vacio = () => {
+    if (estado.padron.afiliados.length) return false;
+    avisoAbajo('El padrón está vacío: inscribe a alguien primero.');
+    return true;
+  };
+  botonesExportar(buscar('#exportar-padron'), {
+    pdf: async () => (vacio() ? null : {
+      bytes: (await import('./pdf-reportes.js')).pdfDelPadron(estado.padron, { ...datos(), generado: selloAhora() }),
+      nombre: `Padron ${hoyIso()}`, titulo: 'Padrón (copia de referencia)'
+    }),
+    excel: async () => (vacio() ? null : {
+      bytes: (await import('./excel-reportes.js')).excelDelPadron(estado.padron, datos()), nombre: `Padron ${hoyIso()}`, titulo: 'Padrón'
+    })
   });
 }
 
-// ------------------------------------------------------------- los PDF
+// ------------------------------------------------------------- comunes
 
 const dos = (n) => String(n).padStart(2, '0');
 
@@ -161,17 +97,4 @@ export function selloAhora(d = new Date()) {
 export function nombreDelCentro() {
   const c = leer(CLAVES.config, {}).ultimoCentro;
   return String((c && c.nombreCentro) || '').trim();
-}
-
-/**
- * Entrega un PDF: el menú «Compartir» de Android (WhatsApp, Drive…) o, en la
- * computadora, la descarga. Avisa abajo cómo terminó.
- */
-export async function compartirPdf(bytes, nombre, titulo) {
-  try {
-    const r = await compartirArchivo({ nombre, tipo: 'application/pdf', bytes, titulo });
-    if (r === 'descargado') avisoAbajo('PDF descargado.');
-  } catch (e) {
-    avisoAbajo('No se pudo abrir el menú para compartir el PDF.');
-  }
 }

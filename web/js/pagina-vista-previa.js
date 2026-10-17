@@ -1,19 +1,19 @@
 // pagina-vista-previa.js — controlador de vista-previa.html (fase 4, AGENTS.md §8.3).
 //
+// Se abre desde el paso «Revisar» del B-1. Solo muestra: exportar (PDF o
+// Excel) está en el propio B-1, junto al enlace que trae aquí.
+//
 // Pone los datos del B-1 en sus posiciones de la hoja oficial (plantilla-b1.js)
 // y lo muestra en pantalla. No imprime. Opcional: una foto de la hoja en blanco
 // de fondo, solo en memoria (URL.createObjectURL): ni localStorage, ni red, ni
 // impresión. Para el equipo, un panel que mueve las cajas en vivo y copia las
 // coordenadas para pegarlas en plantilla-b1.js (no se guardan solas).
 
-import { CLAVES, leer, guardar, aDdMmAa, formatearSoles, cuantos } from './modelo.js';
-import { totales } from './calculos.js';
-import { validarRendicion } from './validaciones.js';
+import { CLAVES, leer } from './modelo.js';
 import { buscar, crearElemento, montarCabecera, pintarAvisosAlmacenamiento, avisoAbajo } from './ui.js';
 import { PLANTILLA_B1 } from './plantilla-b1.js';
 import { hojasDelB1 } from './hoja-b1.js';
-import { pdfDelB1, dibujarFormato } from './pdf-b1.js';
-import { compartirArchivo, paqueteWhatsapp } from './compartir-archivo.js';
+import { dibujarFormato } from './pdf-b1.js';
 
 montarCabecera('b1', 'Cómo queda en la hoja oficial');
 pintarAvisosAlmacenamiento(buscar('#avisos-sistema'));
@@ -244,90 +244,3 @@ buscar('#copiar-plantilla').addEventListener('click', async () => {
     avisoAbajo('No se pudo copiar en este equipo.');
   }
 });
-
-// ------------------------------------------------------------ el PDF
-
-const dos = (n) => String(n).padStart(2, '0');
-function sello(d) {
-  return `${aDdMmAa(`${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`)} ${dos(d.getHours())}:${dos(d.getMinutes())}`;
-}
-const etiquetaDe = (r) => (r && r.periodo && r.periodo.etiqueta) || 'en curso';
-// Solo letras, números, guion y punto: así lo acepta Android y se lee en WhatsApp.
-const nombreArchivo = (r) => `B-1 ${etiquetaDe(r)}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  .replace(/[^\w.\- ]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 60) + '.pdf';
-
-let whatsapp = null;
-paqueteWhatsapp().then((p) => { whatsapp = p; buscar('#pdf-whatsapp').hidden = !p || !rendicion; });
-
-async function entregarPdf(app) {
-  if (!rendicion) { avisoAbajo('Todavía no hay un B-1 llenado.'); return; }
-  // Con un dato obligatorio pendiente no se genera: se dice cuál y dónde.
-  const pendientes = validarRendicion(rendicion).filter((h) => h.severidad === 'error');
-  if (pendientes.length) {
-    avisoAbajo(`Antes del PDF, completa el B-1: ${pendientes.slice(0, 2).map((h) => h.mensaje.replace(/\.$/, '').replace(/^Faltan? /, 'falta ')).join('; ')}` +
-      `${pendientes.length > 2 ? ` y ${pendientes.length - 2} más` : ''}.`);
-    return;
-  }
-  const ahora = new Date();
-  const bytes = pdfDelB1(hojas, { generado: sello(ahora), titulo: `Formato B-1 ${etiquetaDe(rendicion)}` });
-  let r;
-  try {
-    r = await compartirArchivo({ nombre: nombreArchivo(rendicion), tipo: 'application/pdf', bytes,
-      titulo: `Formato B-1 ${etiquetaDe(rendicion)} (copia de referencia)`, app });
-  } catch (e) {
-    avisoAbajo(app ? 'No se pudo abrir WhatsApp. Prueba con «Guardar o compartir PDF».' : 'No se pudo abrir el menú para compartir el PDF.');
-    return;
-  }
-  if (r === 'cancelado') return;
-  registrarGeneracion(ahora, app ? 'whatsapp' : r);
-  avisoAbajo(r === 'descargado' ? 'PDF descargado.' : 'PDF listo: elige dónde guardarlo o a quién mandarlo.');
-}
-buscar('#pdf-compartir').addEventListener('click', () => entregarPdf(null));
-buscar('#pdf-whatsapp').addEventListener('click', () => entregarPdf(whatsapp));
-
-// ---------------------------------------------------------- historial
-// Cuándo se generó el PDF de cada B-1 (los últimos 20 por B-1). Se lee lo
-// guardado en el momento: así no se pisa lo que se haya cambiado en el B-1.
-
-function registrarGeneracion(fecha, como) {
-  const todas = leer(CLAVES.rendiciones, []);
-  const r = todas.find((x) => x && x.id === rendicion.id);
-  if (!r) return;
-  const t = totales(r);
-  r.generaciones = [...(Array.isArray(r.generaciones) ? r.generaciones : []),
-    { en: fecha.toISOString(), hojas: hojas.length, totalCent: t.total, como }].slice(-20);
-  if (guardar(CLAVES.rendiciones, todas)) {
-    rendicion.generaciones = r.generaciones;
-    pintarHistorial();
-  }
-}
-
-const COMO = { whatsapp: 'por WhatsApp', compartido: 'compartido', descargado: 'descargado' };
-
-function pintarHistorial() {
-  const caja = buscar('#historial');
-  caja.textContent = '';
-  const todas = leer(CLAVES.rendiciones, []).filter(Boolean);
-  if (!todas.length) {
-    caja.append(crearElemento('p', { clase: 'pista', texto: 'Todavía no hay ningún B-1.' }));
-    return;
-  }
-  caja.append(crearElemento('ul', { clase: 'historial-b1' }, todas.map((r) => {
-    const gen = Array.isArray(r.generaciones) ? r.generaciones : [];
-    const ultima = gen[gen.length - 1];
-    const t = totales(r);
-    const actual = rendicion && r.id === rendicion.id;
-    return crearElemento('li', {}, [
-      crearElemento('p', { clase: 'historial-titulo', texto: `B-1 ${etiquetaDe(r)}${actual ? ' (el que estás viendo)' : ''}` }),
-      crearElemento('p', { texto: `${cuantos((r.egresos || []).filter((e) => e && Number.isFinite(e.montoTotalCent)).length, 'compra')}` +
-        `${t.total !== null ? ` · total S/ ${formatearSoles(t.total)}` : ''}` }),
-      crearElemento('p', { clase: 'pista', texto: ultima
-        ? `PDF generado ${cuantos(gen.length, 'vez', 'veces')}; el último, el ${sello(new Date(ultima.en))} (${COMO[ultima.como] || 'guardado'}).`
-        : 'Todavía no se generó su PDF.' }),
-      actual ? null : crearElemento('div', { clase: 'acciones' }, [
-        crearElemento('a', { clase: 'boton diminuto secundario', href: `./vista-previa.html?ver=${encodeURIComponent(r.id)}`, texto: 'Ver este B-1' })
-      ])
-    ]);
-  })));
-}
-pintarHistorial();

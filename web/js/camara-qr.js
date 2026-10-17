@@ -8,7 +8,7 @@
 // WebView). Se juntan las partes de un mismo envío hasta tenerlas todas.
 // Nada de esto sale del teléfono: el QR se ve en pantalla y nada más.
 
-import { crearElemento } from './ui.js';
+import { crearElemento, destelloLeido, modoDepuracion } from './ui.js';
 import { leerParteQr, juntarPartesQr } from './compartir-qr.js';
 import { abrirCamaraTrasera } from './camara-trasera.js';
 
@@ -148,13 +148,16 @@ export async function leerListaQr({ alRecibir }) {
   ]);
   video.addEventListener('playing', () => { cargando.hidden = true; }, { once: true });
   const estado = crearElemento('p', { clase: 'camara-estado', role: 'status', 'aria-live': 'polite' });
-  // Si el código viene animado (varias partes), una barra: cuánto falta.
+  // Cuánto falta de un código animado: solo para el equipo (modo depuración).
+  // En uso normal, cada parte vibra y al final el visor se pone verde.
+  const depurar = modoDepuracion();
   const avance = crearElemento('progress', { clase: 'qr-avance', max: '100', value: '0', hidden: true, 'aria-label': 'Cuánto se recibió' });
+  const visor = crearElemento('div', { clase: 'camara-visor' }, [video, cargando]);
   const dialogo = crearElemento('dialog', { clase: 'camara-dni', 'aria-labelledby': 'qrl-titulo' }, [
     crearElemento('h2', { id: 'qrl-titulo', texto: 'Recibir de otro teléfono' }),
     crearElemento('p', { clase: 'camara-pista', texto: 'En el otro teléfono muestra el código y apunta la cámara a su pantalla. Antes de guardar verás qué cambia.' }),
-    crearElemento('div', { clase: 'camara-visor' }, [video, cargando]),
-    avance,
+    visor,
+    depurar ? avance : null,
     estado,
     crearElemento('button', { type: 'button', clase: 'boton secundario', texto: 'Cancelar', onclick: () => cerrar() })
   ]);
@@ -221,6 +224,9 @@ export async function leerListaQr({ alRecibir }) {
           const paquete = await juntarPartesQr([...partes.values()]);
           juntando = false;
           if (paquete) {
+            estado.textContent = 'Recibido.';
+            await destelloLeido(visor);
+            if (!abierto) return;           // se canceló durante el destello
             cerrar();
             alRecibir(paquete);
             return;
@@ -231,9 +237,13 @@ export async function leerListaQr({ alRecibir }) {
           estado.textContent = 'No se leyó bien. Sigue apuntando: se vuelve a leer.';
         } else if (total > 1) {
           const pct = Math.round((partes.size / total) * 100);
-          avance.hidden = false;
-          avance.value = pct;
-          estado.textContent = `Recibiendo… ${pct} %. Sigue apuntando.`;
+          if (depurar) {
+            avance.hidden = false;
+            avance.value = pct;
+            estado.textContent = `Recibiendo… ${pct} % (${partes.size} de ${total} partes).`;
+          } else {
+            estado.textContent = 'Recibiendo… sigue apuntando.';
+          }
         }
       }
     } catch (e) {

@@ -3,8 +3,7 @@
 
 import { hoyIso, aCentimos, formatearSoles, nuevaAtencion, fechaLarga, debounce } from './modelo.js';
 import { resumenEconomicoRaciones } from './calculos.js';
-import { pdfDeAsistencia } from './pdf-reportes.js';
-import { compartirPdf, selloAhora, nombreDelCentro } from './ui-reportes.js';
+import { botonesExportar, selloAhora, nombreDelCentro } from './ui-reportes.js';
 import { validarAtenciones, validarPreciosMenu } from './validaciones.js';
 import {
   estado, cargar, alGuardar, guardarPronto, guardarYa, preciosActuales, hoySigueAlPrecio, periodoPorDefecto, vigilarPestanas
@@ -109,9 +108,17 @@ fIni.value = periodo.inicio;
 fFin.value = periodo.fin;
 fIni.addEventListener('input', () => { periodo.inicio = fIni.value || periodo.inicio; refrescar(); });
 fFin.addEventListener('input', () => { periodo.fin = fFin.value || periodo.fin; refrescar(); });
-buscar('#pdf-asistencia').addEventListener('click', () => {
-  const bytes = pdfDeAsistencia(estado.padron, { inicio: periodo.inicio, fin: periodo.fin, centro: nombreDelCentro(), generado: selloAhora() });
-  compartirPdf(bytes, `Asistencia ${periodo.inicio} a ${periodo.fin}.pdf`, 'Asistencia (copia de referencia)');
+const datosAsistencia = () => ({ inicio: periodo.inicio, fin: periodo.fin, centro: nombreDelCentro() });
+botonesExportar(buscar('#exportar-asistencia'), {
+  // PDF y Excel se cargan al tocar: abrir Asistencia no los espera.
+  pdf: async () => ({
+    bytes: (await import('./pdf-reportes.js')).pdfDeAsistencia(estado.padron, { ...datosAsistencia(), generado: selloAhora() }),
+    nombre: `Asistencia ${periodo.inicio} a ${periodo.fin}`, titulo: 'Asistencia (copia de referencia)'
+  }),
+  excel: async () => ({
+    bytes: (await import('./excel-reportes.js')).excelDeAsistencia(estado.padron, datosAsistencia()),
+    nombre: `Asistencia ${periodo.inicio} a ${periodo.fin}`, titulo: 'Asistencia'
+  })
 });
 
 const CAMPOS_PRECIO = [['precioNormal', 'precioMenuNormalCent'], ['precioAyuda', 'precioMenuAyudaSocialCent']];
@@ -135,10 +142,22 @@ pintarPrecios();
 
 buscar('#agregar-atencion').addEventListener('click', () => {
   const at = nuevaAtencion(preciosActuales());
+  // Sin fecha: el de hoy ya tiene su sección arriba (sin campo de fecha), y
+  // otro día «de hoy» no se veía en ninguna de las dos listas. La fecha la
+  // pone la persona: la ficha se abre con el cursor ahí.
+  at.fecha = '';
   estado.padron.atenciones.push(at);
   ctx.onRepintar();
   const caja = document.getElementById(`ficha-${at.id}`);
-  if (caja) { caja.open = true; caja.scrollIntoView({ block: 'center' }); }
+  if (caja) {
+    caja.open = true;
+    caja.scrollIntoView({ block: 'center' });
+    // El cuerpo de la ficha se arma al abrirse (evento toggle, que llega después).
+    setTimeout(() => {
+      const fecha = caja.querySelector('input[type="date"]');
+      if (fecha) fecha.focus({ preventScroll: true });
+    }, 0);
+  }
 });
 
 repintar();

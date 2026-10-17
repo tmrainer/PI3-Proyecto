@@ -162,10 +162,10 @@ export function pdfDeAsistencia(padron, { inicio, fin, centro = '', generado }) 
   const suma = { normal: 0, ayuda: 0, fuera: 0, total: 0, soles: 0 };
   const filas = dias.map((at) => {
     const d = desgloseDelDia(at);
-    const fuera = d.sinInscribir ? (d.sinInscribir.total ?? d.sinInscribir) : 0;
+    const fuera = d.sinInscribir;
     const soles = recaudacionDelDiaCent(at);
-    suma.normal += d.normal; suma.ayuda += d.ayudaSocial; suma.fuera += Number(fuera) || 0; suma.total += d.total; suma.soles += soles || 0;
-    return [aDdMmAa(at.fecha), DIAS[diaDeSemana(at.fecha)], d.normal, d.ayudaSocial, Number(fuera) || 0, d.total, soles === null ? '—' : formatearSoles(soles)];
+    suma.normal += d.normal; suma.ayuda += d.ayudaSocial; suma.fuera += fuera; suma.total += d.total; suma.soles += soles || 0;
+    return [aDdMmAa(at.fecha), DIAS[diaDeSemana(at.fecha)], d.normal, d.ayudaSocial, fuera, d.total, soles === null ? '—' : formatearSoles(soles)];
   });
   if (filas.length) filas.push(['Total', `${dias.length} días`, suma.normal, suma.ayuda, suma.fuera, suma.total, formatearSoles(suma.soles)]);
   const POR_HOJA = 38;

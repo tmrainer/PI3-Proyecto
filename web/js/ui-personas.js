@@ -8,7 +8,8 @@ import {
 } from './calculos.js';
 import { validarAfiliado, indicePadron } from './validaciones.js';
 import { estado } from './estado.js';
-import { lectoresDni, abrirCamaraDni } from './camara-dni.js';
+// La cámara del DNI se carga recién al usarla: abrir Padrón no la espera.
+const camaraDni = () => import('./camara-dni.js');
 import { leerPerfil } from './perfil.js';
 import { buscar, crearElemento, campo, icono, chip, avatarPersona } from './ui.js';
 
@@ -83,12 +84,12 @@ function montarLecturaDni() {
     boton, nota, verifica
   );
   buscar('#bloque-alta .pista').after(caja);
-  lectoresDni().then((l) => { caja.hidden = !l.texto; }).catch(() => {});
+  camaraDni().then((m) => m.lectoresDni()).then((l) => { caja.hidden = !l.texto; }).catch(() => {});
 
-  boton.addEventListener('click', () => abrirCamaraDni({
+  boton.addEventListener('click', () => camaraDni().then((m) => m.abrirCamaraDni({
     conCodigo: false,
     alLeer: (r) => { if (r.tipo === 'mrz') llenarConDni(r.mrz, r.anverso, nota, verifica); }
-  }));
+  })));
 }
 
 function llenarConDni(mrz, anverso, nota, verifica) {

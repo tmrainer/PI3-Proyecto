@@ -13,8 +13,10 @@ import {
   desgloseDelDia, recaudacionDelDiaCent, asistio, asistenciasDelDia, menuDe, asistenciasConTodos, sinInscribirDelDia
 } from './calculos.js';
 import { estado, preciosActuales, guardarYa } from './estado.js';
-import { lectoresDni, abrirCamaraDni } from './camara-dni.js';
-import { enviarPorQr, recibirPorQr, puedeLeerQr } from './ui-compartir.js';
+// La cámara del DNI y el QR se cargan recién al usarlos (o después de pintar,
+// para saber si mostrar su botón): abrir Asistencia no los espera.
+const camaraDni = () => import('./camara-dni.js');
+const compartir = () => import('./ui-compartir.js');
 import { crearElemento, campo, icono, vigilarAltoFijo, chip, avatarPersona, avisoAbajo, vibrar, estadoVacio } from './ui.js';
 
 // ctx: { fechaRef, titulo, onCambio(), onRepintar(), onResumen() }
@@ -357,14 +359,14 @@ export function pintarOtrosDias(lista, ctx) {
 function juntarConOtroTelefono(at, ctx) {
   const pasar = crearElemento('button', {
     type: 'button', clase: 'boton diminuto secundario', texto: 'Pasar mi lista por QR',
-    onclick: () => enviarPorQr('asistencia', { padron: estado.padron, fechas: [at.fecha] })
+    onclick: () => compartir().then((m) => m.enviarPorQr('asistencia', { padron: estado.padron, fechas: [at.fecha] }))
   });
   const recibir = crearElemento('button', {
     type: 'button', clase: 'boton diminuto secundario', texto: 'Recibir por QR', hidden: true,
     // Lo que está por guardarse se guarda antes: la comparación lee lo guardado.
-    onclick: () => { guardarYa(); recibirPorQr({ alGuardar: ctx.onDatosNuevos }); }
+    onclick: () => { guardarYa(); compartir().then((m) => m.recibirPorQr({ alGuardar: ctx.onDatosNuevos })); }
   });
-  puedeLeerQr().then((si) => { recibir.hidden = !si; }).catch(() => {});
+  import('./camara-qr.js').then((m) => m.puedeLeerQr()).then((si) => { recibir.hidden = !si; }).catch(() => {});
   return crearElemento('div', { clase: 'juntar-qr' }, [
     crearElemento('p', { clase: 'pista', texto: '¿Pasaron lista en dos teléfonos? Junten las listas con un código QR. Otros días, el padrón y las entregas se pasan desde Tus datos.' }),
     crearElemento('div', { clase: 'acciones' }, [pasar, recibir])
@@ -468,9 +470,9 @@ export function pintarAsistenciaDeHoy(caja, ctx) {
   // padrón; no inscribe ni guarda nada más del DNI.
   const botonDni = crearElemento('button', {
     type: 'button', clase: 'boton secundario leer-dni', hidden: true,
-    onclick: () => abrirCamaraDni({ modo: 'asistencia', alLeer: (r) => marcarPorDni(r.mrz.campos.numeroDocumento) })
+    onclick: () => camaraDni().then((m) => m.abrirCamaraDni({ modo: 'asistencia', alLeer: (r) => marcarPorDni(r.mrz.campos.numeroDocumento) }))
   }, [icono('camara', { tam: 22 }), 'Pasar lista leyendo el DNI']);
-  lectoresDni().then((l) => { botonDni.hidden = !l.texto; }).catch(() => {});
+  camaraDni().then((m) => m.lectoresDni()).then((l) => { botonDni.hidden = !l.texto; }).catch(() => {});
 
   /** Marca a la persona de ese DNI y devuelve qué pasó, para el visor. */
   function marcarPorDni(dni) {

@@ -24,7 +24,7 @@ import {
 import {
   detectarSeparador, parsearTabla, detectarColumnas, parsearFechaFlexible,
   parsearGrupoEtario, parsearTipoAfiliado, prepararImportacion, filasImportables,
-  celdaParaHoja, desarmarCelda
+  desarmarCelda
 } from './importar.js';
 import {
   parsearCadenaDni, CAMPOS, digitoControlIcao, leerMrzTd1, buscarMrzTd1, unirFilasOcr, leerPdf417DniAzul,
@@ -39,6 +39,8 @@ import {
 import { hojasDelB1 } from './hoja-b1.js';
 import { pdfDelB1, anchoMm } from './pdf-b1.js';
 import { pdfDelPadron, pdfDeAsistencia } from './pdf-reportes.js';
+import { excelDelPadron, excelDeAsistencia, excelDelB1, CABECERA_PADRON } from './excel-reportes.js';
+import { armarXlsx, leerXlsx, pareceXlsx } from './xlsx.js';
 import { PLANTILLA_B1, FILAS_EGRESOS } from './plantilla-b1.js';
 
 // Ejemplo de MRZ TD1 de la norma ICAO 9303-5 (persona y país inventados).
@@ -421,6 +423,9 @@ export const casos = [
       igual(afiliadosActivos(p, '2026-09-10').length, 1);
       igual(afiliadosActivos(p, '2026-09-25').length, 2);
       igual(afiliadosActivos(p, '2026-08-01').length, 0);
+      igual(afiliadosActivos(p, '2026-09-03').length, 2, 'la baja no borra el historial: antes de bajaEn seguía activa');
+      p.afiliados.push(Object.assign(nuevoAfiliado(), { id: 'd', altaEn: '2026-09-01', activo: false, bajaEn: '' }));
+      igual(afiliadosActivos(p, '2026-09-03').length, 2, 'inactiva sin fecha de baja: fuera en toda fecha');
     }
   },
   {
@@ -910,6 +915,29 @@ export const casos = [
   },
   {
     grupo: 'Entregas',
+    nombre: 'La serie mensual de un día 31 vuelve al 31 después de un mes corto',
+    fn: () => {
+      const cal = Object.assign(calendarioVacio(), {
+        periodicidad: 'mensual', fechaLimiteBase: '2026-01-31'
+      });
+      const f = fechasDeEntrega(cal, '2026-03-15', 3);
+      igual(f[0], '2026-03-31', 'no se queda en el 28 de febrero');
+      igual(f[1], '2026-04-30');
+      igual(f[2], '2026-05-31');
+
+      const futura = Object.assign(calendarioVacio(), {
+        periodicidad: 'mensual', fechaLimiteBase: '2026-05-31'
+      });
+      const g = fechasDeEntrega(futura, '2026-02-10', 2);
+      igual(g[0], '2026-02-28', 'hacia atrás también se cuenta desde la base');
+      igual(g[1], '2026-03-31');
+      const a = alertaProximaEntrega(futura, '2026-03-05');
+      igual(a.fechaLimite, '2026-02-28', 'la entrega vencida sale de la misma serie');
+      igual(a.nivel, 'vencida');
+    }
+  },
+  {
+    grupo: 'Entregas',
     nombre: 'Sin configurar no inventa una fecha',
     fn: () => {
       const a = alertaProximaEntrega(calendarioVacio(), '2026-09-20');
@@ -1378,6 +1406,7 @@ export const casos = [
       igual(parsearFechaFlexible('2026-09-14'), '2026-09-14');
       igual(parsearFechaFlexible('14-09-60'), '1960-09-14', 'dos dígitos: 60 es 1960');
       igual(parsearFechaFlexible('14-09-26'), '2026-09-14', 'y 26 es 2026');
+      igual(parsearFechaFlexible('14-09-99'), '1999-09-14', 'un año de dos cifras nunca cae en el futuro');
       igual(parsearFechaFlexible('cualquier cosa'), '', 'no inventa una fecha');
       igual(parsearFechaFlexible(''), '');
     }
@@ -1390,6 +1419,7 @@ export const casos = [
       igual(parsearGrupoEtario('NIÑA'), 'nino');
       igual(parsearGrupoEtario('adolescente'), 'adolescente');
       igual(parsearGrupoEtario('Adulto Mayor'), 'adulto_mayor');
+      igual(parsearGrupoEtario('Adulto/a mayor'), 'adulto_mayor', 'como lo escribe la app al exportar');
       igual(parsearGrupoEtario('tercera edad'), 'adulto_mayor');
       igual(parsearGrupoEtario('Adulto'), 'adulto');
       igual(parsearGrupoEtario('vejete'), null, 'lo que no entiende queda sin grupo');
@@ -1538,29 +1568,61 @@ export const casos = [
     }
   },
   {
-    grupo: 'Importar',
-    nombre: 'El documento conserva sus ceros en Excel y vuelve igual al importar',
+    grupo: 'Exportar',
+    nombre: 'El padrón exportado a Excel vuelve igual al importar, con los ceros del DNI',
+    fn: async () => {
+      const p = padronVacio();
+      p.afiliados = [Object.assign(nuevoAfiliado(), {
+        id: 'x1', apellidoPaterno: 'Álvarez', apellidoMaterno: 'Rojas', nombres: 'Rosa', numeroDocumento: '01234567',
+        grupoEtarioManual: 'adulto_mayor', tipoAfiliado: 'caso_social', altaEn: '2026-01-01'
+      })];
+      const bytes = excelDelPadron(p, { fechaRef: '2026-10-17', inicio: '2026-10-01', fin: '2026-10-17' });
+      ok(pareceXlsx(bytes.buffer), 'debe ser un .xlsx');
+      const texto = await leerXlsx(bytes.buffer);
+      ok(texto.split('\n')[3].startsWith(CABECERA_PADRON.join('\t')), 'la cuarta fila son los títulos');
+      const r = prepararImportacion(texto, padronVacio());
+      igual(r.filas.length, 1, 'solo la persona: el título de arriba y el resumen no entran');
+      const a = r.filas[0].afiliado;
+      igual(a.numeroDocumento, '01234567');
+      igual(a.apellidoPaterno, 'Álvarez');
+      igual(a.grupoEtarioManual, 'adulto_mayor');
+      igual(a.tipoAfiliado, 'caso_social');
+    }
+  },
+  {
+    grupo: 'Exportar',
+    nombre: 'En el Excel, un texto que empieza como fórmula queda como texto',
     fn: () => {
-      igual(celdaParaHoja('01234567', ',', { comoTexto: true }), '"=""01234567"""');
-      igual(celdaParaHoja('01234567', '\t', { comoTexto: true }), '="01234567"');
-      igual(celdaParaHoja('', ',', { comoTexto: true }), '');
-      const cab = 'N°,Apellido paterno,Apellido materno,Nombres,Tipo de documento,' +
-        'Número de documento,Grupo de edad,Edad,Tipo,Días asistidos';
-      const fila = '1,Álvarez,Rojas,Rosa,DNI,' +
-        celdaParaHoja('01234567', ',', { comoTexto: true }) + ',Niño/a,,Ayuda social,3';
-      const r = prepararImportacion(cab + '\n' + fila, padronVacio());
-      igual(r.filas[0].afiliado.numeroDocumento, '01234567');
+      const xml = new TextDecoder().decode(armarXlsx([{ nombre: 'A', filas: [['=HIPERVINCULO("x")', '+51 999', 12.5]] }]));
+      ok(!xml.includes('<f>'), 'no debe haber ninguna fórmula');
+      ok(xml.includes('t="inlineStr"') && xml.includes('=HIPERVINCULO(&quot;x&quot;)'), 'va como texto, escapado');
+      ok(xml.includes('<v>12.5</v>'), 'los números van como números');
+    }
+  },
+  {
+    grupo: 'Exportar',
+    nombre: 'Asistencia y B-1 en Excel: cifras como números y totales iguales a los del PDF',
+    fn: async () => {
+      const p = padronVacio();
+      p.afiliados = [Object.assign(nuevoAfiliado(), { id: 'a', apellidoPaterno: 'A', nombres: 'Uno', numeroDocumento: '11111111', tipoAfiliado: 'habitual', altaEn: '2026-01-01' })];
+      p.atenciones = [Object.assign(nuevaAtencion({ precioMenuNormalCent: 150, precioMenuAyudaSocialCent: 0 }),
+        { fecha: '2026-10-05', asistencias: [{ afiliadoId: 'a', tipoMenu: 'normal' }] })];
+      const filas = (await leerXlsx(excelDeAsistencia(p, { inicio: '2026-10-01', fin: '2026-10-31' }).buffer)).split('\n');
+      igual(filas[4], ['05-10-26', 'Lunes', '1', '0', '0', '1', '1.5'].join('\t'), 'debajo de título, fechas, renglón vacío y títulos');
+      ok(filas[5].startsWith('Total\t1 día\t'), filas[5]);
+
+      const r = Object.assign(nuevaRendicion(), { montoSubsidioCent: 20000 });
+      r.egresos = [Object.assign(nuevoEgreso(), { fechaCompra: '2026-10-02', descripcion: 'Arroz', montoTotalCent: 20985 })];
+      const b1 = await leerXlsx(excelDelB1(r).buffer);
+      ok(/Gastos con el subsidio económico(\t)+200(\n|$)/.test(b1), 'gastos con el subsidio: 200');
+      ok(/Aporte del centro de atención(\t)+9.85(\n|$)/.test(b1), 'aporte: 9.85');
+      ok(/Total de rendición de gastos(\t)+209.85(\n|$)/.test(b1), 'total: 209.85');
     }
   },
   {
     grupo: 'Importar',
-    nombre: 'Un texto que empieza como fórmula se exporta como texto',
+    nombre: 'Un CSV exportado por una versión anterior se sigue leyendo',
     fn: () => {
-      igual(celdaParaHoja('=HIPERVINCULO("x")', ','), `"'=HIPERVINCULO(""x"")"`);
-      igual(celdaParaHoja('+51 999', '\t'), "'+51 999");
-      igual(celdaParaHoja('@Rosa', ','), "'@Rosa");
-      igual(celdaParaHoja('Rosa, María', ','), '"Rosa, María"');
-      igual(celdaParaHoja('Rosa', ','), 'Rosa');
       igual(desarmarCelda("'=SUMA(1)"), '=SUMA(1)');
       igual(desarmarCelda('="00012"'), '00012');
       igual(desarmarCelda("O'Brien"), "O'Brien");

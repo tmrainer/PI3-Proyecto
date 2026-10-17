@@ -183,6 +183,69 @@ const PAGINAS = [
   { href: './calendario.html', texto: 'Entregas', clave: 'calendario', icono: 'calendario' }
 ];
 
+// La sección en la que estás lleva el ícono RELLENO, como en Android: la
+// silueta en el color del ícono (verde en modo claro, blanco en oscuro) y los
+// detalles calados en el color de la píldora. Cada pieza: [trazo, cómo va].
+//   lleno: relleno y borde · mancha: solo relleno · linea: solo borde
+//   calado / hueco: borde / relleno del color de la píldora · fino: calado delgado
+const RELLENOS = {
+  casa: [['M3 11l9-7 9 7zM5 10v10h14V10z', 'lleno'], ['M10.2 14h3.6v7.2h-3.6z', 'hueco']],
+  lista: [
+    ['M9.2 6.5a3.2 3.2 0 1 1-6.4 0 3.2 3.2 0 0 1 6.4 0zM9.2 13.5a3.2 3.2 0 1 1-6.4 0 3.2 3.2 0 0 1 6.4 0zM7 20a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z', 'mancha'],
+    ['M4.5 6.6l1.1 1.1 2-2.2M4.5 13.6l1.1 1.1 2-2.2', 'fino'],
+    ['M12 7h8M12 14h8M12 20h8', 'linea']
+  ],
+  personas: [
+    ['M12.5 8a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0zM2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5zM19.5 9a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z', 'lleno'],
+    ['M17 14c2.5 0 4 1.5 4.5 4', 'linea']
+  ],
+  boleta: [['M6 3h12v18l-3-2-3 2-3-2-3 2z', 'lleno'], ['M9 8h6M9 12h6M9 16h3', 'calado']],
+  calendario: [
+    ['M5.5 5h13a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z', 'lleno'],
+    ['M8 3v4M16 3v4', 'linea'],
+    ['M7.5 12.5h2M11 12.5h2M14.5 12.5h2M7.5 16h2M11 16h2', 'calado']
+  ]
+};
+
+/** Agrega al ícono del menú su versión rellena (CSS la muestra en la sección activa). */
+function rellenarIconoNav(svg, nombre) {
+  const piezas = RELLENOS[nombre];
+  if (!svg || !piezas || svg.querySelector('.icono-lleno')) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const g = document.createElementNS(NS, 'g');
+  g.setAttribute('class', 'icono-lleno');
+  for (const [d, como] of piezas) {
+    const path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('class', como);
+    g.appendChild(path);
+  }
+  svg.appendChild(g);
+}
+
+/**
+ * Al tocar otra sección, la píldora y el ícono relleno pasan ahí al instante.
+ * La página nueva tarda unas décimas en armarse (más en un celular modesto) y,
+ * sin esto, durante ese rato el toque parecía no haber entrado.
+ */
+function marcarAlTocar(nav) {
+  const propio = nav.querySelector('.nav-enlace.activo');
+  const marcar = (a) => {
+    for (const e of nav.querySelectorAll('.nav-enlace')) {
+      e.classList.toggle('activo', e === a);
+      if (e === a) e.setAttribute('aria-current', 'page'); else e.removeAttribute('aria-current');
+    }
+  };
+  nav.addEventListener('click', (ev) => {
+    const a = ev.target.closest('.nav-enlace');
+    if (!a || a === propio || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+    nav.classList.add('al-tocar');
+    marcar(a);
+  });
+  // Volver atrás puede traer esta página tal como quedó (caché del navegador).
+  addEventListener('pageshow', (ev) => { if (ev.persisted && propio) marcar(propio); });
+}
+
 export function montarCabecera(claveActiva, subtitulo) {
   if (claveActiva === 'pruebas') {
     PAGINAS.push({ href: './pruebas.html', texto: 'Pruebas', clave: 'pruebas' });
@@ -208,6 +271,13 @@ export function montarCabecera(claveActiva, subtitulo) {
       crearElemento('span', { clase: 'nav-texto', texto: p.texto })
     ]));
   }
+  // El menú viene en el HTML; antes del primer cuadro (el módulo bloquea el
+  // pintado) se le agrega a cada ícono su versión rellena.
+  for (const a of nav.querySelectorAll('.nav-enlace')) {
+    const p = PAGINAS.find((x) => new URL(x.href, location.href).pathname === new URL(a.href, location.href).pathname);
+    if (p) rellenarIconoNav(a.querySelector('.nav-icono svg'), p.icono);
+  }
+  marcarAlTocar(nav);
   if (subtitulo) {
     const sub = buscar('.cabecera-sub');
     if (sub) sub.textContent = subtitulo;
@@ -1132,6 +1202,37 @@ function cerrarAvisoAbajo() {
 /** Un toque corto de vibración, donde el teléfono lo permite. */
 export function vibrar(ms = 20) {
   try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* sin vibración */ }
+}
+
+// ------------------------------------------------ «se leyó», sobre la cámara
+//
+// Como en las apps de pago con QR: al reconocer un DNI o un código, el visor
+// se pone verde un instante con un ✓. Translúcido (se sigue viendo la imagen)
+// y solo dentro del visor. Con «reducir movimiento», aparece sin animarse.
+
+const DURACION_DESTELLO = 550;
+
+/**
+ * @param {HTMLElement} visor  el recuadro de la cámara (.camara-visor)
+ * @returns {Promise<void>}  cuando se fue, para cerrar el visor después
+ */
+export function destelloLeido(visor) {
+  const capa = crearElemento('div', { clase: 'camara-leido', 'aria-hidden': 'true' }, [
+    crearElemento('span', { clase: 'camara-leido-marca' }, [icono('ok', { tam: 56 })])
+  ]);
+  visor.append(capa);
+  return new Promise((listo) => setTimeout(() => { capa.remove(); listo(); }, DURACION_DESTELLO));
+}
+
+/**
+ * Para el equipo: muestra lo que en uso normal sobra (p. ej. la barra de
+ * avance al recibir por QR). Se prende con ?depurar en la dirección, o con
+ * localStorage «pi3.depurar» = '1' (en el APK, desde chrome://inspect).
+ */
+export function modoDepuracion() {
+  try {
+    return new URLSearchParams(location.search).has('depurar') || localStorage.getItem('pi3.depurar') === '1';
+  } catch (e) { return false; }
 }
 
 // ------------------------------------------------------- iniciales en círculo

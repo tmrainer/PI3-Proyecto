@@ -22,6 +22,7 @@
   --superficie: #ffffff;     /* tarjetas, listas, campos */
   --superficie-2: #eef3e8;   /* fondo suave: resaltar sin borde */
   --seleccion: #d3e4c7;      /* lo elegido: ficha, pestaña, fila marcada */
+  --nav-activo: #3a5533;     /* ícono relleno de la sección actual, en el menú de abajo */
 
   /* Texto */
   --tinta: #1f251c;
@@ -83,6 +84,7 @@
     --superficie: #19221b;
     --superficie-2: #1f2b22;
     --seleccion: #2f4834;
+    --nav-activo: #ffffff;
     --tinta: #e4eadf;
     --tinta-suave: #a9b4a3;
     --titulo: #e8f1e0;
@@ -111,6 +113,7 @@
   --superficie: #19221b;
   --superficie-2: #1f2b22;
   --seleccion: #2f4834;
+  --nav-activo: #ffffff;
   --tinta: #e4eadf;
   --tinta-suave: #a9b4a3;
   --titulo: #e8f1e0;
@@ -164,12 +167,15 @@ a { color: var(--acento-texto); }
 
 /* Al tocar, todo lo que se toca se oscurece un poco, como en Android. Sin
    cambiar su color: una capa encima, sirva para fondos claros u oscuros. */
-:is(.boton, .tarea, .toque-nombre, .toque-menu, .persona-fila, .dia > summary, .nav-enlace,
+:is(.boton, .tarea, .toque-nombre, .toque-menu, .persona-fila, .dia > summary,
   .ficha-filtro, .opcion, .menu-opciones button, .cabecera-volver, .cabecera-menu, .cabecera-voz, .enlace-ajustes,
   .plegable > summary, details.ficha > summary, .fab, .hoy-entrega, .enlace-ir,
   .paso-segmento, details.bloque.desplegable > summary, .aviso-abajo button):active {
   background-image: linear-gradient(var(--toque), var(--toque));
 }
+/* En el menú de abajo se oscurece la píldora, no la celda entera (como en
+   Android): la celda quedaba gris mientras cargaba la página nueva. */
+.nav-enlace:active .nav-icono { background-image: linear-gradient(var(--toque), var(--toque)); }
 
 /* Foco del teclado: anillo visible en todo lo que se puede tocar. */
 :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible,
@@ -275,6 +281,20 @@ html.letra-muy-grande { font-size: 125%; }
 .nav-icono .icono { width: 24px; height: 24px; }
 .nav-enlace.activo { color: var(--titulo); font-weight: 700; }
 .nav-enlace.activo .nav-icono { background: var(--seleccion); }
+/* Al tocar otra sección, el cambio es inmediato (marcarAlTocar, ui.js): con la
+   transición se veían dos píldoras a la vez mientras cargaba la página. */
+.nav.al-tocar .nav-icono { transition: none; }
+/* Y el ícono relleno (rellenarIconoNav, ui.js): verde en claro, blanco en oscuro;
+   los detalles quedan calados del color de la píldora. */
+.nav-enlace.activo .nav-icono { color: var(--nav-activo); }
+.icono-lleno { display: none; }
+.nav-enlace.activo .nav-icono .icono:has(.icono-lleno) > path { display: none; }
+.nav-enlace.activo .icono-lleno { display: inline; }
+.icono-lleno .lleno { fill: currentColor; }
+.icono-lleno .mancha { fill: currentColor; stroke: none; }
+.icono-lleno .calado, .icono-lleno .fino { stroke: var(--seleccion); }
+.icono-lleno .fino { stroke-width: 1.6; }
+.icono-lleno .hueco { fill: var(--seleccion); stroke: none; }
 .nav-enlace:focus-visible { outline-color: var(--contorno); }
 
 /* Lo que va pegado abajo queda sobre el menú, no debajo. Con botón flotante,
@@ -1014,6 +1034,25 @@ dialog.camara-dni::backdrop { background: rgba(10, 18, 12, .75); }
   .girador { animation: latir 1.6s ease-in-out infinite !important; border-top-color: rgba(255, 255, 255, .25); }
 }
 @keyframes latir { 50% { opacity: .35; } }
+/* «Se leyó»: el visor se pone verde un instante con un ✓ (destelloLeido, ui.js).
+   Visible por defecto: con «reducir movimiento» la animación no corre, pero se ve. */
+.camara-leido {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(46, 125, 50, .55); pointer-events: none;
+  animation: leido-fondo 550ms ease-out both;
+}
+.camara-leido-marca {
+  display: flex; align-items: center; justify-content: center; width: 96px; height: 96px; border-radius: 50%;
+  background: #2e7d32; color: #fff; box-shadow: 0 4px 18px rgba(0, 0, 0, .3);
+  animation: leido-marca 550ms cubic-bezier(.2, 1.4, .4, 1) both;
+}
+.camara-leido-marca .icono { stroke-width: 3; }
+@keyframes leido-fondo { from { opacity: 0; } 25% { opacity: 1; } 75% { opacity: 1; } to { opacity: 0; } }
+@keyframes leido-marca { from { transform: scale(.4); opacity: 0; } 35% { transform: scale(1); opacity: 1; } }
+/* Sin esto, la regla general dejaría la animación en su último cuadro: invisible. */
+@media (prefers-reduced-motion: reduce) {
+  .camara-leido, .camara-leido-marca { animation: none !important; }
+}
 .camara-estado { min-height: 1.5em; margin: var(--e3) 0; font-weight: 600; }
 .camara-dni .boton { width: 100%; }
 
@@ -1031,6 +1070,10 @@ pre.plantilla {
 }
 .leer-dni { width: 100%; margin-bottom: var(--e3); }
 
+/* Exportar (Asistencia, Padrón, B-1): los mismos dos botones, PDF y Excel, del mismo ancho. */
+.exportar { margin-top: var(--e3); }
+.exportar .boton { flex: 1 1 12rem; }
+
 /* Inscribir leyendo el DNI (en prueba) */
 .alta-dni { margin: var(--e3) 0; padding: var(--e3) var(--e4); border-radius: var(--r-m); background: var(--superficie-2); }
 .alta-dni .boton { width: 100%; }
@@ -1046,6 +1089,7 @@ pre.plantilla {
 .qr-caja { display: flex; justify-content: center; padding: var(--e3); background: #fff; border-radius: var(--r-m); }
 .qr-lienzo { width: min(100%, 360px); height: auto; image-rendering: pixelated; }
 .qr-de-a-uno { display: block; margin: var(--e2) auto 0; }
+/* Solo en modo depuración (modoDepuracion, ui.js): en uso normal avisa el destello. */
 .qr-avance { display: block; width: 100%; height: 10px; margin-top: var(--e3); accent-color: var(--acento); }
 .qr-parte { min-height: 1.5em; margin: var(--e3) 0; font-weight: 600; text-align: center; }
 #enviar-qr .boton { flex: 1 1 12em; }

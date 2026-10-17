@@ -1,5 +1,5 @@
-// compartir-archivo.js — entregar un archivo que arma la app (PDF del B-1,
-// copia de los datos): el menú «Compartir» del teléfono o, si no hay, una
+// compartir-archivo.js — entregar un archivo que arma la app (PDF o Excel
+// exportado, copia de los datos): el menú «Compartir» del teléfono o, si no hay, una
 // descarga.
 //
 // En el APK, el WebView no tiene navigator.share y una descarga no llega a
@@ -32,24 +32,13 @@ function descargar(nombre, tipo, bytes) {
 }
 
 /**
- * ¿Se puede mandar directo a WhatsApp? Solo en el APK y si está instalado.
- * @returns {Promise<?string>}  el paquete de WhatsApp, o null
- */
-export async function paqueteWhatsapp() {
-  const c = complemento();
-  if (!c) return null;
-  try { return (await c.whatsapp()).paquete || null; } catch (e) { return null; }
-}
-
-/**
- * @param {{nombre: string, tipo: string, bytes: Uint8Array, titulo: string, app?: ?string}} archivo
- *   app: un paquete de Android (p. ej. el de paqueteWhatsapp()) para ir directo a esa app
+ * @param {{nombre: string, tipo: string, bytes: Uint8Array, titulo: string}} archivo
  * @returns {Promise<'compartido'|'descargado'|'cancelado'>}
  */
-export async function compartirArchivo({ nombre, tipo, bytes, titulo, app = null }) {
+export async function compartirArchivo({ nombre, tipo, bytes, titulo }) {
   const c = complemento();
   if (c) {
-    await c.compartir({ nombre, tipo, titulo, base64: aBase64(bytes), app });
+    await c.compartir({ nombre, tipo, titulo, base64: aBase64(bytes) });
     return 'compartido';
   }
   if (typeof File !== 'undefined' && navigator.canShare && matchMedia('(pointer: coarse)').matches) {

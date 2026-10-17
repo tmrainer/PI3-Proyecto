@@ -36,6 +36,25 @@ export function retrocederPeriodo(fechaIso, periodicidad, pasos = 1) {
 }
 
 /**
+ * Cuántos periodos hay que avanzar desde la base para llegar a la primera
+ * fecha que no ha pasado (puede ser negativo si la base es futura).
+ *
+ * Siempre se cuenta DESDE LA BASE, nunca de a un paso sobre la fecha anterior:
+ * con una base el 31, ir sumando un mes recortaba a fin de mes y la serie se
+ * corría para siempre (31 → 28 → 28 → 28…) en vez de volver al 31.
+ */
+function pasosHastaHoy(calendario, hoy) {
+  const per = calendario.periodicidad || 'mensual';
+  const base = calendario.fechaLimiteBase;
+  let n = 0;
+  // Retrocede hasta quedar en la última fecha anterior a hoy.
+  while (n > -2000 && avanzarPeriodo(base, per, n) > hoy) n -= 1;
+  // Avanza hasta la primera que no ha pasado.
+  while (n < 2000 && avanzarPeriodo(base, per, n) < hoy) n += 1;
+  return n;
+}
+
+/**
  * Serie de fechas de entrega alrededor de hoy, a partir de la fecha base.
  * Devuelve `cuantas` fechas: la primera es la primera que no ha pasado todavía.
  */
@@ -43,29 +62,16 @@ export function fechasDeEntrega(calendario, hoyRef, cuantas = 6) {
   const hoy = esIso(hoyRef) ? hoyRef : hoyIso();
   if (!calendario || !esIso(calendario.fechaLimiteBase)) return [];
   const per = calendario.periodicidad || 'mensual';
-
-  let actual = calendario.fechaLimiteBase;
-  let guardia = 0;
-  // Retrocede hasta quedar en la última fecha anterior a hoy.
-  while (actual > hoy && guardia < 2000) { actual = retrocederPeriodo(actual, per); guardia += 1; }
-  // Avanza hasta la primera que no ha pasado.
-  guardia = 0;
-  while (actual < hoy && guardia < 2000) { actual = avanzarPeriodo(actual, per); guardia += 1; }
-
-  const salida = [];
-  for (let i = 0; i < cuantas; i += 1) {
-    salida.push(actual);
-    actual = avanzarPeriodo(actual, per);
-  }
-  return salida;
+  const n = pasosHastaHoy(calendario, hoy);
+  return Array.from({ length: cuantas }, (_, i) => avanzarPeriodo(calendario.fechaLimiteBase, per, n + i));
 }
 
 /** Fecha de entrega inmediatamente anterior a hoy, o '' si no hay base. */
 export function entregaAnterior(calendario, hoyRef) {
   const hoy = esIso(hoyRef) ? hoyRef : hoyIso();
-  const proxima = fechasDeEntrega(calendario, hoy, 1)[0];
-  if (!proxima) return '';
-  return retrocederPeriodo(proxima, calendario.periodicidad || 'mensual');
+  if (!calendario || !esIso(calendario.fechaLimiteBase)) return '';
+  const per = calendario.periodicidad || 'mensual';
+  return avanzarPeriodo(calendario.fechaLimiteBase, per, pasosHastaHoy(calendario, hoy) - 1);
 }
 
 export const NIVELES = ['vencida', 'hoy', 'urgente', 'proxima', 'lejana'];

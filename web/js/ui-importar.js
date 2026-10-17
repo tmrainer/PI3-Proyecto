@@ -4,7 +4,6 @@
 import { cuantos, hoyIso } from './modelo.js';
 import { etiquetaGrupoEtario, grupoEtario } from './calculos.js';
 import { prepararImportacion, filasImportables } from './importar.js';
-import { leerXlsx, pareceXlsx } from './xlsx.js';
 import { estado, guardarYa } from './estado.js';
 import { buscar, crearElemento, chip } from './ui.js';
 
@@ -40,6 +39,7 @@ export function montarImportacion(ctx) {
     };
     try {
       const datos = await f.arrayBuffer();
+      const { leerXlsx, pareceXlsx } = await import('./xlsx.js');   // recién aquí: Padrón abre sin él
       if (pareceXlsx(datos)) {
         area.value = await leerXlsx(datos);
       } else if (/\.xls$/i.test(f.name)) {
